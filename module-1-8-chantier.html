@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.8 — Suivi de chantier</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;
+      --sidebar-w:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    .nav{width:var(--sidebar-w);background:var(--primary);color:#fff;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px 20px 16px;font-size:22px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:16px 20px 4px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;font-size:12px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    .wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar__bc{font-size:13px;color:var(--text-2);flex:1}
+    .topbar__bc a{color:var(--primary);cursor:pointer}
+    .page{padding:28px;display:none;flex-direction:column;gap:20px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+    .kpi__label{font-size:10.5px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+    .kpi__val{font-size:22px;font-weight:700;font-family:var(--mono);margin-bottom:3px}
+    .kpi__detail{font-size:11px;color:var(--text-3)}
+    .tabs{display:flex;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:4px;gap:2px;overflow-x:auto}
+    .tab{padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap}
+    .tab:hover{background:rgba(255,255,255,.7)}
+    .tab--on{background:var(--surface);color:var(--primary);font-weight:700;box-shadow:var(--shadow)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .info-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+    .info-block__title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+    /* Tableau CR */
+    .data-table{width:100%;border-collapse:collapse;font-size:13px}
+    .data-table th{background:var(--grey-l);border-bottom:1px solid var(--border);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px}
+    .data-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .data-table tr:last-child td{border-bottom:none}
+    .data-table tr:hover td{background:rgba(27,73,101,.02)}
+    .cr-num{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--primary)}
+    .cr-date{font-family:var(--mono);font-size:12px}
+    /* Observations */
+    .obs-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--border)}
+    .obs-card--critical{border-left-color:var(--red)}
+    .obs-card--open{border-left-color:var(--orange)}
+    .obs-card--closed{border-left-color:var(--green);opacity:.7}
+    .obs-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px}
+    .obs-card__title{font-size:13px;font-weight:700}
+    .obs-card__meta{display:flex;align-items:center;gap:6px;flex-shrink:0}
+    .obs-card__lot{font-size:10.5px;background:var(--grey-l);color:var(--text-2);padding:2px 6px;border-radius:3px}
+    .obs-card__desc{font-size:12px;color:var(--text-2);margin-bottom:6px}
+    .obs-card__photos{display:flex;gap:5px;align-items:center}
+    .obs-thumb{width:32px;height:32px;background:var(--grey-l);border:1px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer}
+    .obs-thumb:hover{background:var(--primary-l)}
+    /* Suivi entreprises */
+    .lot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .lot-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;box-shadow:var(--shadow)}
+    .lot-card__name{font-size:13px;font-weight:700;margin-bottom:2px}
+    .lot-card__company{font-size:11.5px;color:var(--text-3);margin-bottom:6px}
+    .lot-card__progress{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:4px}
+    .lot-card__progress-fill{height:100%;border-radius:3px}
+    .lot-card__meta{display:flex;justify-content:space-between;font-size:11.5px}
+    /* Timeline */
+    .timeline{display:flex;flex-direction:column}
+    .tl-item{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+    .tl-item:last-child{border-bottom:none}
+    .tl-date{font-family:var(--mono);font-size:11px;color:var(--primary);font-weight:600;min-width:80px;padding-top:2px}
+    .tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+    .tl-text{flex:1;color:var(--text-2)}
+    .tl-text strong{color:var(--text)}
+    /* Modale CR */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay--on{display:flex}
+    .modal{background:var(--surface);border-radius:12px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mi .2s ease}
+    @keyframes mi{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal__hd{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:5}
+    .modal__title{font-size:16px;font-weight:700}
+    .modal__x{width:28px;height:28px;border-radius:50%;border:none;background:var(--grey-l);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+    .modal__body{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+    .modal__ft{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface)}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-input,.form-select,.form-textarea{padding:8px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none;resize:vertical}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.12)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .mono{font-family:var(--mono)}
+    .text-green{color:var(--green)}.text-orange{color:var(--orange)}.text-red{color:var(--red)}.text-primary{color:var(--primary)}.text-muted{color:var(--text-3)}
+    /* Filtre pills */
+    .pill-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .pill{padding:4px 10px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;color:var(--text-2);transition:all .15s}
+    .pill:hover{border-color:var(--primary);color:var(--primary)}
+    .pill--on{background:var(--primary);border-color:var(--primary);color:#fff}
+    .pill--danger{border-color:var(--red);color:var(--red)}
+    .pill--danger.pill--on{background:var(--red)}
+    /* Visa badge */
+    .visa-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--r-sm);font-size:11px;font-weight:700}
+    .visa-badge--bpe{background:var(--green-l);color:var(--green)}
+    .visa-badge--bpear{background:var(--orange-l);color:var(--orange)}
+    .visa-badge--ref{background:var(--red-l);color:var(--red)}
+  </style>
+</head>
+<body>
+
+<!-- Modale : Nouveau CR -->
+<div class="modal-overlay" id="modal-cr">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Nouveau CR de chantier — CR-15</h2>
+      <button class="modal__x" onclick="closeModal('modal-cr')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Date de visite <span style="color:var(--red)">*</span></label>
+          <input class="form-input" type="date" value="2026-03-06">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure</label>
+          <input class="form-input" type="time" value="09:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rédacteur</label>
+        <select class="form-select"><option>M. Lefort</option><option>P. Bernard</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Présents</label>
+        <input class="form-input" type="text" placeholder="MOA, OPC, entreprises présentes…" value="M. Bertrand (MOA), BTP-Pro, Menuiseries Durand">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Avancement général</label>
+        <select class="form-select"><option>Dans les délais</option><option>Léger retard (1–2 sem.)</option><option>Retard significatif (>2 sem.)</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observations ajoutées</label>
+        <textarea class="form-input form-textarea" rows="4" placeholder="Saisir les observations constatées lors de la visite…"></textarea>
+      </div>
+      <div style="background:var(--green-l);border:1px solid var(--green);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--green)">
+        📤 <strong>Diffusion automatique</strong> à la validation : MOA (M. Bertrand), BET Structure, BET Fluides, Entreprise GO, Menuiseries, OPC.
+        <span style="display:block;font-size:11px;margin-top:3px;color:var(--text-3)">Configurable dans les paramètres du projet</span>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-cr')">Annuler</button>
+      <button class="btn btn--ghost" onclick="closeModal('modal-cr')">Enregistrer brouillon</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-cr')">Valider et diffuser →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale : Nouvelle observation -->
+<div class="modal-overlay" id="modal-obs">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Nouvelle observation</h2>
+      <button class="modal__x" onclick="closeModal('modal-obs')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">CR rattaché</label>
+          <select class="form-select"><option>CR-15 (en cours)</option><option>CR-14</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lot</label>
+          <select class="form-select"><option>Lot 01 — Gros Œuvre</option><option>Lot 02 — Charpente</option><option>Lot 05 — Électricité</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description <span style="color:var(--red)">*</span></label>
+        <textarea class="form-input form-textarea" rows="3" placeholder="Décrire précisément l'observation…"></textarea>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Criticité</label>
+          <select class="form-select"><option>Normale</option><option>Critique</option><option>Bloquante</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Délai de levée</label>
+          <input class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Photos</label>
+        <div style="border:2px dashed var(--border);border-radius:var(--r-sm);padding:16px;text-align:center;font-size:12.5px;color:var(--text-3);cursor:pointer">📷 Glisser des photos ou cliquer pour sélectionner</div>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-obs')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-obs')">Enregistrer observation</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="nav">
+    <div class="nav__logo"><span class="nav__dot"></span>GAA</div>
+    <div class="nav__sec">Pilotage</div>
+    <a class="nav__item"><span>⬜</span> Tableau de bord</a>
+    <a class="nav__item"><span>📁</span> Projets</a>
+    <div class="nav__sec">Opérationnel</div>
+    <a class="nav__item"><span>⏱</span> Temps</a>
+    <a class="nav__item"><span>📂</span> Documents</a>
+    <a class="nav__item nav__item--on"><span>🏗</span> Chantier</a>
+    <a class="nav__item"><span>✓</span> Tâches</a>
+    <div class="nav__sec">Commercial</div>
+    <a class="nav__item"><span>👥</span> CRM</a>
+    <div class="nav__sec">Finance</div>
+    <a class="nav__item"><span>💰</span> Facturation</a>
+    <div class="nav__user">
+      <div class="nav__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="topbar__bc"><a href="#">Projets</a> / <a href="#">Rés. Les Cèdres</a> / <strong>Suivi chantier</strong></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost btn--sm" onclick="return false">📱 Mode tablette</button>
+        <button class="btn btn--ghost btn--sm" onclick="openModal('modal-obs')">+ Observation</button>
+        <button class="btn btn--primary" onclick="openModal('modal-cr')">+ Nouveau CR</button>
+      </div>
+    </header>
+
+    <main class="page page--on" id="page-chantier">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Résidence Les Cèdres</h1>
+          <p style="font-size:13px;color:var(--text-2);margin-top:2px">Phase DET · Chantier · 14 CR rédigés</p>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi__label">CR rédigés</div><div class="kpi__val">14</div><div class="kpi__detail">Dernier : 28/02/2026</div></div>
+        <div class="kpi"><div class="kpi__label">Observations ouvertes</div><div class="kpi__val text-red">23</div><div class="kpi__detail">dont 5 critiques</div></div>
+        <div class="kpi"><div class="kpi__label">Réserves levées</div><div class="kpi__val text-green">41</div><div class="kpi__detail">sur 64 total (64%)</div></div>
+        <div class="kpi"><div class="kpi__label">VISA en attente</div><div class="kpi__val text-orange">3</div><div class="kpi__detail">Plans exé. lot GO</div></div>
+        <div class="kpi"><div class="kpi__label">Photos chantier</div><div class="kpi__val">187</div><div class="kpi__detail">12 non associées</div></div>
+      </div>
+
+      <!-- Onglets -->
+      <div class="tabs">
+        <div class="tab tab--on">Comptes-rendus</div>
+        <div class="tab" onclick="return false">Observations / Réserves</div>
+        <div class="tab" onclick="return false">VISA documents</div>
+        <div class="tab" onclick="return false">Photothèque</div>
+        <div class="tab" onclick="return false">PV & Réception</div>
+        <div class="tab" onclick="return false">Historique</div>
+      </div>
+
+      <!-- Layout 2 colonnes : CR + Observations -->
+      <div class="grid-2">
+
+        <!-- CR list -->
+        <div>
+          <div class="info-block">
+            <div class="info-block__title">
+              📋 Comptes-rendus de chantier
+              <button class="btn btn--primary btn--sm" onclick="openModal('modal-cr')">+ Nouveau CR</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>N°</th><th>Date visite</th><th>Rédacteur</th><th>Obs.</th><th>Statut</th><th>Diffusion</th></tr>
+              </thead>
+              <tbody>
+                <tr style="background:var(--primary-l)">
+                  <td class="cr-num">CR-14</td>
+                  <td class="cr-date">28/02/26</td>
+                  <td>M. Lefort</td>
+                  <td style="text-align:center;font-size:12px">6 nouvelles</td>
+                  <td><span class="badge badge--orange">Brouillon</span></td>
+                  <td style="font-size:12px;color:var(--text-3)">—</td>
+                </tr>
+                <tr>
+                  <td class="cr-num">CR-13</td>
+                  <td class="cr-date">21/02/26</td>
+                  <td>M. Lefort</td>
+                  <td style="text-align:center;font-size:12px">4 nouv., 2 levées</td>
+                  <td><span class="badge badge--green">Diffusé</span></td>
+                  <td style="font-size:12px;color:var(--green)">✓ 21/02 14:30</td>
+                </tr>
+                <tr>
+                  <td class="cr-num">CR-12</td>
+                  <td class="cr-date">14/02/26</td>
+                  <td>P. Bernard</td>
+                  <td style="text-align:center;font-size:12px">8 nouv., 5 levées</td>
+                  <td><span class="badge badge--green">Diffusé</span></td>
+                  <td style="font-size:12px;color:var(--green)">✓ 14/02 17:15</td>
+                </tr>
+                <tr>
+                  <td class="cr-num">CR-11</td>
+                  <td class="cr-date">07/02/26</td>
+                  <td>M. Lefort</td>
+                  <td style="text-align:center;font-size:12px">3 nouv., 7 levées</td>
+                  <td><span class="badge badge--green">Diffusé</span></td>
+                  <td style="font-size:12px;color:var(--green)">✓ 07/02 16:00</td>
+                </tr>
+                <tr>
+                  <td class="cr-num">CR-10</td>
+                  <td class="cr-date">31/01/26</td>
+                  <td>P. Bernard</td>
+                  <td style="text-align:center;font-size:12px">5 nouv., 3 levées</td>
+                  <td><span class="badge badge--green">Diffusé</span></td>
+                  <td style="font-size:12px;color:var(--green)">✓ 31/01 18:00</td>
+                </tr>
+              </tbody>
+            </table>
+            <!-- Diffusion auto -->
+            <div style="margin-top:12px;background:var(--green-l);border:1px solid rgba(45,106,79,.3);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px">
+              <div style="font-weight:700;color:var(--green);margin-bottom:4px">📤 Diffusion automatique à la validation</div>
+              <div style="color:var(--text-2)">MOA (contact principal), BET Structure, BET Fluides, Entreprise GO, Menuiseries, OPC.</div>
+              <div style="color:var(--primary);font-size:11px;font-weight:600;margin-top:4px">→ Liste configurable dans les paramètres du projet</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observations -->
+        <div>
+          <div class="info-block">
+            <div class="info-block__title">
+              🔍 Observations ouvertes (23)
+              <button class="btn btn--ghost btn--sm" onclick="openModal('modal-obs')">+ Observation</button>
+            </div>
+            <!-- Filtres lots -->
+            <div class="pill-bar" style="margin-bottom:12px">
+              <span class="pill pill--on">Toutes</span>
+              <span class="pill">Lot GO</span>
+              <span class="pill">Lot Menuiseries</span>
+              <span class="pill">Lot Élec.</span>
+              <span class="pill pill--danger">⚠ Critiques (5)</span>
+            </div>
+
+            <div class="obs-card obs-card--critical">
+              <div class="obs-card__head">
+                <div class="obs-card__title">OBS-057 — Fissure linteau baie R+2</div>
+                <div class="obs-card__meta"><span class="obs-card__lot">Lot 01 — GO</span><span class="badge badge--red">Critique</span></div>
+              </div>
+              <div class="obs-card__desc">Fissure traversante sur linteau béton baie salon apt. B204. Largeur ~2mm, longueur 40cm. Avis BET structure demandé.</div>
+              <div class="obs-card__photos"><div class="obs-thumb">📷</div><div class="obs-thumb">📷</div><span style="font-size:11px;color:var(--text-3);margin-left:4px">CR-14 · 28/02</span></div>
+            </div>
+
+            <div class="obs-card obs-card--open">
+              <div class="obs-card__head">
+                <div class="obs-card__title">OBS-054 — Réservation passage gaines manquante</div>
+                <div class="obs-card__meta"><span class="obs-card__lot">Lot 01 — GO</span><span class="badge badge--orange">Ouverte</span></div>
+              </div>
+              <div class="obs-card__desc">Réservation non percée au niveau N+1 pour passage gaines CVC. L'entreprise CVC ne peut pas avancer.</div>
+              <div class="obs-card__photos"><div class="obs-thumb">📷</div><span style="font-size:11px;color:var(--text-3);margin-left:4px">CR-13 · 21/02</span></div>
+            </div>
+
+            <div class="obs-card obs-card--open" style="border-left-color:var(--orange)">
+              <div class="obs-card__head">
+                <div class="obs-card__title">OBS-051 — Pente insuffisante terrasse R+4</div>
+                <div class="obs-card__meta"><span class="obs-card__lot">Lot 01 — GO</span><span class="badge badge--orange">Ouverte</span></div>
+              </div>
+              <div class="obs-card__desc">Pente d'écoulement 0,8% au lieu de 2% minimum requis. Risque stagnation eau.</div>
+            </div>
+
+            <div class="obs-card obs-card--closed">
+              <div class="obs-card__head">
+                <div class="obs-card__title">OBS-048 — Défaut d'aplomb cloison hall</div>
+                <div class="obs-card__meta"><span class="obs-card__lot">Lot 03 — Plâtrerie</span><span class="badge badge--green">Levée</span></div>
+              </div>
+              <div class="obs-card__desc">Cloison reprise et conforme. Vérifiée visite CR-14.</div>
+            </div>
+
+            <div style="text-align:center;padding:8px;font-size:12.5px;color:var(--primary);cursor:pointer;border-top:1px solid var(--border);margin-top:4px">Afficher les 19 autres observations →</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suivi entreprises par lot -->
+      <div class="info-block">
+        <div class="info-block__title">🏢 Suivi entreprises par lot</div>
+        <div class="lot-grid">
+          <div class="lot-card">
+            <div class="lot-card__name">Lot 01 — Gros Œuvre</div>
+            <div class="lot-card__company">SARL Bâti-Pro</div>
+            <div class="lot-card__progress"><div class="lot-card__progress-fill" style="background:var(--primary);width:72%"></div></div>
+            <div class="lot-card__meta"><span style="font-weight:700;color:var(--primary)">72%</span><span style="color:var(--red);font-size:11px">⚠ 2 retards · 8 obs.</span></div>
+          </div>
+          <div class="lot-card">
+            <div class="lot-card__name">Lot 02 — Charpente</div>
+            <div class="lot-card__company">Menuiseries Durand</div>
+            <div class="lot-card__progress"><div class="lot-card__progress-fill" style="background:var(--green);width:85%"></div></div>
+            <div class="lot-card__meta"><span style="font-weight:700;color:var(--green)">85%</span><span style="color:var(--green);font-size:11px">✓ À jour · 2 obs.</span></div>
+          </div>
+          <div class="lot-card">
+            <div class="lot-card__name">Lot 05 — Électricité</div>
+            <div class="lot-card__company">Élec-Sud SAS</div>
+            <div class="lot-card__progress"><div class="lot-card__progress-fill" style="background:var(--orange);width:45%"></div></div>
+            <div class="lot-card__meta"><span style="font-weight:700;color:var(--orange)">45%</span><span style="color:var(--orange);font-size:11px">⏳ En attente GO · 6 obs.</span></div>
+          </div>
+          <div class="lot-card">
+            <div class="lot-card__name">Lot 08 — Peinture</div>
+            <div class="lot-card__company">Peintures Martin</div>
+            <div class="lot-card__progress"><div class="lot-card__progress-fill" style="background:var(--border);width:0%"></div></div>
+            <div class="lot-card__meta"><span style="font-weight:700;color:var(--text-3)">0%</span><span style="color:var(--text-3);font-size:11px">Non démarré</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISA documents -->
+      <div class="info-block">
+        <div class="info-block__title">🗂 VISA documents — En attente (3)</div>
+        <table class="data-table">
+          <thead><tr><th>Document</th><th>Lot</th><th>Soumis le</th><th>VISA</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Plans exécution GO — Fondations</strong><div style="font-size:11px;color:var(--text-3)">Bâti-Pro · Rev. B · 2,4 Mo</div></td>
+              <td><span style="font-size:11px">Lot 01 — GO</span></td>
+              <td class="mono" style="font-size:12px">25/02/26</td>
+              <td><span class="badge badge--orange">En attente VISA</span></td>
+              <td><div style="display:flex;gap:6px;font-size:12px">
+                <span style="color:var(--primary);cursor:pointer">Voir</span>
+                <span class="visa-badge visa-badge--bpe" style="cursor:pointer">BPE</span>
+                <span class="visa-badge visa-badge--bpear" style="cursor:pointer">BPEAR</span>
+                <span class="visa-badge visa-badge--ref" style="cursor:pointer">Refus</span>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>Détails façade sud — Menuiseries</strong><div style="font-size:11px;color:var(--text-3)">Menuiseries Durand · Rev. A · 1,8 Mo</div></td>
+              <td><span style="font-size:11px">Lot 02</span></td>
+              <td class="mono" style="font-size:12px">28/02/26</td>
+              <td><span class="badge badge--orange">En attente VISA</span></td>
+              <td><div style="display:flex;gap:6px;font-size:12px">
+                <span style="color:var(--primary);cursor:pointer">Voir</span>
+                <span class="visa-badge visa-badge--bpe" style="cursor:pointer">BPE</span>
+                <span class="visa-badge visa-badge--bpear" style="cursor:pointer">BPEAR</span>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Timeline historique -->
+      <div class="info-block">
+        <div class="info-block__title">📜 Historique récent du chantier</div>
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-date">28/02 10:30</div><div class="tl-dot" style="background:var(--primary)"></div><div class="tl-text"><strong>CR-14</strong> créé par M. Lefort — 6 observations ajoutées</div></div>
+          <div class="tl-item"><div class="tl-date">27/02 16:00</div><div class="tl-dot" style="background:var(--green)"></div><div class="tl-text">OBS-048 <strong>levée</strong> — Lot Plâtrerie conforme, vérifiée sur site</div></div>
+          <div class="tl-item"><div class="tl-date">25/02 09:15</div><div class="tl-dot" style="background:var(--orange)"></div><div class="tl-text">VISA <strong class="text-orange">"Bon pour exécution avec remarques"</strong> — Plans exé. lot Menuiseries</div></div>
+          <div class="tl-item"><div class="tl-date">21/02 14:30</div><div class="tl-dot" style="background:var(--green)"></div><div class="tl-text">CR-13 <strong>diffusé</strong> à 6 destinataires</div></div>
+          <div class="tl-item"><div class="tl-date">14/02 17:15</div><div class="tl-dot" style="background:var(--green)"></div><div class="tl-text">CR-12 diffusé — 8 nouvelles obs., 5 levées, VISA BPE lot Charpente</div></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  function openModal(id){document.getElementById(id).classList.add('modal-overlay--on');document.body.style.overflow='hidden'}
+  function closeModal(id){document.getElementById(id).classList.remove('modal-overlay--on');document.body.style.overflow=''}
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay--on').forEach(m=>closeModal(m.id))});
+  document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',function(){document.querySelectorAll('.pill').forEach(x=>x.classList.remove('pill--on'));this.classList.add('pill--on')}));
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaToastTimer;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_gaaToastTimer);_gaaToastTimer=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+  document.querySelectorAll('.nav__user > div > div:first-child,.nav-sidebar__user > div > div:first-child').forEach(el=>el.textContent=me?.nom||'M. Lefort');
+}
+
+const CR_KEY='chantier_cr';
+const OBS_KEY='chantier_obs';
+function getCRs(){ return GAAStore.get(CR_KEY)||[]; }
+function saveCR(cr){ const list=getCRs(); const i=list.findIndex(x=>x.id===cr.id); if(i>=0)list[i]=cr; else list.push(cr); GAAStore.set(CR_KEY,list); }
+function getObs(){ return GAAStore.get(OBS_KEY)||[]; }
+function saveObs(o){ const list=getObs(); const i=list.findIndex(x=>x.id===o.id); if(i>=0)list[i]=o; else list.push(o); GAAStore.set(OBS_KEY,list); }
+
+// ── Numéro CR auto ────────────────────────────────────────
+function nextCRNum(){
+  const crs=getCRs();
+  const nums=crs.map(c=>parseInt(c.num||0)).filter(n=>!isNaN(n));
+  const last=nums.length?Math.max(...nums):14;
+  return last+1;
+}
+
+// ── Init modaux ───────────────────────────────────────────
+function initModaux(){
+  const num=nextCRNum();
+  // Titre modal CR
+  const t=document.querySelector('#modal-cr .modal__title');
+  if(t) t.textContent=`Nouveau CR de chantier — CR-${String(num).padStart(2,'0')}`;
+  // Date = aujourd'hui
+  const dateInp=document.querySelector('#modal-cr input[type="date"]');
+  if(dateInp) dateInp.value=new Date().toISOString().split('T')[0];
+  // Select rédacteur depuis users
+  const sel=document.querySelector('#modal-cr select:first-of-type');
+  if(sel){
+    const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+    sel.innerHTML=users.map(u=>`<option value="${u.id}">${u.nom}</option>`).join('');
+  }
+  // Patcher boutons CR
+  document.querySelector('#modal-cr .modal__ft .btn--primary')?.addEventListener('click',validerCR);
+  document.querySelector('#modal-cr .modal__ft .btn--ghost:not(.modal__x)')?.addEventListener('click',()=>sauvegarderCR('brouillon'));
+
+  // Modal observation — select CR rattaché
+  const crSel=document.querySelector('#modal-obs select:first-of-type');
+  if(crSel){
+    const crs=getCRs();
+    const staticOpt=`<option value="current">CR-${String(num).padStart(2,'0')} (en cours)</option>`;
+    const dynOpts=crs.slice(0,5).map(c=>`<option value="${c.id}">CR-${String(c.num).padStart(2,'0')} — ${c.date||''}</option>`).join('');
+    crSel.innerHTML=staticOpt+dynOpts;
+  }
+  // Patcher bouton obs
+  document.querySelector('#modal-obs .modal__ft .btn--primary')?.addEventListener('click',enregistrerObs);
+}
+
+function sauvegarderCR(statut){
+  const inputs=document.querySelectorAll('#modal-cr input,#modal-cr select,#modal-cr textarea');
+  const date=inputs[0]?.value||new Date().toISOString().split('T')[0];
+  const heure=inputs[1]?.value||'09:00';
+  const redacteurId=inputs[2]?.value;
+  const presents=inputs[3]?.value||'';
+  const avancement=inputs[4]?.value||'Dans les délais';
+  const observations=inputs[5]?.value||'';
+  const num=nextCRNum();
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+  const redacteur=GAAStore.getUtilisateurs().find(u=>u.id===redacteurId)||GAAStore.getMe();
+  const cr={
+    id:'cr-'+Date.now(),num,statut,date,heure,
+    redacteur:redacteur?.nom||'M. Lefort',
+    presents,avancement,observations,
+    projet_id:projet?.id,projet_nom:projet?.nom,
+    created_at:new Date().toISOString(),
+  };
+  saveCR(cr);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`CR-${String(num).padStart(2,'0')} ${statut==='brouillon'?'enregistré en brouillon':'créé'}`,'1.8 Chantier');
+  return cr;
+}
+
+function validerCR(){
+  const cr=sauvegarderCR('valide');
+  closeModal('modal-cr');
+  renderTimeline();
+  renderTableauCR();
+  showToast(`CR-${String(cr.num).padStart(2,'0')} validé et diffusé ✓`,'success');
+  // Mettre à jour le titre modal pour le prochain
+  const t=document.querySelector('#modal-cr .modal__title');
+  if(t) t.textContent=`Nouveau CR de chantier — CR-${String(nextCRNum()).padStart(2,'0')}`;
+}
+
+function enregistrerObs(){
+  const inputs=document.querySelectorAll('#modal-obs select,#modal-obs textarea,#modal-obs input[type="date"]');
+  const cr=inputs[0]?.value||'current';
+  const lot=inputs[1]?.value||'Lot 01';
+  const desc=document.querySelector('#modal-obs textarea')?.value?.trim()||'';
+  const criticite=document.querySelector('#modal-obs select:nth-of-type(2)')?.value||'Normale';
+  const delai=document.querySelector('#modal-obs input[type="date"]')?.value||'';
+  if(!desc){showToast('La description est requise','error');return;}
+  const num=getObs().length+1;
+  const obs={
+    id:'obs-'+Date.now(),
+    num:`OBS-${String(num).padStart(3,'0')}`,
+    cr_id:cr,lot,desc,criticite,delai,
+    statut:'ouverte',
+    projet_id:GAAStore.getProjets().find(p=>p.statut==='en_cours')?.id,
+    created_at:new Date().toISOString(),
+    created_by:GAAStore.getMe()?.nom,
+  };
+  saveObs(obs);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Observation ${obs.num} — ${criticite} — ${lot}`,'1.8 Chantier');
+  closeModal('modal-obs');
+  renderObs();
+  showToast(`${obs.num} enregistrée ✓`,'success');
+}
+
+// ── Rendu tableau CRs ─────────────────────────────────────
+function renderTableauCR(){
+  const tbody=document.querySelector('#page-chantier tbody');
+  if(!tbody)return;
+  const crs=getCRs().slice(0,3);
+  if(!crs.length)return;
+  crs.forEach(cr=>{
+    if(tbody.querySelector(`[data-cr-id="${cr.id}"]`))return;
+    const tr=document.createElement('tr');
+    tr.dataset.crId=cr.id;
+    const sCls=cr.statut==='valide'?'badge--green':'badge--grey';
+    const sLabel=cr.statut==='valide'?'Diffusé':'Brouillon';
+    tr.innerHTML=`
+      <td><strong class="mono">CR-${String(cr.num).padStart(2,'0')}</strong></td>
+      <td>${cr.date||'—'}</td>
+      <td>${cr.redacteur||'—'}</td>
+      <td><span class="badge ${sCls}">${sLabel}</span></td>
+      <td>${cr.avancement||'—'}</td>
+      <td><button class="btn btn--ghost btn--sm" onclick="leverObs('${cr.id}')">Détail</button></td>`;
+    tbody.insertBefore(tr,tbody.firstChild);
+  });
+}
+
+// ── Rendu observations ────────────────────────────────────
+function renderObs(){
+  const obs=getObs();
+  if(!obs.length)return;
+  // Mettre à jour le compteur
+  const cnt=document.querySelector('.obs-count,[data-count="obs"]');
+  if(cnt) cnt.textContent=obs.filter(o=>o.statut==='ouverte').length+' ouvertes';
+  // Insérer dans la timeline si présente
+  renderTimeline();
+}
+
+// ── Timeline ──────────────────────────────────────────────
+function renderTimeline(){
+  const cont=document.querySelector('.timeline');
+  if(!cont)return;
+  const crs=getCRs().slice(0,3);
+  if(!crs.length)return;
+  crs.forEach(cr=>{
+    if(cont.querySelector(`[data-cr-tl="${cr.id}"]`))return;
+    const div=document.createElement('div');
+    div.className='tl-item';div.dataset.crTl=cr.id;
+    div.innerHTML=`<div class="tl-date">${cr.date||'—'}</div>
+      <div class="tl-dot" style="background:var(--primary)"></div>
+      <div class="tl-text"><strong>CR-${String(cr.num).padStart(2,'0')}</strong> créé par ${cr.redacteur||'—'} — ${cr.avancement||''}</div>`;
+    cont.insertBefore(div,cont.firstChild);
+  });
+}
+
+function leverObs(crId){
+  showToast('Fonctionnalité levée observation — à venir','');
+}
+
+// ── KPIs depuis le store ──────────────────────────────────
+function renderKPIs(){
+  const crs=getCRs();
+  const obs=getObs();
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+  const kpis=document.querySelectorAll('.kpi-card__value');
+  if(kpis[0]) kpis[0].textContent=String(14+crs.length);
+  if(kpis[2]) kpis[2].textContent=obs.filter(o=>o.statut==='ouverte').length+(obs.length?0:57);
+  // Titre
+  const h=document.querySelector('h1');
+  if(h&&projet) h.textContent=`Chantier — ${projet.nom}`;
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  initModaux();
+  renderKPIs();
+  renderTableauCR();
+  renderTimeline();
+});
+
+</script>
+</body>
+</html>

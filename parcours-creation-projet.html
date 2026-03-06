@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Parcours création projet</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;
+      --purple:#6A3D9A;--purple-l:#F3EEF9;
+      --sidebar-w:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--shadow-md:0 4px 12px rgba(0,0,0,.09);
+      --r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    .nav{width:var(--sidebar-w);background:var(--primary);color:#fff;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px 20px 16px;font-size:22px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:16px 20px 4px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;font-size:12px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    .wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar__bc{font-size:13px;color:var(--text-2);flex:1}
+    .page{padding:28px;max-width:900px;display:none;flex-direction:column;gap:24px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--green{background:var(--green);color:#fff;border-color:var(--green)}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    /* Stepper */
+    .stepper{display:flex;align-items:center;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+    .step-btn{flex:1;padding:12px 10px;text-align:center;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--text-2);transition:all .15s;border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px}
+    .step-btn:last-child{border-right:none}
+    .step-btn:hover{background:var(--grey-l);color:var(--text)}
+    .step-btn--on{background:var(--primary);color:#fff;font-weight:700}
+    .step-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:rgba(255,255,255,.25);flex-shrink:0}
+    .step-btn:not(.step-btn--on) .step-num{background:var(--border);color:var(--text-2)}
+    /* Status badges */
+    .status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;border:1.5px solid}
+    .status--brouillon{background:var(--grey-l);color:var(--text-2);border-color:var(--border-md)}
+    .status--attente{background:var(--orange-l);color:var(--orange);border-color:var(--orange)}
+    .status--acte{background:var(--green-l);color:var(--green);border-color:var(--green)}
+    .status--encours{background:var(--primary-l);color:var(--primary);border-color:var(--primary)}
+    .status--termine{background:var(--grey-l);color:#555;border-color:#aaa}
+    .status--archive{background:var(--grey-l);color:var(--text-3);border-color:var(--border-md)}
+    /* Blocs de flow */
+    .flow-step{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px 24px;box-shadow:var(--shadow);position:relative}
+    .flow-step--auto{background:rgba(45,106,79,.03);border-color:rgba(45,106,79,.4)}
+    .flow-step--warning{border-left:4px solid var(--orange)}
+    .flow-step--decision{background:var(--purple-l);border-color:var(--purple)}
+    .step-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+    .step-title{font-size:16px;font-weight:700;margin-bottom:8px}
+    .step-num-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:13px;flex-shrink:0}
+    .step-num-badge--auto{background:var(--green)}
+    .step-row{display:flex;gap:14px;align-items:flex-start}
+    .arrow-down{display:flex;justify-content:center;padding:6px 0;color:var(--text-3)}
+    /* Branches */
+    .branches{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* Prérequis */
+    .prereq-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .prereq-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow)}
+    .prereq-card__icon{font-size:20px;margin-bottom:6px}
+    .prereq-card__title{font-size:13px;font-weight:700;margin-bottom:4px}
+    .prereq-card__desc{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:6px}
+    .prereq-card__module{font-size:11px;font-weight:600;color:var(--primary)}
+    .prereq-card__badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px}
+    /* Formfields */
+    .field-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+    .field-box{border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;background:var(--bg)}
+    .field-box--required{border-color:var(--primary)}
+    .field-box__req{font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+    .field-box__opt{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+    .field-box__name{font-size:14px;font-weight:700;margin-bottom:3px}
+    .field-box__example{font-size:11.5px;color:var(--text-3)}
+    /* Phases */
+    .phase-pill{display:inline-flex;padding:4px 10px;border-radius:3px;font-size:12px;font-weight:600;border:1.5px solid;margin:2px}
+    .phase-pill--on{background:var(--primary-l);color:var(--primary);border-color:var(--primary)}
+    .phase-pill--off{color:var(--text-3);border-color:var(--border);text-decoration:line-through}
+    .phase-pill--added{background:var(--green-l);color:var(--green);border-color:var(--green)}
+    /* Déclenchements auto */
+    .trigger-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+    .trigger-card{border:1px solid rgba(45,106,79,.4);border-radius:var(--r-sm);padding:10px;background:rgba(45,106,79,.03)}
+    .trigger-card__icon{font-size:18px;margin-bottom:4px}
+    .trigger-card__title{font-size:12.5px;font-weight:700;color:var(--green);margin-bottom:4px}
+    .trigger-card__desc{font-size:11.5px;color:var(--text-2);line-height:1.5}
+    .trigger-card__module{font-size:10px;font-weight:700;color:var(--primary);margin-top:4px}
+    /* Vie du projet */
+    .life-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .life-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;text-align:center;box-shadow:var(--shadow)}
+    .life-card__icon{font-size:20px;margin-bottom:6px}
+    .life-card__title{font-size:12.5px;font-weight:700;margin-bottom:4px}
+    .life-card__desc{font-size:11.5px;color:var(--text-2);line-height:1.5;margin-bottom:4px}
+    .life-card__module{font-size:10px;font-weight:700;color:var(--primary)}
+    /* Phases MOP enchaînement */
+    .phase-chain{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .phase-tag{padding:4px 10px;background:var(--primary);color:#fff;border-radius:3px;font-size:13px;font-weight:600}
+    .phase-tag--chantier{background:var(--orange)}
+    .phase-sep{color:var(--border-md);font-size:16px}
+    /* Terminaison */
+    .term-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+    .term-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text-2)}
+    .term-item__icon{color:var(--green);flex-shrink:0;font-size:14px}
+    /* Branche annulé */
+    .cancel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+    .cancel-card{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12.5px}
+    .cancel-card__title{font-weight:700;color:var(--red);margin-bottom:4px}
+    /* Section divider */
+    .section-divider{font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+    /* Modale */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay--on{display:flex}
+    .modal{background:var(--surface);border-radius:12px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mi .2s ease}
+    @keyframes mi{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal__hd{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:5}
+    .modal__title{font-size:16px;font-weight:700}
+    .modal__x{width:28px;height:28px;border-radius:50%;border:none;background:var(--grey-l);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+    .modal__body{padding:20px 24px;display:flex;flex-direction:column;gap:14px}
+    .modal__ft{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-input,.form-select,.form-textarea{padding:8px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none;resize:vertical}
+    .form-input:focus,.form-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.12)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .mono{font-family:var(--mono)}
+    .text-green{color:var(--green)}.text-orange{color:var(--orange)}.text-red{color:var(--red)}.text-primary{color:var(--primary)}.text-muted{color:var(--text-3)}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--purple{background:var(--purple-l);color:var(--purple)}
+  </style>
+</head>
+<body>
+
+<!-- Modale : Formulaire de création -->
+<div class="modal-overlay" id="modal-create">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Nouveau projet</h2>
+      <button class="modal__x" onclick="closeModal('modal-create')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label">Nom du projet <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="text" placeholder="Ex. : Groupe scolaire V. Hugo — Réhabilitation" value="Groupe scolaire Victor Hugo">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Type de mission <span style="color:var(--red)">*</span></label>
+          <select class="form-select"><option>MOE complète</option><option>Diagnostic</option><option>OPC</option><option>Concours</option><option>Mission partielle</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">MOA / Client <span style="color:var(--red)">*</span></label>
+          <input class="form-input" type="text" placeholder="Rechercher dans le CRM…" value="Ville de Nantes">
+        </div>
+      </div>
+      <div style="background:var(--primary-l);border:1px solid rgba(27,73,101,.2);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;color:var(--primary)">
+        ℹ️ <strong>Type = MOE complète</strong> — 11 champs supplémentaires affichés ci-dessous
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label class="form-label">Programme</label>
+          <select class="form-select"><option>Éq. scolaire</option><option>Santé</option><option>Résidentiel</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Marché</label>
+          <select class="form-select"><option>Public</option><option>Privé</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Honoraires HT</label>
+          <input class="form-input" type="text" value="255 000">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Chef de projet</label>
+          <select class="form-select"><option>M. Lefort</option><option>S. Moreau</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Montant travaux HT</label>
+          <input class="form-input" type="text" placeholder="Estimé">
+        </div>
+      </div>
+      <!-- Phases pré-cochées -->
+      <div>
+        <label class="form-label" style="margin-bottom:6px;display:block">Phases MOP</label>
+        <div style="display:flex;flex-wrap:wrap;gap:2px">
+          <span class="phase-pill phase-pill--on">☑ ESQ — 8% — 4 sem.</span>
+          <span class="phase-pill phase-pill--on">☑ APS — 12% — 6 sem.</span>
+          <span class="phase-pill phase-pill--on">☑ APD — 15% — 8 sem.</span>
+          <span class="phase-pill phase-pill--on">☑ PRO — 20% — 10 sem.</span>
+          <span class="phase-pill phase-pill--on">☑ DCE — 10% — 4 sem.</span>
+          <span class="phase-pill phase-pill--off">☐ ACT — retirée</span>
+          <span class="phase-pill phase-pill--on">☑ DET — 25% — 40 sem.</span>
+          <span class="phase-pill phase-pill--on">☑ AOR — 10% — 8 sem.</span>
+          <span class="phase-pill phase-pill--added">☑ OPC — ajoutée</span>
+        </div>
+        <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:6px">✓ Total phases = 255 000 € — Cohérent</div>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-create')">Annuler</button>
+      <button class="btn btn--ghost" onclick="closeModal('modal-create'); showPage('p2')">📝 Enregistrer en brouillon</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-create'); showPage('p2')">Créer le projet → En attente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale : Actation -->
+<div class="modal-overlay" id="modal-acte">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Acter le projet — V. Hugo</h2>
+      <button class="modal__x" onclick="closeModal('modal-acte')">×</button>
+    </div>
+    <div class="modal__body">
+      <div style="background:var(--green-l);border:1px solid var(--green);border-radius:var(--r-sm);padding:10px 12px;font-size:13px;color:var(--green)">
+        <strong>Le MOA a signé le marché.</strong> Cette action est irréversible. Le projet passera en statut <strong>Acté</strong>.
+      </div>
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label class="form-label">Date de signature <span style="color:var(--red)">*</span></label>
+          <input class="form-input" type="date" value="2026-03-15">
+        </div>
+        <div class="form-group">
+          <label class="form-label">N° marché / contrat</label>
+          <input class="form-input" type="text" placeholder="M-2026-0045">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Commentaire</label>
+          <input class="form-input" type="text" placeholder="Notification de marché reçue">
+        </div>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text-2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">6 déclenchements automatiques :</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+          <div style="display:flex;gap:6px;align-items:flex-start;color:var(--green)"><span>📅</span><span>Calendrier des phases calculé</span></div>
+          <div style="display:flex;gap:6px;align-items:flex-start;color:var(--green)"><span>💰</span><span>Plan de facturation généré</span></div>
+          <div style="display:flex;gap:6px;align-items:flex-start;color:var(--green)"><span>📊</span><span>Charge confirmée dans 1.7</span></div>
+          <div style="display:flex;gap:6px;align-items:flex-start;color:var(--green)"><span>📂</span><span>Arborescence GED créée</span></div>
+          <div style="display:flex;gap:6px;align-items:flex-start;color:var(--green)"><span>👥</span><span>MOA → Client actif (CRM)</span></div>
+          <div style="display:flex;gap:6px;align-items:flex-start;color:var(--green)"><span>🔔</span><span>Notification équipe affectée</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-acte')">Annuler</button>
+      <button class="btn btn--green" onclick="closeModal('modal-acte'); showPage('p3')">✓ Confirmer l'actation →</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="nav">
+    <div class="nav__logo"><span class="nav__dot"></span>GAA</div>
+    <div class="nav__sec">Pilotage</div>
+    <a class="nav__item nav__item--on"><span>⬜</span> Tableau de bord</a>
+    <a class="nav__item"><span>📁</span> Projets</a>
+    <div class="nav__sec">Commercial</div>
+    <a class="nav__item"><span>📄</span> Devis</a>
+    <a class="nav__item"><span>👥</span> CRM</a>
+    <div class="nav__sec">Opérationnel</div>
+    <a class="nav__item"><span>⏱</span> Temps</a>
+    <a class="nav__item"><span>📂</span> Documents</a>
+    <a class="nav__item"><span>✓</span> Tâches</a>
+    <div class="nav__sec">Finance</div>
+    <a class="nav__item"><span>💰</span> Facturation</a>
+    <div class="nav__user">
+      <div class="nav__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="topbar__bc"><strong>Parcours — Création d'un projet</strong></div>
+      <button class="btn btn--primary" onclick="openModal('modal-create')">+ Nouveau projet</button>
+    </header>
+
+    <!-- Navigation étapes -->
+    <div style="padding:16px 28px 0;max-width:900px">
+      <div class="stepper">
+        <div class="step-btn step-btn--on" id="s1" onclick="showPage('p1')"><span class="step-num">1</span>Création & prérequis</div>
+        <div class="step-btn" id="s2" onclick="showPage('p2')"><span class="step-num">2</span>Devis → Actation</div>
+        <div class="step-btn" id="s3" onclick="showPage('p3')"><span class="step-num">3</span>Vie du projet</div>
+      </div>
+    </div>
+
+    <!-- PAGE 1 : Prérequis + formulaire -->
+    <main class="page page--on" id="page-p1">
+
+      <div>
+        <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Étape 1 — Création du projet</h1>
+        <p style="font-size:13px;color:var(--text-2);margin-top:4px">Prérequis de paramétrage + formulaire de création</p>
+      </div>
+
+      <!-- Prérequis -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)">
+        <div style="font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px">⚙ Prérequis — Paramétrage one-time (module 2.5)</div>
+        <div class="prereq-grid">
+          <div class="prereq-card">
+            <div class="prereq-card__icon">📋</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Types de mission</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">MOE, Diagnostic, OPC, Concours. Chaque type conditionne les champs du formulaire et les phases pré-cochées.</div>
+            <div class="prereq-card__module">Module 2.5</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">📐</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Phases et ratios MOP</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">Bibliothèque des phases avec ratios par défaut et durées prévisionnelles par type de mission.</div>
+            <div class="prereq-card__module">2.5 + 1.2</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">👥</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Rôles + Collaborateurs</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">Bibliothèque des rôles projet et collaborateurs avec leur capacité horaire.</div>
+            <div class="prereq-card__module">2.5 + 2.3</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">🏢</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Contacts CRM</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">MOA et intervenants extérieurs existants dans le CRM. Créables à la volée.</div>
+            <div class="prereq-card__module">1.6 CRM</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">📁</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Modèles de tâches</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">Livrables par phase générés automatiquement à l'ouverture de phase.</div>
+            <div class="prereq-card__module">2.5 + 1.9</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">📂</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Arborescence type</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">Structure de dossiers GED créée automatiquement pour chaque projet.</div>
+            <div class="prereq-card__module">2.5 + 1.4</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">💶</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Taux horaires</div><span class="badge badge--green" style="font-size:10px">✓ OK</span></div>
+            <div class="prereq-card__desc">Taux par rôle pour la valorisation du temps et le calcul de rentabilité.</div>
+            <div class="prereq-card__module">2.5</div>
+          </div>
+          <div class="prereq-card">
+            <div class="prereq-card__icon">🛡</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="prereq-card__title">Assurances</div><span class="badge badge--orange" style="font-size:10px">⚠ Vérifier</span></div>
+            <div class="prereq-card__desc">Non bloquant. Avertissement si RC Pro ou décennale proche de l'échéance.</div>
+            <div class="prereq-card__module">1.10 Assurances</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Étape 1 : formulaire -->
+      <div class="flow-step">
+        <div class="step-row">
+          <div class="step-num-badge">1</div>
+          <div style="flex:1">
+            <div class="step-label">Action utilisateur</div>
+            <div class="step-title">Clic "+ Nouveau projet" depuis le portefeuille</div>
+            <p style="font-size:13px;color:var(--text-2)">Le formulaire s'ouvre. 3 champs obligatoires apparaissent immédiatement (tronc commun). Le formulaire s'adapte dynamiquement au type de mission sélectionné.</p>
+            <div class="field-grid">
+              <div class="field-box field-box--required"><div class="field-box__req">Obligatoire *</div><div class="field-box__name">Nom du projet</div><div class="field-box__example">Ex. : Groupe scolaire V. Hugo</div></div>
+              <div class="field-box field-box--required"><div class="field-box__req">Obligatoire *</div><div class="field-box__name">Type de mission</div><div class="field-box__example">MOE, Diagnostic, OPC, Concours…</div></div>
+              <div class="field-box field-box--required"><div class="field-box__req">Obligatoire *</div><div class="field-box__name">MOA / Client</div><div class="field-box__example">Depuis le CRM — créable à la volée</div></div>
+            </div>
+            <div style="margin-top:10px;background:var(--primary-l);border-radius:var(--r-sm);padding:8px 12px;font-size:12.5px;color:var(--primary)">
+              <strong>Formulaire dynamique :</strong> MOE = 11 champs supplémentaires · Diagnostic = 4 champs · Le type est le pivot du formulaire.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+          <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:8px">Phases MOP pré-cochées selon le type (modifiables)</div>
+          <div>
+            <span class="phase-pill phase-pill--on">☑ ESQ 8%</span>
+            <span class="phase-pill phase-pill--on">☑ APS 12%</span>
+            <span class="phase-pill phase-pill--on">☑ APD 15%</span>
+            <span class="phase-pill phase-pill--on">☑ PRO 20%</span>
+            <span class="phase-pill phase-pill--on">☑ DCE 10%</span>
+            <span class="phase-pill phase-pill--off">☐ ACT — retirée</span>
+            <span class="phase-pill phase-pill--on">☑ DET 25%</span>
+            <span class="phase-pill phase-pill--on">☑ AOR 10%</span>
+            <span class="phase-pill phase-pill--added">☑ OPC — ajoutée</span>
+          </div>
+          <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:6px">✓ Total = 255 000 € HT — Cohérent avec le montant honoraires</div>
+        </div>
+      </div>
+
+      <div class="arrow-down"><svg width="20" height="20" fill="none"><path d="M10 3v14M3 11l7 6 7-6" stroke="#9B998F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- Décision statut -->
+      <div class="flow-step flow-step--decision">
+        <div style="text-align:center">
+          <div style="font-size:15px;font-weight:700;color:var(--purple);margin-bottom:6px">Quel statut initial ?</div>
+          <p style="font-size:13px;color:var(--text-2)">Pas de sélecteur de statut. Le <strong>bouton cliqué</strong> détermine le statut.</p>
+        </div>
+      </div>
+
+      <div class="branches">
+        <!-- Brouillon -->
+        <div class="flow-step">
+          <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px"><span class="status status--brouillon">📝 Brouillon</span><span style="font-size:13px;font-weight:700">"Enregistrer en brouillon"</span></div>
+          <div style="font-size:13px;color:var(--text-2);display:flex;flex-direction:column;gap:5px">
+            <div><strong>Quand :</strong> Mission en régie, projet interne, phase amont exploratoire.</div>
+            <div><strong class="text-green">✓ Autorisé :</strong> Temps, documents, tâches.</div>
+            <div><strong class="text-red">✗ Interdit :</strong> Facturation. N'apparaît pas dans le CA prévisionnel.</div>
+            <div style="color:var(--purple);font-size:12px;font-weight:600;margin-top:4px">→ Peut évoluer : Brouillon → En attente (si devis créé) ou Acté (signature directe)</div>
+          </div>
+        </div>
+        <!-- En attente -->
+        <div class="flow-step" style="border-left:4px solid var(--orange)">
+          <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px"><span class="status status--attente">⏳ En attente</span><span style="font-size:13px;font-weight:700">"Créer le projet" (flux standard)</span></div>
+          <div style="font-size:13px;color:var(--text-2);display:flex;flex-direction:column;gap:5px">
+            <div><strong>Quand :</strong> Devis / proposition d'honoraires rattaché.</div>
+            <div><strong class="text-green">⚡ Auto :</strong> Devis créé automatiquement depuis les données projet.</div>
+            <div><strong class="text-green">✓ Autorisé :</strong> Consultation et modification du devis.</div>
+            <div><strong class="text-red">✗ Interdit :</strong> Démarrage de phases, facturation.</div>
+            <div style="color:var(--orange);font-size:12px;font-weight:600;margin-top:4px">→ Apparaît dans le pipeline CRM. La probabilité de signature pondère le prévisionnel.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn btn--primary" onclick="openModal('modal-create')">Simuler la création →</button>
+        <button class="btn btn--ghost" style="margin-left:8px" onclick="showPage('p2')">Étape suivante →</button>
+      </div>
+
+    </main>
+
+    <!-- PAGE 2 : Devis → Actation -->
+    <main class="page" id="page-p2">
+
+      <div>
+        <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Étape 2 — Du devis à l'actation</h1>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <span class="status status--brouillon">📝 Brouillon</span>
+          <span style="color:var(--text-3)">ou</span>
+          <span class="status status--attente">⏳ En attente</span>
+          <span style="font-size:18px;color:var(--border-md)">→</span>
+          <span class="status status--acte">✓ Acté</span>
+        </div>
+      </div>
+
+      <!-- Chemin A -->
+      <div class="section-divider">Chemin A — Depuis "Brouillon"</div>
+      <div class="branches">
+        <div class="flow-step">
+          <div class="step-label">Option A1 — Le client demande un devis</div>
+          <div class="step-title">Brouillon → Devis → En attente</div>
+          <p style="font-size:13px;color:var(--text-2)">GAA crée un devis pré-rempli (client, programme, montant, phases). Après envoi → statut passe en <span class="status status--attente" style="font-size:11px;padding:1px 7px">En attente</span>.</p>
+          <ul style="font-size:12.5px;color:var(--text-2);margin-top:8px;padding-left:16px;display:flex;flex-direction:column;gap:3px">
+            <li>Devis N° D-2026-XXX auto</li>
+            <li>Projet visible dans le pipeline CRM</li>
+            <li>Temps antérieur conservé en non-refacturable</li>
+          </ul>
+          <div style="margin-top:8px;font-size:11px;color:var(--primary);font-weight:600">→ 1.5 Devis · 1.6 CRM</div>
+        </div>
+        <div class="flow-step flow-step--warning">
+          <div class="step-label">Option A2 — Signature directe (hors GAA)</div>
+          <div class="step-title">Brouillon → Acté directement</div>
+          <p style="font-size:13px;color:var(--text-2)">Clic "Acter le projet". <strong style="color:var(--orange)">⚠ Alerte :</strong> "Aucun devis rattaché — plan de facturation à créer manuellement".</p>
+          <ul style="font-size:12.5px;color:var(--text-2);margin-top:8px;padding-left:16px;display:flex;flex-direction:column;gap:3px">
+            <li>⚠ Alerte absence de plan de facturation</li>
+            <li>Calendrier des phases généré</li>
+            <li>Plan de facturation à créer manuellement</li>
+          </ul>
+          <div style="margin-top:8px;font-size:11px;color:var(--primary);font-weight:600">→ 1.2 Phases</div>
+        </div>
+      </div>
+
+      <!-- Chemin B -->
+      <div class="section-divider">Chemin B — Depuis "En attente" (flux standard)</div>
+
+      <div class="flow-step">
+        <div class="step-row">
+          <div class="step-num-badge">4</div>
+          <div style="flex:1">
+            <div class="step-label">Événement déclencheur</div>
+            <div class="step-title">Le MOA signe le contrat → "Acter le projet"</div>
+            <div class="field-grid" style="margin-top:10px">
+              <div class="field-box field-box--required"><div class="field-box__req">Obligatoire *</div><div class="field-box__name">Date de signature</div><div class="field-box__example">📅 15/03/2026</div></div>
+              <div class="field-box"><div class="field-box__opt">Optionnel</div><div class="field-box__name">N° marché / contrat</div><div class="field-box__example">M-2026-0045</div></div>
+              <div class="field-box"><div class="field-box__opt">Optionnel</div><div class="field-box__name">Commentaire</div><div class="field-box__example">Notification reçue</div></div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn btn--green" onclick="openModal('modal-acte')">✓ Confirmer l'actation →</button>
+              <button class="btn btn--ghost">Annuler</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-down"><svg width="20" height="20" fill="none"><path d="M10 3v14M3 11l7 6 7-6" stroke="#9B998F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+      <!-- Déclenchements auto -->
+      <div class="flow-step flow-step--auto">
+        <div class="step-row">
+          <div class="step-num-badge step-num-badge--auto">⚡</div>
+          <div style="flex:1">
+            <div class="step-label">Déclenchements automatiques à l'actation</div>
+            <div class="step-title">GAA exécute 6 actions en cascade</div>
+            <div class="trigger-grid">
+              <div class="trigger-card"><div class="trigger-card__icon">📅</div><div class="trigger-card__title">1. Calendrier phases</div><div class="trigger-card__desc">Durées prévisionnelles à partir de la date de signature. Début/fin par phase.</div><div class="trigger-card__module">→ Module 1.2</div></div>
+              <div class="trigger-card"><div class="trigger-card__icon">💰</div><div class="trigger-card__title">2. Plan de facturation</div><div class="trigger-card__desc">Montants par phase issus du devis. Échéancier automatique selon les jalons.</div><div class="trigger-card__module">→ Module 1.5</div></div>
+              <div class="trigger-card"><div class="trigger-card__icon">📊</div><div class="trigger-card__title">3. Charge confirmée</div><div class="trigger-card__desc">Projet passe de "prévisionnel" à "confirmé" dans le planning de charge.</div><div class="trigger-card__module">→ Module 1.7</div></div>
+              <div class="trigger-card"><div class="trigger-card__icon">📂</div><div class="trigger-card__title">4. Arborescence GED</div><div class="trigger-card__desc">Structure de dossiers créée selon le type de mission et les phases.</div><div class="trigger-card__module">→ Module 1.4</div></div>
+              <div class="trigger-card"><div class="trigger-card__icon">👥</div><div class="trigger-card__title">5. Statut CRM MOA</div><div class="trigger-card__desc">MOA passe en "Client actif". Opportunité pipeline → "Gagné".</div><div class="trigger-card__module">→ Module 1.6</div></div>
+              <div class="trigger-card"><div class="trigger-card__icon">🔔</div><div class="trigger-card__title">6. Notification équipe</div><div class="trigger-card__desc">"Projet acté — démarrage le XX/XX". In-app + email à tous les membres.</div><div class="trigger-card__module">→ Module 2.6</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost" onclick="showPage('p1')">← Étape 1</button>
+        <button class="btn btn--primary" onclick="showPage('p3')">Étape 3 →</button>
+      </div>
+
+    </main>
+
+    <!-- PAGE 3 : Vie du projet → Archivage -->
+    <main class="page" id="page-p3">
+
+      <div>
+        <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Étape 3 — Vie du projet</h1>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <span class="status status--acte">✓ Acté</span>
+          <span style="font-size:18px;color:var(--border-md)">→</span>
+          <span class="status status--encours">● En cours</span>
+          <span style="font-size:18px;color:var(--border-md)">→</span>
+          <span class="status status--termine">Terminé</span>
+          <span style="font-size:18px;color:var(--border-md)">→</span>
+          <span class="status status--archive">Archivé</span>
+        </div>
+      </div>
+
+      <!-- Démarrage 1ère phase -->
+      <div class="flow-step">
+        <div class="step-row">
+          <div class="step-num-badge">5</div>
+          <div style="flex:1">
+            <div class="step-label">Action chef de projet</div>
+            <div class="step-title">Démarrage première phase → passage automatique "En cours"</div>
+            <p style="font-size:13px;color:var(--text-2)">Le chef de projet active la phase ESQ. Le statut bascule automatiquement de <span class="status status--acte" style="font-size:11px;padding:1px 7px">Acté</span> à <span class="status status--encours" style="font-size:11px;padding:1px 7px">En cours</span>. Toutes les opérations sont déverrouillées.</p>
+            <ul style="font-size:12.5px;color:var(--text-2);margin-top:8px;padding-left:16px;display:flex;flex-direction:column;gap:3px">
+              <li>⚡ Tâches auto-générées depuis le modèle de phase</li>
+              <li>⚡ Collaborateurs notifiés de l'ouverture de phase</li>
+              <li>⚡ Timer de temps activable sur les tâches</li>
+            </ul>
+            <div style="margin-top:8px;font-size:11px;color:var(--primary);font-weight:600">→ 1.2 Phases · 1.9 Tâches · 1.3 Temps</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vie en cours -->
+      <div style="background:var(--surface);border:1.5px solid var(--primary);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)">
+        <div style="font-size:13px;font-weight:700;color:var(--primary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px">● Vie du projet — "En cours" — 5 activités parallèles</div>
+        <div class="life-grid">
+          <div class="life-card"><div class="life-card__icon">⏱</div><div class="life-card__title">Saisie du temps</div><div class="life-card__desc">Pointage projet → phase → tâche. Refacturable / non-refacturable. Validation hebdo.</div><div class="life-card__module">Module 1.3</div></div>
+          <div class="life-card"><div class="life-card__icon">📄</div><div class="life-card__title">Production documentaire</div><div class="life-card__desc">Plans, notices déposés dans la GED. Versionnage, validation, diffusion.</div><div class="life-card__module">Module 1.4</div></div>
+          <div class="life-card"><div class="life-card__icon">💰</div><div class="life-card__title">Facturation par phase</div><div class="life-card__desc">Factures selon le plan. Encaissements, relances, rentabilité par phase.</div><div class="life-card__module">Module 1.5</div></div>
+          <div class="life-card"><div class="life-card__icon">✓</div><div class="life-card__title">Suivi des tâches</div><div class="life-card__desc">Kanban, dépendances, assignations. Avancement par phase.</div><div class="life-card__module">Module 1.9</div></div>
+          <div class="life-card"><div class="life-card__icon">🏗</div><div class="life-card__title">Chantier (DET/AOR)</div><div class="life-card__desc">CR, observations, VISA, réception. Activé uniquement pour DET et AOR.</div><div class="life-card__module">Module 1.8</div></div>
+        </div>
+        <!-- Enchaînement phases -->
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Enchaînement des phases MOP</div>
+          <div class="phase-chain">
+            <span class="phase-tag">ESQ</span><span class="phase-sep">→</span>
+            <span class="phase-tag">APS</span><span class="phase-sep">→</span>
+            <span class="phase-tag">APD</span><span class="phase-sep">→</span>
+            <span class="phase-tag">PRO</span><span class="phase-sep">→</span>
+            <span class="phase-tag">DCE</span><span class="phase-sep">→</span>
+            <span class="phase-tag phase-tag--chantier">DET 🏗</span><span class="phase-sep">→</span>
+            <span class="phase-tag phase-tag--chantier">AOR 🏗</span>
+            <span style="font-size:12px;color:var(--text-3);margin-left:8px">Chaque passage : tâches auto, notif. équipe, facture proposée</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminaison -->
+      <div class="flow-step">
+        <div class="step-row">
+          <div class="step-num-badge">6</div>
+          <div style="flex:1">
+            <div class="step-label">Fin du projet</div>
+            <div class="step-title">Toutes les phases validées → "Terminé"</div>
+            <p style="font-size:13px;color:var(--text-2);margin-bottom:10px">La dernière phase (AOR) est validée. Le projet bascule en "Terminé". Lecture seule sur les données opérationnelles.</p>
+            <div class="term-list">
+              <div class="term-item"><span class="term-item__icon">⚡</span><span>Constitution du DOE proposée</span><span style="font-size:11px;color:var(--primary);font-weight:600;margin-left:8px">→ 1.4 GED</span></div>
+              <div class="term-item"><span class="term-item__icon">⚡</span><span>Fiche REX (Retour d'Expérience) proposée</span><span style="font-size:11px;color:var(--primary);font-weight:600;margin-left:8px">→ 4.4 Base connaissances</span></div>
+              <div class="term-item"><span class="term-item__icon">⚡</span><span>Dernière facture AOR proposée automatiquement</span><span style="font-size:11px;color:var(--primary);font-weight:600;margin-left:8px">→ 1.5 Facturation</span></div>
+              <div class="term-item"><span class="term-item__icon">⚡</span><span>GPA démarrée automatiquement (1 an) avec rappels</span><span style="font-size:11px;color:var(--primary);font-weight:600;margin-left:8px">→ 1.8 Chantier</span></div>
+              <div class="term-item"><span class="term-item__icon">⚡</span><span>Bilan financier généré (prévus vs réel, rentabilité)</span><span style="font-size:11px;color:var(--primary);font-weight:600;margin-left:8px">→ 1.5 · 4.1 Reporting</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Archivage -->
+      <div class="flow-step" style="opacity:.8">
+        <div class="step-row">
+          <div class="step-num-badge" style="background:#aaa">7</div>
+          <div style="flex:1">
+            <div class="step-label">Après GPA (1 an)</div>
+            <div class="step-title">Archivage définitif</div>
+            <p style="font-size:13px;color:var(--text-2)">Après expiration de la GPA et levée des réserves. Accès lecture seule pérenne. Données capitalisées dans la base de connaissances (module 4.4). GAA propose l'archivage par notification.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Branche Annulé/Perdu -->
+      <div style="border:2px dashed var(--red);border-radius:var(--r);padding:16px;background:rgba(192,57,43,.02)">
+        <div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">↳ Branche alternative — Annulé / Perdu</div>
+        <div class="cancel-grid">
+          <div class="cancel-card"><div class="cancel-card__title">Depuis "En attente"</div><p style="color:var(--text-2)">Devis refusé, concours perdu. Temps passé en prospection conservé pour analyse du coût d'acquisition.</p></div>
+          <div class="cancel-card"><div class="cancel-card__title">Depuis "Brouillon"</div><p style="color:var(--text-2)">Projet exploratoire abandonné. Le travail fait est conservé en lecture seule. Aucune perte de données.</p></div>
+          <div class="cancel-card"><div class="cancel-card__title">Données conservées</div><p style="color:var(--text-2)">Lecture seule. Temps passé analysable. Motif de perte tracé. Statistiques CRM alimentées.</p></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost" onclick="showPage('p2')">← Étape 2</button>
+        <button class="btn btn--primary" onclick="showPage('p1')">↩ Recommencer</button>
+      </div>
+
+    </main>
+
+  </div>
+</div>
+
+<script>
+  function showPage(p){
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('page--on'));
+    document.getElementById('page-'+p).classList.add('page--on');
+    ['s1','s2','s3'].forEach(s=>document.getElementById(s).classList.remove('step-btn--on'));
+    const map={'p1':'s1','p2':'s2','p3':'s3'};
+    document.getElementById(map[p]).classList.add('step-btn--on');
+    window.scrollTo(0,0);
+  }
+  function openModal(id){document.getElementById(id).classList.add('modal-overlay--on');document.body.style.overflow='hidden'}
+  function closeModal(id){document.getElementById(id).classList.remove('modal-overlay--on');document.body.style.overflow=''}
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay--on').forEach(m=>closeModal(m.id))});
+</script>
+<script>
+
+const GAAStore=(()=>{
+  const P='gaa_',K={AGENCE:'agence',BRANDING:'branding',TAUX:'taux',NUMEROTATION:'numerotation',PHASES:'phases',UTILISATEURS:'utilisateurs',PREFERENCES:'preferences',PROJETS:'projets',CONTACTS:'contacts',ALERTES:'alertes_devis',AUDIT:'audit_log'};
+  const ts=()=>{const n=new Date(),p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;};
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));}catch(e){console.error(e);}};
+  const sub={};const emit=(k,v)=>{(sub[k]||[]).forEach(f=>f(v));};
+  const D={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'u2',phases:[{code:'ESQ',statut:'valide',avancement:100},{code:'APS',statut:'valide',avancement:100},{code:'APD',statut:'valide',avancement:100},{code:'PRO',statut:'en_cours',avancement:72},{code:'DCE',statut:'a_venir',avancement:0},{code:'DET',statut:'a_venir',avancement:0},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'u2',phases:[{code:'ESQ',statut:'valide',avancement:100},{code:'APS',statut:'valide',avancement:100},{code:'APD',statut:'en_cours',avancement:45},{code:'PRO',statut:'a_venir',avancement:0},{code:'DCE',statut:'a_venir',avancement:0},{code:'DET',statut:'a_venir',avancement:0},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'u3',phases:[{code:'ESQ',statut:'en_cours',avancement:12},{code:'APS',statut:'a_venir',avancement:0},{code:'APD',statut:'a_venir',avancement:0},{code:'PRO',statut:'a_venir',avancement:0},{code:'DCE',statut:'a_venir',avancement:0},{code:'DET',statut:'a_venir',avancement:0},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2023-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'u3',phases:[{code:'ESQ',statut:'valide',avancement:100},{code:'APS',statut:'valide',avancement:100},{code:'APD',statut:'valide',avancement:100},{code:'PRO',statut:'valide',avancement:100},{code:'DCE',statut:'valide',avancement:100},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return{
+    K,
+    init(){Object.entries(D).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??D[k]??null;},
+    set(k,v){w(k,v);emit(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){const n={...c,...p};w(k,n);emit(k,n);}return this;},
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);i>=0?ps[i]=p:ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,String(cfg.prochain).padStart(3,'0'));cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,String(cfg.prochain).padStart(3,'0'));},
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    addAudit(user,action,mod){const l=this.get(K.AUDIT)||[];l.unshift({time:ts(),user,action,module:mod});this.set(K.AUDIT,l.slice(0,200));},
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+function gaaToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);color:#fff';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+function gaaApplyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale)document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_principale)document.documentElement.style.setProperty('--c-primary',b.couleur_principale);
+  if(b?.couleur_accent){document.documentElement.style.setProperty('--accent',b.couleur_accent);document.documentElement.style.setProperty('--c-accent',b.couleur_accent);}
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar,.topbar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';if(me?.couleur)el.style.background=me.couleur;});
+  document.querySelectorAll('.nav__user > div > div:first-child').forEach(el=>el.textContent=me?.nom||'M. Lefort');
+}
+
+
+// ── Phases depuis store ────────────────────────────────────
+function initPhasePills(containerId){
+  const phases=GAAStore.get(GAAStore.K.PHASES).filter(p=>p.actif);
+  const c=document.getElementById(containerId);
+  if(!c||!phases.length)return;
+  c.innerHTML=phases.map(p=>
+    `<span class="phase-pill phase-pill--on" data-code="${p.code}" data-ratio="${p.ratio}" onclick="toggleParcoursPill(this)">☑ ${p.code} — ${p.ratio}% — ${p.duree} sem.</span>`
+  ).join('')+`<span class="phase-pill phase-pill--off" data-code="ACT" data-ratio="0" onclick="toggleParcoursPill(this)">☐ ACT — retirée</span>`;
+}
+
+function toggleParcoursPill(el){
+  const on=el.classList.contains('phase-pill--on');
+  el.classList.toggle('phase-pill--on',!on);
+  el.classList.toggle('phase-pill--off',on);
+  const code=el.dataset.code;
+  el.textContent=(on?'☐ ':'☑ ')+code+(el.textContent.substring(el.textContent.indexOf(' ',2)));
+  updatePilCoherence();
+}
+
+function updatePilCoherence(){
+  const modal=document.getElementById('modal-create');
+  if(!modal)return;
+  const hon=parseFloat(modal.querySelector('input[type="text"]')?.value?.replace(/\s/g,'')||'0')||0;
+  const selected=[...modal.querySelectorAll('.phase-pill--on[data-ratio]')];
+  const totalRatio=selected.reduce((s,el)=>s+parseFloat(el.dataset.ratio||0),0);
+  const totalEur=Math.round(hon*totalRatio/100);
+  const info=modal.querySelector('.modal__body > div:last-of-type > div:last-child');
+  if(info){
+    info.style.color=totalRatio===100?'var(--green)':'var(--orange)';
+    info.textContent=totalRatio===100
+      ?`✓ Total phases = ${totalEur.toLocaleString('fr-FR')} € — Cohérent`
+      :`⚠ Total ratios = ${totalRatio}% (doit être 100%)`;
+  }
+}
+
+// ── Création réelle → store ────────────────────────────────
+function creerProjet(statut){
+  const modal=document.getElementById('modal-create');
+  const nom=modal.querySelector('input[type="text"]')?.value?.trim();
+  const type=modal.querySelectorAll('select')[0]?.value||'MOE';
+  const moa=modal.querySelectorAll('input[type="text"]')[1]?.value?.trim()||'';
+  const hon=parseFloat(modal.querySelectorAll('input')[2]?.value?.replace(/\s/g,'')||'0')||0;
+  if(!nom){gaaToast('Le nom du projet est requis','error');return;}
+
+  const phases=[...modal.querySelectorAll('.phase-pill--on[data-code]')].map((el,i)=>{
+    const ph=GAAStore.get(GAAStore.K.PHASES).find(p=>p.code===el.dataset.code)||{};
+    return{code:el.dataset.code,statut:i===0?'en_cours':'a_venir',ratio:ph.ratio||0,duree:ph.duree||0,avancement:i===0?0:undefined};
+  });
+
+  const id=GAAStore.nextNumero('projet');
+  const me=GAAStore.getMe();
+  const projet={id,nom,statut,type_mission:type.toUpperCase(),phase_courante:phases[0]?.code||'ESQ',moa:{nom:moa},honoraires_ht:hon,date_debut:new Date().toISOString().split('T')[0],chef_projet:me?.id||'u2',phases,created_at:new Date().toISOString()};
+  GAAStore.saveProjet(projet);
+  GAAStore.addAudit(me?.nom||'Utilisateur',`Projet "${nom}" créé — statut : ${statut}`,'1.1 Projets');
+  closeModal('modal-create');
+  showPage('p2');
+  gaaToast(`Projet "${nom}" créé — ${id}`,'success');
+  // Mettre à jour l'étape 2 avec le vrai ID
+  document.querySelectorAll('.step-proj-id').forEach(el=>el.textContent=id);
+}
+
+// ── Autocomplétetion CRM ────────────────────────────────────
+function initCrmAutocomplete(){
+  const input=document.getElementById('modal-create')?.querySelectorAll('input[type="text"]')[1];
+  if(!input)return;
+  const list=document.createElement('datalist');list.id='crmList';
+  GAAStore.getContacts().forEach(c=>{const o=document.createElement('option');o.value=c.societe||c.nom;list.appendChild(o);});
+  document.body.appendChild(list);
+  input.setAttribute('list','crmList');
+}
+
+// ── Prérequis — statut dynamique ───────────────────────────
+function checkPrerequis(){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const contacts=GAAStore.getContacts();
+  const taux=GAAStore.get(GAAStore.K.TAUX)||[];
+  const cards=document.querySelectorAll('.prereq-card');
+  const statuses=[
+    phases.length>0,   // Types de mission / phases
+    phases.length>0,   // Phases MOP
+    users.length>0,    // Rôles + collabs
+    contacts.length>0, // Contacts CRM
+    true,              // Modèles tâches (statique)
+    true,              // Arborescence (statique)
+    taux.length>0,     // Taux horaires
+    true,              // Assurances (toujours ⚠)
+  ];
+  cards.forEach((card,i)=>{
+    const badge=card.querySelector('.badge');
+    if(!badge)return;
+    if(i===7){badge.textContent='⚠ Vérifier';badge.className='badge badge--orange';return;}
+    badge.textContent=statuses[i]?'✓ OK':'⚠ Manquant';
+    badge.className='badge '+(statuses[i]?'badge--green':'badge--orange');
+  });
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  gaaApplyBranding();
+  checkPrerequis();
+  // Remplir phases dans la maquette statique (page 1)
+  const staticPills=document.querySelectorAll('#page-p1 .phase-pill');
+  const phases=GAAStore.get(GAAStore.K.PHASES).filter(p=>p.actif);
+  if(staticPills.length&&phases.length){
+    staticPills.forEach((pill,i)=>{
+      const ph=phases[i];if(!ph)return;
+      pill.textContent=(pill.classList.contains('phase-pill--on')?'☑ ':'☐ ')+ph.code+' '+ph.ratio+'%';
+    });
+  }
+  // Init modal
+  const btnOpen=document.querySelector('button[onclick*="modal-create"]');
+  if(btnOpen) btnOpen.onclick=()=>{
+    initCrmAutocomplete();
+    // Peupler pills dans modal
+    const pillsContainer=document.querySelector('#modal-create .modal__body > div:last-of-type > div:nth-child(2)');
+    if(pillsContainer) pillsContainer.id='modal-pills';
+    initPhasePills('modal-pills');
+    openModal('modal-create');
+  };
+  // Patcher boutons footer modal
+  const ft=document.querySelector('#modal-create .modal__ft');
+  if(ft){
+    const btns=ft.querySelectorAll('button');
+    btns.forEach(btn=>{
+      if(btn.textContent.includes('brouillon')) btn.onclick=()=>creerProjet('brouillon');
+      if(btn.textContent.includes('Créer')) btn.onclick=()=>creerProjet('en_attente');
+    });
+  }
+  // Afficher nb projets dans résumé p3
+  const p3=document.getElementById('page-p3');
+  if(p3){
+    const nb=GAAStore.getProjets().length;
+    p3.querySelectorAll('.flow-step:first-child').forEach(el=>{
+      const sub=el.querySelector('p');if(sub)sub.textContent=`${nb} projet(s) en cours dans le portefeuille.`;
+    });
+  }
+});
+
+</script>
+</body>
+</html>

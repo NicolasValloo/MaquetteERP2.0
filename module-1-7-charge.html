@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.7 — Planning de charge</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;
+      --accent:#C75B37;--green:#2D6A4F;--green-l:#E8F5EE;
+      --orange:#B8860B;--orange-l:#FDF6DC;--red:#C0392B;--red-l:#FDECEA;
+      --grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --sidebar-w:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    /* Sidebar */
+    .nav{width:var(--sidebar-w);background:var(--primary);color:#fff;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px 20px 16px;font-size:22px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:16px 20px 4px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;font-size:12px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    /* Main */
+    .wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar__bc{font-size:13px;color:var(--text-2);flex:1}
+    .topbar__bc a{color:var(--primary);cursor:pointer}
+    .page{padding:28px;display:none;flex-direction:column;gap:20px}
+    .page--on{display:flex}
+    /* Composants */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+    .kpi__label{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+    .kpi__val{font-size:24px;font-weight:700;letter-spacing:-.5px;font-family:var(--mono);margin-bottom:4px}
+    .kpi__detail{font-size:11.5px;color:var(--text-3)}
+    .tabs{display:flex;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:4px;gap:2px;overflow-x:auto}
+    .tab{padding:7px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap}
+    .tab:hover{background:rgba(255,255,255,.7);color:var(--text)}
+    .tab--on{background:var(--surface);color:var(--primary);font-weight:700;box-shadow:var(--shadow)}
+    .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;box-shadow:var(--shadow)}
+    .filter-sel{appearance:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 28px 5px 10px;font-family:var(--font);font-size:12.5px;color:var(--text);cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+    /* Grille planning */
+    .grid-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .plan-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:900px}
+    .plan-table th{background:var(--grey-l);border-bottom:1px solid var(--border);padding:8px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+    .plan-table th:first-child,.plan-table th:nth-child(2){text-align:left}
+    .plan-table th.today-col{background:var(--primary-l);color:var(--primary)}
+    .plan-table td{padding:4px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .plan-table tr:hover td{background:rgba(27,73,101,.02)}
+    .plan-table tr:last-child td{border-bottom:none}
+    .collab-name{font-weight:700;font-size:13px}
+    .collab-role{font-size:11px;color:var(--text-3)}
+    /* Cellule de charge */
+    .cell-inner{position:relative;min-height:38px;border-radius:3px;overflow:visible;padding:2px}
+    .bar{border-radius:3px;padding:2px 5px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+    .bar--confirmed{background:var(--primary)}
+    .bar--forecast{background:var(--primary);opacity:.4;border:1px dashed var(--primary)}
+    .bar--draft{background:repeating-linear-gradient(45deg,var(--orange),var(--orange) 3px,transparent 3px,transparent 6px);color:var(--orange)}
+    .bar--absence{background:var(--red-l);color:var(--red);border:1px solid rgba(192,57,43,.3)}
+    .pct{font-size:10px;font-weight:700;margin-top:2px;text-align:right}
+    .pct--ok{color:var(--primary)}.pct--hi{color:var(--red)}.pct--lo{color:var(--orange)}
+    .avg-cell{font-size:14px;font-weight:700;text-align:center}
+    /* Graphique barres */
+    .chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;box-shadow:var(--shadow)}
+    .chart-title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+    .chart-legend{display:flex;gap:14px;font-size:11.5px;color:var(--text-3)}
+    .legend-dot{width:10px;height:8px;border-radius:2px;display:inline-block;margin-right:4px}
+    .bars-row{display:flex;align-items:flex-end;gap:8px;height:120px;position:relative;border-bottom:2px solid var(--border);padding-bottom:4px}
+    .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+    .bar-stacked{width:100%;border-radius:3px 3px 0 0;transition:height .3s}
+    .bar-label{font-size:10px;color:var(--text-3);margin-top:4px;font-family:var(--mono)}
+    .capacity-line{position:absolute;bottom:40%;left:0;right:0;border-top:2px dashed var(--red);z-index:5}
+    .capacity-label{position:absolute;right:0;top:-16px;font-size:10px;color:var(--red);font-weight:700}
+    /* Alertes */
+    .alerts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .alert{border-radius:var(--r);padding:12px 14px;font-size:12.5px;border:1px solid}
+    .alert--danger{background:var(--red-l);border-color:rgba(192,57,43,.4);color:var(--red)}
+    .alert--warning{background:var(--orange-l);border-color:rgba(184,134,11,.4);color:#7a5c00}
+    .alert--info{background:var(--primary-l);border-color:rgba(27,73,101,.3);color:var(--primary)}
+    .alert__title{font-weight:700;margin-bottom:4px;font-size:13px}
+    /* Vue hebdo */
+    .hebdo-table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+    .hebdo-table th{background:var(--grey-l);border-bottom:1px solid var(--border);padding:9px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px}
+    .hebdo-table th:first-child,.hebdo-table th:nth-child(2){text-align:left}
+    .hebdo-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+    .hebdo-table tr:last-child td{border-bottom:none}
+    .hebdo-cell{font-size:12px}
+    .hebdo-hours{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center}
+    .hebdo-dispo{font-family:var(--mono);font-size:13px;font-weight:700;text-align:center;color:var(--green)}
+    .hebdo-task{font-size:11.5px;color:var(--text-2);margin-top:1px}
+    .hebdo-due{font-size:10px;color:var(--red);font-weight:600;display:block;margin-top:2px}
+    .hebdo-forecast{opacity:.6;font-style:italic}
+    /* Comparaison prévu/réel */
+    .prvu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .prvu-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;box-shadow:var(--shadow)}
+    .prvu-card--dim{opacity:.55}
+    .prvu-card__title{font-size:13px;font-weight:700;margin-bottom:2px}
+    .prvu-card__phase{font-size:11.5px;color:var(--text-3);margin-bottom:8px}
+    .mini-bars{display:flex;align-items:flex-end;justify-content:center;gap:8px;height:56px}
+    .mini-bar{width:28px;border-radius:3px 3px 0 0}
+    .mini-bar--prev{background:var(--primary)}
+    .mini-bar--real{background:var(--orange)}
+    .mini-bar--forecast{border:2px dashed var(--primary);background:transparent}
+    .prvu-card__nums{display:flex;justify-content:center;gap:14px;font-size:11px;margin-top:4px}
+    .prvu-card__note{font-size:11px;font-weight:600;margin-top:4px}
+    /* Modale */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay--on{display:flex}
+    .modal{background:var(--surface);border-radius:12px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mi .2s ease}
+    @keyframes mi{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal__hd{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal__title{font-size:16px;font-weight:700}
+    .modal__x{width:28px;height:28px;border-radius:50%;border:none;background:var(--grey-l);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+    .modal__body{padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+    .modal__ft{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-input,.form-select{padding:8px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none}
+    .form-input:focus,.form-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.12)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .mono{font-family:var(--mono)}
+    .text-green{color:var(--green)}.text-orange{color:var(--orange)}.text-red{color:var(--red)}.text-primary{color:var(--primary)}
+  </style>
+</head>
+<body>
+
+<!-- Modale : Affecter une ressource -->
+<div class="modal-overlay" id="modal-affect">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Affecter une ressource — S10</h2>
+      <button class="modal__x" onclick="closeModal('modal-affect')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label">Collaborateur</label>
+        <select class="form-select"><option>A. Dupont — Dessinatrice (dispo ~20h)</option><option>P. Bernard — Architecte</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Projet</label>
+        <select class="form-select"><option>Groupe scolaire V. Hugo — APD</option><option>École Jules-Ferry — ESQ</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phase</label>
+        <select class="form-select"><option>APD</option><option>PRO</option></select>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Heures estimées</label>
+          <input class="form-input" type="number" value="20">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tâche principale</label>
+          <input class="form-input" type="text" placeholder="Plans APD…">
+        </div>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-affect')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-affect')">Affecter →</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="nav">
+    <div class="nav__logo"><span class="nav__dot"></span>GAA</div>
+    <div class="nav__sec">Pilotage</div>
+    <a class="nav__item"><span>⬜</span> Tableau de bord</a>
+    <a class="nav__item"><span>📁</span> Projets</a>
+    <div class="nav__sec">Planification</div>
+    <a class="nav__item nav__item--on"><span>📊</span> Charge</a>
+    <a class="nav__item"><span>✓</span> Tâches</a>
+    <div class="nav__sec">Opérationnel</div>
+    <a class="nav__item"><span>⏱</span> Temps</a>
+    <a class="nav__item"><span>📂</span> Documents</a>
+    <a class="nav__item"><span>🏗</span> Chantier</a>
+    <div class="nav__sec">Finance</div>
+    <a class="nav__item"><span>💰</span> Facturation</a>
+    <div class="nav__user">
+      <div class="nav__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="topbar__bc" id="bc"><strong>Planning de charge — Vue globale</strong></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost btn--sm" onclick="switchView('hebdo')">Point hebdo →</button>
+        <button class="btn btn--primary btn--sm" onclick="openModal('modal-affect')">+ Affecter</button>
+      </div>
+    </header>
+
+    <!-- PAGE 1 : Vue globale -->
+    <main class="page page--on" id="page-global">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Planning de charge — Agence</h1>
+          <p style="font-size:13px;color:var(--text-2);margin-top:2px">Semaines 10 à 15 · Mars–Avril 2026</p>
+        </div>
+        <button class="btn btn--ghost" onclick="return false">⬇ Exporter</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi__label">Capacité totale</div><div class="kpi__val">1 120 h</div><div class="kpi__detail">14 collab. × 6 sem.</div></div>
+        <div class="kpi"><div class="kpi__label">Charge confirmée</div><div class="kpi__val text-primary">864 h</div><div class="kpi__detail">77% de capacité</div></div>
+        <div class="kpi"><div class="kpi__label">Charge prévisionnelle</div><div class="kpi__val text-orange">+ 218 h</div><div class="kpi__detail">+19% si projets signés</div></div>
+        <div class="kpi"><div class="kpi__label">Taux global</div><div class="kpi__val text-red">96%</div><div class="kpi__detail">3 collab. en surcharge</div></div>
+      </div>
+
+      <!-- Filtres + onglets -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="tabs" style="flex:1">
+          <div class="tab" onclick="switchView('hebdo')">Par collaborateur</div>
+          <div class="tab tab--on">Vue globale</div>
+          <div class="tab" onclick="return false">Par projet</div>
+        </div>
+        <div style="display:flex;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+          <button style="padding:5px 12px;font-size:12px;background:var(--primary);color:#fff;border:none;cursor:pointer;font-family:var(--font);font-weight:600">6 sem.</button>
+          <button style="padding:5px 12px;font-size:12px;background:var(--bg);color:var(--text-2);border:none;cursor:pointer;font-family:var(--font);border-left:1px solid var(--border)">3 mois</button>
+          <button style="padding:5px 12px;font-size:12px;background:var(--bg);color:var(--text-2);border:none;cursor:pointer;font-family:var(--font);border-left:1px solid var(--border)">6 mois</button>
+        </div>
+        <select class="filter-sel"><option>Équipe : Tous</option><option>Pôle Architecture</option></select>
+        <label style="font-size:12.5px;display:flex;align-items:center;gap:5px;color:var(--text-2)"><input type="checkbox" checked> Confirmé</label>
+        <label style="font-size:12.5px;display:flex;align-items:center;gap:5px;color:var(--orange)"><input type="checkbox" checked> Prévisionnel</label>
+        <label style="font-size:12.5px;display:flex;align-items:center;gap:5px;color:var(--text-3)"><input type="checkbox"> Brouillon</label>
+      </div>
+
+      <!-- Grille planning -->
+      <div class="grid-wrap">
+        <table class="plan-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;min-width:160px;padding-left:14px">Collaborateur</th>
+              <th style="text-align:left;width:56px">Lieu</th>
+              <th class="today-col">S10 ●<br><span style="font-size:9px;font-weight:400">2–6 mars</span></th>
+              <th>S11<br><span style="font-size:9px;font-weight:400">9–13 mars</span></th>
+              <th>S12<br><span style="font-size:9px;font-weight:400">16–20 mars</span></th>
+              <th>S13<br><span style="font-size:9px;font-weight:400">23–27 mars</span></th>
+              <th>S14<br><span style="font-size:9px;font-weight:400">30–3 avr</span></th>
+              <th>S15<br><span style="font-size:9px;font-weight:400">6–10 avr</span></th>
+              <th style="width:52px">Moy.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- M. Lefort — surcharge -->
+            <tr>
+              <td style="padding-left:14px"><div class="collab-name">M. Lefort</div><div class="collab-role">Chef de projet</div></td>
+              <td style="font-size:11px;color:var(--text-3)">Agence</td>
+              <td style="background:rgba(192,57,43,.04)"><div class="cell-inner"><div class="bar bar--confirmed">V. Hugo — APD</div><div class="bar bar--forecast">Parc Est — ESQ</div><div class="pct pct--hi">125% ⚠</div></div></td>
+              <td style="background:rgba(192,57,43,.04)"><div class="cell-inner"><div class="bar bar--confirmed">V. Hugo — APD</div><div class="bar bar--forecast">Parc Est — ESQ</div><div class="pct pct--hi">115%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">V. Hugo — APD</div><div class="pct pct--ok">95%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">V. Hugo — Coord</div><div class="pct pct--ok">85%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">V. Hugo — APD</div><div class="pct pct--ok">90%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">V. Hugo — APD</div><div class="pct pct--ok">80%</div></div></td>
+              <td class="avg-cell text-red">98%</td>
+            </tr>
+            <!-- S. Moreau -->
+            <tr>
+              <td style="padding-left:14px"><div class="collab-name">S. Moreau</div><div class="collab-role">Architecte</div></td>
+              <td style="font-size:11px;color:var(--text-3)">Agence</td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Maison R. — EXE</div><div class="pct pct--ok">100%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Maison R. — EXE</div><div class="pct pct--ok">100%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed" style="font-size:9px">Maison R. / École J.</div><div class="pct pct--ok">100%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — ESQ</div><div class="pct pct--ok">80%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — APS</div><div class="pct pct--ok">80%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — APS</div><div class="pct pct--ok">85%</div></div></td>
+              <td class="avg-cell text-primary">91%</td>
+            </tr>
+            <!-- A. Dupont — sous-charge -->
+            <tr>
+              <td style="padding-left:14px"><div class="collab-name">A. Dupont <span style="font-size:10px;background:var(--red-l);color:var(--red);padding:1px 5px;border-radius:3px;margin-left:4px">CP J-V</span></div><div class="collab-role">Dessinatrice</div></td>
+              <td style="font-size:11px;color:var(--text-3)">Agence</td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Oliviers — Plans</div><div class="pct pct--lo">40%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Oliviers — Plans</div><div class="pct pct--lo">60%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — Plans</div><div class="pct pct--lo">35%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — Plans</div><div class="pct pct--lo">30%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Loft B12 — Plans</div><div class="pct pct--lo">50%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Loft B12 — Plans</div><div class="pct pct--lo">45%</div></div></td>
+              <td class="avg-cell text-orange">43%</td>
+            </tr>
+            <!-- P. Bernard — absences -->
+            <tr>
+              <td style="padding-left:14px"><div class="collab-name">P. Bernard</div><div class="collab-role">Architecte</div></td>
+              <td style="font-size:11px;color:var(--text-3)"><span style="display:inline-block;width:7px;height:7px;background:var(--orange);border-radius:50%;margin-right:3px"></span>Chantier</td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Rés. Cèdres — DET</div><div class="pct pct--ok">60%</div></div></td>
+              <td style="background:rgba(192,57,43,.05)"><div class="cell-inner"><div class="bar bar--absence">Congés payés</div></div></td>
+              <td style="background:rgba(192,57,43,.05)"><div class="cell-inner"><div class="bar bar--absence">Congés payés</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Rés. Cèdres — DCE</div><div class="pct pct--ok">90%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Rés. Cèdres — DCE</div><div class="pct pct--ok">95%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Rés. Cèdres — ACT</div><div class="pct pct--ok">80%</div></div></td>
+              <td class="avg-cell text-primary">54%</td>
+            </tr>
+            <!-- L. Chen — BIM -->
+            <tr>
+              <td style="padding-left:14px"><div class="collab-name">L. Chen <span style="font-size:10px;background:var(--purple-l);color:var(--purple);padding:1px 5px;border-radius:3px;margin-left:4px">Form. ven.</span></div><div class="collab-role">BIM Manager</div></td>
+              <td style="font-size:11px;color:var(--text-3)">Agence</td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed" style="font-size:9px">BIM transversal</div><div class="bar bar--forecast" style="font-size:9px">Parc Est BIM</div><div class="pct pct--ok">95%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">BIM transversal</div><div class="pct pct--ok">75%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — BIM</div><div class="pct pct--ok">80%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">École J. — BIM</div><div class="bar bar--draft" style="font-size:9px">Concours Méd.</div><div class="pct pct--ok">85%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Maison R. — BIM</div><div class="pct pct--ok">70%</div></div></td>
+              <td><div class="cell-inner"><div class="bar bar--confirmed">Oliviers — BIM</div><div class="pct pct--ok">70%</div></div></td>
+              <td class="avg-cell text-primary">79%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Graphique charge vs capacité -->
+      <div class="chart-wrap">
+        <div class="chart-title">
+          Charge vs Capacité — Vue agence
+          <div class="chart-legend">
+            <span><span class="legend-dot" style="background:var(--primary)"></span>Confirmé</span>
+            <span><span class="legend-dot" style="background:var(--primary);opacity:.35;border:1px dashed var(--primary)"></span>Prévisionnel</span>
+            <span><span class="legend-dot" style="background:var(--orange)"></span>Brouillon</span>
+            <span style="color:var(--red)">— Capacité 100%</span>
+          </div>
+        </div>
+        <div class="bars-row">
+          <div class="capacity-line"><span class="capacity-label">100%</span></div>
+          <div class="bar-group"><div class="bar-stacked" style="background:var(--primary);height:72px"></div><div class="bar-stacked" style="background:var(--primary);opacity:.3;height:14px"></div><div class="bar-label">S10</div></div>
+          <div class="bar-group"><div class="bar-stacked" style="background:var(--primary);height:78px"></div><div class="bar-stacked" style="background:var(--primary);opacity:.3;height:11px"></div><div class="bar-label">S11</div></div>
+          <div class="bar-group"><div class="bar-stacked" style="background:var(--primary);height:62px"></div><div class="bar-stacked" style="background:var(--primary);opacity:.3;height:8px"></div><div class="bar-label">S12</div></div>
+          <div class="bar-group"><div class="bar-stacked" style="background:var(--primary);height:68px"></div><div class="bar-stacked" style="background:var(--primary);opacity:.3;height:9px"></div><div class="bar-label">S13</div></div>
+          <div class="bar-group"><div class="bar-stacked" style="background:var(--primary);height:82px"></div><div class="bar-stacked" style="background:var(--primary);opacity:.3;height:17px"></div><div class="bar-label">S14</div></div>
+          <div class="bar-group"><div class="bar-stacked" style="background:var(--primary);height:60px"></div><div class="bar-stacked" style="background:var(--primary);opacity:.3;height:6px"></div><div class="bar-label">S15</div></div>
+        </div>
+      </div>
+
+      <!-- Alertes -->
+      <div class="alerts">
+        <div class="alert alert--danger"><div class="alert__title">⚠ Surcharge détectée</div>M. Lefort à 125% S10–S11. Suggestion : décaler Parc Est — ESQ d'1 semaine, ou réaffecter sur A. Dupont (20h dispo).</div>
+        <div class="alert alert--warning"><div class="alert__title">📉 Sous-charge</div>A. Dupont à 43% moy. Capacité disponible ~20h/sem. Réaffecter sur V. Hugo — Plans APD ?<span style="display:block;margin-top:6px"><button class="btn btn--ghost btn--sm" onclick="openModal('modal-affect')">Affecter →</button></span></div>
+        <div class="alert alert--info"><div class="alert__title">📊 Scénario : Parc Est signé</div>Si Parc Est signé → charge agence passe de 96% à 108%. Besoin +1 ETP temporaire en S10–S11.</div>
+      </div>
+
+    </main>
+
+    <!-- PAGE 2 : Point hebdomadaire -->
+    <main class="page" id="page-hebdo">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Point hebdomadaire — M. Lefort</h1>
+          <p style="font-size:13px;color:var(--text-2);margin-top:2px">Semaine 10 · 2 – 6 mars 2026</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost btn--sm" onclick="return false">← S9</button>
+          <button class="btn btn--ghost btn--sm" onclick="return false">S11 →</button>
+          <button class="btn btn--ghost btn--sm" onclick="return false">📤 Partager le récap</button>
+          <button class="btn btn--ghost btn--sm" onclick="switchView('global')">← Vue globale</button>
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="toolbar">
+        <select class="filter-sel"><option>Chef de projet : M. Lefort</option><option>S. Moreau</option></select>
+        <select class="filter-sel"><option>Afficher 3 semaines</option><option>1 semaine</option></select>
+      </div>
+
+      <!-- Grille hebdo -->
+      <div style="overflow-x:auto">
+        <table class="hebdo-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;min-width:150px;padding-left:14px">Collaborateur</th>
+              <th style="text-align:left">Rôle</th>
+              <th>Dispo S10</th>
+              <th>S10 — Projets / Tâches</th>
+              <th>S11 — Projets / Tâches</th>
+              <th>S12 — Projets / Tâches</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding-left:14px"><strong>M. Lefort</strong></td>
+              <td style="font-size:12px;color:var(--text-2)">Chef de projet</td>
+              <td class="hebdo-dispo">28h</td>
+              <td class="hebdo-cell"><div>V. Hugo — Revue plans APD <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red)">(20h)</span></div><span class="hebdo-due">⚠ Rendu APD le 13/03</span><div class="hebdo-forecast">Parc Est — Cadrage ESQ (8h prévi.)</div></td>
+              <td class="hebdo-cell"><div>V. Hugo — Réunion MOA + coord <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(25h)</span></div></td>
+              <td class="hebdo-cell"><div>V. Hugo — APD finalisé <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(30h)</span></div></td>
+            </tr>
+            <tr>
+              <td style="padding-left:14px"><strong>A. Dupont</strong></td>
+              <td style="font-size:12px;color:var(--text-2)">Dessinatrice</td>
+              <td class="hebdo-dispo" style="color:var(--orange)">21h <span style="font-size:10px">(CP J-V)</span></td>
+              <td class="hebdo-cell"><div>Oliviers — Plans façades <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange)">(8h)</span></div><div style="font-size:11.5px;color:var(--text-3)">~20h disponibles non affectées</div></td>
+              <td class="hebdo-cell"><div>Oliviers — Plans coupes <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange)">(13h)</span></div></td>
+              <td class="hebdo-cell"><div>École J. — Plans masse <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange)">(12h)</span></div></td>
+            </tr>
+            <tr>
+              <td style="padding-left:14px"><strong>S. Moreau</strong></td>
+              <td style="font-size:12px;color:var(--text-2)">Architecte</td>
+              <td class="hebdo-dispo">35h</td>
+              <td class="hebdo-cell"><div>Maison R. — Plans exé <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(35h)</span></div></td>
+              <td class="hebdo-cell"><div>Maison R. — EXE finalisé <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(35h)</span></div></td>
+              <td class="hebdo-cell"><div>École J. — ESQ démarrage <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(35h)</span></div></td>
+            </tr>
+            <tr>
+              <td style="padding-left:14px"><strong>P. Bernard</strong></td>
+              <td style="font-size:12px;color:var(--text-2)">Architecte</td>
+              <td class="hebdo-dispo">35h</td>
+              <td class="hebdo-cell"><div>Rés. Cèdres — Visite DET <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(21h)</span></div><span style="font-size:10px;color:var(--orange)">🏗 Chantier lun–mar</span></td>
+              <td class="hebdo-cell" style="background:rgba(192,57,43,.04)"><div style="color:var(--red)">Congés payés — S11 et S12</div></td>
+              <td class="hebdo-cell" style="background:rgba(192,57,43,.04)"><div style="color:var(--red)">Congés payés</div></td>
+            </tr>
+            <tr>
+              <td style="padding-left:14px"><strong>L. Chen</strong></td>
+              <td style="font-size:12px;color:var(--text-2)">BIM Manager</td>
+              <td class="hebdo-dispo" style="color:var(--purple)">28h <span style="font-size:10px">(Form. ven.)</span></td>
+              <td class="hebdo-cell"><div>BIM transversal + Parc Est (prévi.) <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(27h)</span></div></td>
+              <td class="hebdo-cell"><div>BIM transversal <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(26h)</span></div></td>
+              <td class="hebdo-cell"><div>École J. — BIM ESQ <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--primary)">(28h)</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Prochaines échéances + comparaison prévu/réel -->
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)">
+          <div style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Prochains rendus</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+              <div><div style="font-weight:600">Rendu APD — V. Hugo</div><div style="font-size:11px;color:var(--text-3)">Toute l'équipe</div></div>
+              <span style="font-size:11px;font-weight:700;color:var(--red);background:var(--red-l);padding:2px 7px;border-radius:3px">J – 7</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px">
+              <div><div style="font-weight:600">ESQ — École Jules-Ferry</div><div style="font-size:11px;color:var(--text-3)">S. Moreau</div></div>
+              <span style="font-size:11px;font-weight:700;color:var(--orange);background:var(--orange-l);padding:2px 7px;border-radius:3px">J – 18</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:12.5px">
+              <div><div style="font-weight:600">Jury concours — Parc Est</div><div style="font-size:11px;color:var(--text-3)">M. Lefort</div></div>
+              <span style="font-size:11px;font-weight:700;color:var(--text-3);background:var(--grey-l);padding:2px 7px;border-radius:3px">J – 35</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">Charge prévisionnelle vs temps passé (mes projets)</div>
+          <div class="prvu-grid">
+            <div class="prvu-card">
+              <div class="prvu-card__title">Résid. Oliviers</div>
+              <div class="prvu-card__phase">Phase APD</div>
+              <div class="mini-bars">
+                <div class="mini-bar mini-bar--prev" style="height:75%"></div>
+                <div class="mini-bar mini-bar--real" style="height:55%"></div>
+              </div>
+              <div class="prvu-card__nums"><span style="color:var(--primary)">Prévu 56h</span><span style="color:var(--orange)">Passé 42h</span></div>
+              <div class="prvu-card__note text-orange">75% — J–9 du rendu ⚠</div>
+            </div>
+            <div class="prvu-card">
+              <div class="prvu-card__title">École Jules-Ferry</div>
+              <div class="prvu-card__phase">Phase ESQ</div>
+              <div class="mini-bars">
+                <div class="mini-bar mini-bar--prev" style="height:60%"></div>
+                <div class="mini-bar mini-bar--real" style="height:20%"></div>
+              </div>
+              <div class="prvu-card__nums"><span style="color:var(--primary)">Prévu 80h</span><span style="color:var(--orange)">Passé 18h</span></div>
+              <div class="prvu-card__note text-green">23% — démarrage OK ✓</div>
+            </div>
+            <div class="prvu-card prvu-card--dim">
+              <div class="prvu-card__title">Parc Est</div>
+              <div class="prvu-card__phase" style="color:var(--orange)">En attente</div>
+              <div class="mini-bars">
+                <div class="mini-bar mini-bar--forecast" style="height:40%"></div>
+                <div style="width:28px"></div>
+              </div>
+              <div class="prvu-card__nums"><span style="color:var(--primary)">Prévu 45h</span><span style="color:var(--text-3)">Passé 0h</span></div>
+              <div class="prvu-card__note text-orange">Signature en attente</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  function switchView(v){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('page--on'));
+    document.getElementById('page-'+v).classList.add('page--on');
+    const bc=document.getElementById('bc');
+    if(v==='global') bc.innerHTML='<strong>Planning de charge — Vue globale</strong>';
+    if(v==='hebdo') bc.innerHTML='<a onclick="switchView(\'global\')">Charge</a> / <strong>Point hebdomadaire S10</strong>';
+    window.scrollTo(0,0);
+  }
+  function openModal(id){document.getElementById(id).classList.add('modal-overlay--on');document.body.style.overflow='hidden'}
+  function closeModal(id){document.getElementById(id).classList.remove('modal-overlay--on');document.body.style.overflow=''}
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay--on').forEach(m=>closeModal(m.id))});
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{
+    el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';
+  });
+}
+function renderKPIs(){
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  const nbSemaines=6;
+  const capacite=users.length*nbSemaines*35;
+  const kpis=document.querySelectorAll('.kpi-card__value');
+  if(kpis[0]) kpis[0].textContent=capacite.toLocaleString('fr-FR')+' h';
+  const details=document.querySelectorAll('.kpi-card__detail');
+  if(details[0]) details[0].textContent=users.length+' collab. × '+nbSemaines+' semaines';
+  // Sous-titre
+  const sub=document.querySelector('h1 + p, h1 ~ p');
+  if(sub){
+    const d=new Date();
+    const wk=Math.ceil(((d-new Date(d.getFullYear(),0,1))/86400000+new Date(d.getFullYear(),0,1).getDay()+1)/7);
+    sub.textContent='Semaines '+wk+' à '+(wk+nbSemaines-1)+' · '+users.length+' collaborateurs';
+  }
+  // Injecter noms dans le tableau
+  const tbody=document.querySelector('tbody');
+  if(tbody){
+    const rows=tbody.querySelectorAll('tr');
+    rows.forEach((row,i)=>{
+      const el=row.querySelector('.collab-name__main,[class*="collab"] strong');
+      if(el&&users[i]) el.textContent=users[i].nom;
+    });
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{ applyBranding(); renderKPIs(); });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.9 — Gestion des tâches</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;
+      --purple:#6A3D9A;--purple-l:#F3EEF9;--blue:#2B5EA7;--blue-l:#EBF1FA;
+      --sidebar-w:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--shadow-md:0 4px 12px rgba(0,0,0,.09);
+      --r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    .nav{width:var(--sidebar-w);background:var(--primary);color:#fff;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px 20px 16px;font-size:22px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:16px 20px 4px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;font-size:12px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    .wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar__bc{font-size:13px;color:var(--text-2);flex:1}
+    .topbar__bc a{color:var(--primary);cursor:pointer}
+    .page{padding:28px;display:none;flex-direction:column;gap:20px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .btn--purple{background:var(--purple);color:#fff;border-color:var(--purple)}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--purple{background:var(--purple-l);color:var(--purple)}
+    .tabs{display:flex;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:4px;gap:2px}
+    .tab{padding:7px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap}
+    .tab:hover{background:rgba(255,255,255,.7)}
+    .tab--on{background:var(--surface);color:var(--primary);font-weight:700;box-shadow:var(--shadow)}
+    .filter-sel{appearance:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 28px 5px 10px;font-family:var(--font);font-size:12.5px;color:var(--text);cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+    /* Kanban */
+    .kanban{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;align-items:flex-start}
+    .kb-col{flex:0 0 240px;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column}
+    .kb-col__hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--border)}
+    .kb-col__title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-2)}
+    .kb-col__count{font-size:11px;font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 7px;border-radius:10px;color:var(--text-3)}
+    .kb-col__cards{padding:8px;display:flex;flex-direction:column;gap:8px;min-height:180px}
+    .kb-col--done{opacity:.75}
+    .task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);position:relative}
+    .task-card:hover{box-shadow:var(--shadow-md);border-color:var(--primary);transform:translateY(-1px)}
+    .task-card--dep{border-left:3px solid var(--purple)}
+    .task-card--recur{border-left:3px solid var(--blue)}
+    .task-card--urgent{border-top:2px solid var(--red)}
+    .task-card--review{border-left:3px solid var(--orange)}
+    .task-card__title{font-size:13px;font-weight:700;margin-bottom:4px}
+    .task-card__meta{font-size:11.5px;color:var(--text-3);margin-bottom:3px}
+    .task-card__tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+    .tag{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:700}
+    .tag--urgent{background:var(--red-l);color:var(--red)}
+    .tag--client{background:var(--primary-l);color:var(--primary)}
+    .tag--bet{background:var(--orange-l);color:var(--orange)}
+    .tag--permis{background:var(--purple-l);color:var(--purple)}
+    .task-card__assign{font-size:11.5px;color:var(--text-2);margin-bottom:3px}
+    .task-card__due{font-size:11.5px;font-weight:600}
+    .task-card__due--late{color:var(--red)}.task-card__due--soon{color:var(--orange)}.task-card__due--ok{color:var(--green)}
+    .task-card__progress{font-size:10.5px;color:var(--text-3);margin-top:3px}
+    .task-card__time{font-size:11px;font-family:var(--mono)}
+    .task-card__dep-warn{font-size:10.5px;color:var(--purple);margin-top:3px}
+    .task-card__recur{font-size:10.5px;color:var(--blue);margin-top:3px}
+    .add-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:7px;font-size:12px;color:var(--text-3);cursor:pointer;border-top:1px solid var(--border);border-radius:0 0 var(--r-sm) var(--r-sm);transition:background .1s}
+    .add-btn:hover{background:var(--primary-l);color:var(--primary)}
+    /* Détail tâche (panneau droit) */
+    .detail-layout{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+    .task-detail-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:0}
+    .panel-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+    .panel-section:last-child{border-bottom:none}
+    .panel-section__title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+    .meta-row{display:flex;align-items:flex-start;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .meta-row:last-child{border-bottom:none}
+    .meta-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;min-width:90px;padding-top:2px}
+    .meta-value{font-weight:500;flex:1}
+    /* Checklist */
+    .checklist-item{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:var(--r-sm);font-size:12.5px}
+    .checklist-item--done{text-decoration:line-through;color:var(--text-3)}
+    .checklist-item input[type=checkbox]{flex-shrink:0}
+    /* Commentaires */
+    .comment{background:var(--grey-l);border-radius:var(--r-sm);padding:8px 10px;font-size:12.5px;margin-bottom:6px}
+    .comment__header{display:flex;justify-content:space-between;margin-bottom:4px}
+    .comment__author{font-weight:700;font-size:12.5px}
+    .comment__date{font-size:11px;color:var(--text-3);font-family:var(--mono)}
+    .comment__text{color:var(--text-2);line-height:1.5}
+    /* Fichier attaché */
+    .file-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-size:12px;cursor:pointer}
+    .file-pill:hover{border-color:var(--primary);color:var(--primary)}
+    /* Calendrier semaine */
+    .cal-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+    .cal-hd{display:grid;grid-template-columns:repeat(5,1fr);background:var(--grey-l);border-bottom:1px solid var(--border)}
+    .cal-day-hd{padding:7px 8px;text-align:center;font-size:11.5px;font-weight:600;color:var(--text-2);border-right:1px solid var(--border)}
+    .cal-day-hd:last-child{border-right:none}
+    .cal-day-hd--today{background:var(--primary-l);color:var(--primary)}
+    .cal-day-hd--alert{color:var(--red);font-weight:700}
+    .cal-body{display:grid;grid-template-columns:repeat(5,1fr);min-height:240px}
+    .cal-cell{padding:5px 4px;border-right:1px solid var(--border);font-size:11px;display:flex;flex-direction:column;gap:3px}
+    .cal-cell:last-child{border-right:none}
+    .cal-cell--today{background:rgba(27,73,101,.025)}
+    .cal-cell--alert{background:rgba(192,57,43,.03)}
+    .cal-event{border-radius:3px;padding:2px 5px;color:#fff;font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .cal-event--primary{background:var(--primary)}
+    .cal-event--blue{background:var(--blue);color:#fff}
+    .cal-event--green{background:var(--green)}
+    .cal-event--purple{background:var(--purple)}
+    .cal-event--alert{background:var(--red)}
+    .cal-event--forecast{background:transparent;border:1px dashed var(--primary);color:var(--primary)}
+    /* Synthèse */
+    .synthese-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .synthese-box{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;text-align:center;background:var(--surface)}
+    .synthese-box__val{font-size:22px;font-weight:700;font-family:var(--mono);margin-bottom:2px}
+    .synthese-box__label{font-size:11px;color:var(--text-3)}
+    /* Modale */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay--on{display:flex}
+    .modal{background:var(--surface);border-radius:12px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mi .2s ease}
+    @keyframes mi{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal__hd{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:5}
+    .modal__title{font-size:16px;font-weight:700}
+    .modal__x{width:28px;height:28px;border-radius:50%;border:none;background:var(--grey-l);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+    .modal__body{padding:20px 24px;display:flex;flex-direction:column;gap:12px}
+    .modal__ft{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-input,.form-select,.form-textarea{padding:8px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none;resize:vertical}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.12)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .info-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+    .info-block__title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+    .mono{font-family:var(--mono)}
+    .text-green{color:var(--green)}.text-orange{color:var(--orange)}.text-red{color:var(--red)}.text-primary{color:var(--primary)}.text-muted{color:var(--text-3)}
+    /* Progress bar inline */
+    .inline-progress{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+    .inline-progress__fill{height:100%;border-radius:3px}
+    /* Échéances triées */
+    .due-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+    .due-item:last-child{border-bottom:none}
+    .due-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:3px}
+  </style>
+</head>
+<body>
+
+<!-- Modale nouvelle tâche -->
+<div class="modal-overlay" id="modal-task">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Nouvelle tâche</h2>
+      <button class="modal__x" onclick="closeModal('modal-task')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label">Titre <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="text" placeholder="Ex. : Plans façades PRO">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select"><option>Livrable</option><option>Réunion</option><option>Coordination</option><option>Revue</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priorité</label>
+          <select class="form-select"><option>Normale</option><option>Haute</option><option>Critique</option></select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Assignée à</label>
+          <select class="form-select"><option>A. Dupont</option><option>S. Moreau</option><option>M. Lefort</option><option>L. Chen</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Échéance</label>
+          <input class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Estimation (heures)</label>
+          <input class="form-input" type="number" placeholder="Ex. : 12">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags</label>
+          <input class="form-input" type="text" placeholder="urgent, client, BET…">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-input form-textarea" rows="2" placeholder="Détails de la tâche…"></textarea>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-task')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-task')">Créer la tâche</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="nav">
+    <div class="nav__logo"><span class="nav__dot"></span>GAA</div>
+    <div class="nav__sec">Pilotage</div>
+    <a class="nav__item"><span>⬜</span> Tableau de bord</a>
+    <a class="nav__item"><span>📁</span> Projets</a>
+    <div class="nav__sec">Opérationnel</div>
+    <a class="nav__item"><span>⏱</span> Temps</a>
+    <a class="nav__item"><span>📂</span> Documents</a>
+    <a class="nav__item"><span>🏗</span> Chantier</a>
+    <a class="nav__item nav__item--on"><span>✓</span> Tâches</a>
+    <div class="nav__sec">Planification</div>
+    <a class="nav__item"><span>📊</span> Charge</a>
+    <div class="nav__sec">Finance</div>
+    <a class="nav__item"><span>💰</span> Facturation</a>
+    <div class="nav__user">
+      <div class="nav__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="topbar__bc" id="bc"><a onclick="showView('kanban')">Tâches</a> / <a onclick="return false">Rés. Oliviers</a> / <strong>Phase PRO</strong></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost btn--sm" onclick="showView('detail')" id="btn-detail">📝 Détail tâche</button>
+        <button class="btn btn--purple btn--sm" onclick="return false">⚙ Modèle PRO</button>
+        <button class="btn btn--primary" onclick="openModal('modal-task')">+ Nouvelle tâche</button>
+      </div>
+    </header>
+
+    <!-- PAGE KANBAN -->
+    <main class="page page--on" id="page-kanban">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Résidence Les Oliviers — Tâches</h1>
+          <p style="font-size:13px;color:var(--text-2);margin-top:2px">Phase PRO · 14 tâches · 29% avancement · Mars 2026</p>
+        </div>
+      </div>
+
+      <!-- Vue + filtres -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="tabs">
+          <div class="tab tab--on">Kanban</div>
+          <div class="tab" onclick="showView('detail')">Liste</div>
+          <div class="tab" onclick="showView('detail')">Calendrier</div>
+        </div>
+        <select class="filter-sel"><option>Projet : Rés. Oliviers</option></select>
+        <select class="filter-sel"><option>Phase : PRO</option><option>APD</option></select>
+        <select class="filter-sel"><option>Assigné : Tous</option><option>A. Dupont</option><option>L. Chen</option></select>
+        <div style="display:flex;gap:5px;align-items:center;font-size:12px;color:var(--text-2)">Tags :</div>
+        <span class="tag tag--urgent" style="cursor:pointer;padding:3px 8px">urgent</span>
+        <span class="tag tag--client" style="cursor:pointer;padding:3px 8px">client</span>
+        <span class="tag tag--bet" style="cursor:pointer;padding:3px 8px">BET</span>
+      </div>
+
+      <!-- Kanban -->
+      <div class="kanban">
+
+        <!-- À faire -->
+        <div class="kb-col">
+          <div class="kb-col__hd"><span class="kb-col__title">À faire</span><span class="kb-col__count">5</span></div>
+          <div class="kb-col__cards">
+
+            <div class="task-card task-card--urgent" onclick="showView('detail')">
+              <div class="task-card__title">Plans PRO niveaux R+1 à R+4</div>
+              <div class="task-card__meta">Livrable · Estimé 16h</div>
+              <div class="task-card__tags"><span class="tag tag--urgent">urgent</span></div>
+              <div class="task-card__assign">👤 A. Dupont</div>
+              <div class="task-card__due task-card__due--soon">📅 12/03 (J–8)</div>
+              <div class="task-card__progress">☐ 0/4 sous-tâches</div>
+            </div>
+
+            <div class="task-card task-card--dep" onclick="showView('detail')">
+              <div class="task-card__title">CCTP lots architecturaux</div>
+              <div class="task-card__meta">Livrable · Estimé 12h</div>
+              <div class="task-card__tags"><span class="tag tag--client">client</span></div>
+              <div class="task-card__assign">👤 M. Lefort</div>
+              <div class="task-card__due task-card__due--ok">📅 20/03 (J–16)</div>
+              <div class="task-card__dep-warn">🔗 Bloqué par : Plans PRO niveaux</div>
+            </div>
+
+            <div class="task-card" onclick="showView('detail')">
+              <div class="task-card__title">Quantitatif estimatif</div>
+              <div class="task-card__meta">Livrable · Estimé 8h</div>
+              <div class="task-card__assign">👤 S. Moreau</div>
+              <div class="task-card__due task-card__due--ok">📅 22/03 (J–18)</div>
+            </div>
+
+            <div class="task-card" onclick="showView('detail')">
+              <div class="task-card__title">Notice descriptive PRO</div>
+              <div class="task-card__meta">Livrable · Estimé 6h</div>
+              <div class="task-card__assign">👤 M. Lefort</div>
+              <div class="task-card__due task-card__due--ok">📅 25/03 (J–21)</div>
+            </div>
+
+            <div class="task-card task-card--recur" onclick="return false">
+              <div class="task-card__title">Réunion coordination BET</div>
+              <div class="task-card__meta">Réunion · Chaque mardi</div>
+              <div class="task-card__tags"><span class="tag tag--bet">BET</span></div>
+              <div class="task-card__assign">👤 M. Lefort</div>
+              <div class="task-card__recur">↻ Récurrente hebdo</div>
+            </div>
+
+          </div>
+          <div class="add-btn" onclick="openModal('modal-task')">+ Ajouter une tâche</div>
+        </div>
+
+        <!-- En cours -->
+        <div class="kb-col">
+          <div class="kb-col__hd"><span class="kb-col__title" style="color:var(--primary)">En cours</span><span class="kb-col__count">3</span></div>
+          <div class="kb-col__cards">
+
+            <div class="task-card task-card--urgent" onclick="showView('detail')">
+              <div class="task-card__title">Plans PRO niveaux RDC + SS</div>
+              <div class="task-card__meta">Livrable</div>
+              <div class="task-card__tags"><span class="tag tag--urgent">urgent</span></div>
+              <div class="task-card__assign">👤 A. Dupont</div>
+              <div class="task-card__due task-card__due--late">📅 06/03 (J–2) ⚠</div>
+              <div class="task-card__time mono">10h / 14h estimées</div>
+              <div class="inline-progress"><div class="inline-progress__fill" style="background:var(--orange);width:71%"></div></div>
+              <div class="task-card__progress" style="margin-top:4px">☑ 2/3 sous-tâches</div>
+            </div>
+
+            <div class="task-card" onclick="return false">
+              <div class="task-card__title">Modèle BIM PRO</div>
+              <div class="task-card__meta">Livrable</div>
+              <div class="task-card__assign">👤 L. Chen</div>
+              <div class="task-card__due task-card__due--ok">📅 18/03 (J–14)</div>
+              <div class="task-card__time mono">8h / 20h estimées</div>
+              <div class="inline-progress"><div class="inline-progress__fill" style="background:var(--primary);width:40%"></div></div>
+            </div>
+
+            <div class="task-card" onclick="return false">
+              <div class="task-card__title">Coordination réseaux fluides</div>
+              <div class="task-card__meta">Coordination</div>
+              <div class="task-card__tags"><span class="tag tag--bet">BET</span></div>
+              <div class="task-card__assign">👤 M. Lefort + S. Moreau</div>
+              <div class="task-card__due task-card__due--ok">📅 14/03 (J–10)</div>
+              <div class="task-card__time mono">3h / 6h estimées</div>
+            </div>
+
+          </div>
+          <div class="add-btn" onclick="openModal('modal-task')">+ Ajouter</div>
+        </div>
+
+        <!-- En revue -->
+        <div class="kb-col">
+          <div class="kb-col__hd"><span class="kb-col__title" style="color:var(--orange)">En revue</span><span class="kb-col__count" style="border-color:var(--orange);color:var(--orange)">2</span></div>
+          <div class="kb-col__cards">
+
+            <div class="task-card task-card--review" onclick="showView('detail')">
+              <div class="task-card__title">Plans de coupes PRO</div>
+              <div class="task-card__meta">Livrable · 12h / 12h</div>
+              <div class="task-card__assign">👤 A. Dupont → 🔍 M. Lefort</div>
+              <div class="task-card__due task-card__due--ok">📅 04/03 (aujourd'hui)</div>
+              <div style="font-size:11px;color:var(--primary);margin-top:4px">💬 2 commentaires</div>
+            </div>
+
+            <div class="task-card task-card--review" onclick="return false">
+              <div class="task-card__title">Détails techniques façades</div>
+              <div class="task-card__meta">Livrable · 8h / 8h</div>
+              <div class="task-card__tags"><span class="tag tag--client">client</span></div>
+              <div class="task-card__assign">👤 S. Moreau → 🔍 M. Lefort</div>
+              <div class="task-card__due task-card__due--ok">📅 03/03</div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px">📎 1 pièce jointe</div>
+            </div>
+
+          </div>
+          <div class="add-btn" onclick="openModal('modal-task')">+ Ajouter</div>
+        </div>
+
+        <!-- Terminé -->
+        <div class="kb-col kb-col--done">
+          <div class="kb-col__hd"><span class="kb-col__title" style="color:var(--green)">Terminé ✓</span><span class="kb-col__count" style="border-color:var(--green);color:var(--green)">4</span></div>
+          <div class="kb-col__cards">
+            <div class="task-card" style="border-left:3px solid var(--green)">
+              <div class="task-card__title text-muted">Plans de masse PRO</div>
+              <div class="task-card__meta">6h / 6h ✓</div>
+              <div class="task-card__assign" style="color:var(--text-3)">👤 A. Dupont</div>
+            </div>
+            <div class="task-card" style="border-left:3px solid var(--green)">
+              <div class="task-card__title text-muted">Études d'ensoleillement</div>
+              <div class="task-card__meta">4h / 4h ✓</div>
+              <div class="task-card__assign" style="color:var(--text-3)">👤 L. Chen</div>
+            </div>
+            <div class="task-card" style="border-left:3px solid var(--green)">
+              <div class="task-card__title text-muted">Carnet de détails RDC</div>
+              <div class="task-card__meta">10h / 8h estimées ✓</div>
+              <div class="task-card__assign" style="color:var(--text-3)">👤 S. Moreau</div>
+              <div style="font-size:10.5px;color:var(--orange);margin-top:3px">⚠ +2h vs estimation</div>
+            </div>
+            <div class="task-card task-card--recur" style="opacity:.7">
+              <div class="task-card__title text-muted">CR réunion BET 25/02</div>
+              <div class="task-card__meta">Réunion · 1h ✓</div>
+              <div class="task-card__recur">↻ Prochaine : 04/03</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- PAGE DÉTAIL + CALENDRIER -->
+    <main class="page" id="page-detail">
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="btn btn--ghost btn--sm" onclick="showView('kanban')">← Kanban</button>
+        <h1 style="font-size:18px;font-weight:700">Plans PRO niveaux RDC + SS <span class="badge badge--red" style="font-size:11px;margin-left:6px">J–2 ⚠</span></h1>
+      </div>
+
+      <div class="detail-layout">
+
+        <!-- Colonne gauche : Calendrier + Synthèse -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+
+          <!-- Vue calendrier -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <h2 style="font-size:14px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px">Calendrier — Semaine 10 · 2 mars 2026</h2>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn--ghost btn--sm">← Sem. 9</button>
+                <button class="btn btn--ghost btn--sm">Sem. 11 →</button>
+              </div>
+            </div>
+            <div class="cal-wrap">
+              <div class="cal-hd">
+                <div class="cal-day-hd">Lun 02</div>
+                <div class="cal-day-hd">Mar 03</div>
+                <div class="cal-day-hd cal-day-hd--today">Mer 04 ●</div>
+                <div class="cal-day-hd">Jeu 05</div>
+                <div class="cal-day-hd cal-day-hd--alert">Ven 06 ⚠</div>
+              </div>
+              <div class="cal-body">
+                <div class="cal-cell"><div class="cal-event cal-event--primary">Plans PRO RDC+SS <span style="opacity:.7">3h</span></div><div class="cal-event cal-event--blue">BIM PRO 4h</div></div>
+                <div class="cal-cell"><div class="cal-event cal-event--primary">Plans PRO RDC+SS 3h</div><div class="cal-event cal-event--purple">Réunion BET 1h</div><div class="cal-event cal-event--blue">Coord. fluides 2h</div></div>
+                <div class="cal-cell cal-cell--today"><div class="cal-event cal-event--primary">Plans PRO 2h</div><div class="cal-event cal-event--blue">BIM PRO 4h</div><div class="cal-event cal-event--green">Revue coupes 1h</div></div>
+                <div class="cal-cell"><div class="cal-event cal-event--primary">Plans PRO 1h</div><div class="cal-event cal-event--blue">Coord. fluides 2h</div></div>
+                <div class="cal-cell cal-cell--alert"><div class="cal-event cal-event--alert">⚠ ÉCHÉANCE Plans PRO</div><div class="cal-event cal-event--blue">BIM PRO 4h</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Synthèse avancement phase PRO -->
+          <div class="info-block">
+            <div class="info-block__title">Synthèse — Phase PRO</div>
+            <div class="synthese-grid">
+              <div class="synthese-box"><div class="synthese-box__val text-muted">5</div><div class="synthese-box__label">À faire</div></div>
+              <div class="synthese-box" style="border-color:var(--primary)"><div class="synthese-box__val text-primary">3</div><div class="synthese-box__label text-primary">En cours</div></div>
+              <div class="synthese-box" style="border-color:var(--orange)"><div class="synthese-box__val text-orange">2</div><div class="synthese-box__label text-orange">En revue</div></div>
+              <div class="synthese-box" style="border-color:var(--green)"><div class="synthese-box__val text-green">4</div><div class="synthese-box__label text-green">Terminé</div></div>
+            </div>
+            <div style="margin-top:10px;font-size:12.5px;color:var(--text-2)">Avancement global : <strong class="text-primary">29%</strong> (4/14 tâches) · Temps passé : <strong>54h</strong> / 98h estimées (55%)</div>
+            <div style="margin-top:6px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:flex">
+              <div style="width:29%;background:var(--green)"></div>
+              <div style="width:14%;background:var(--orange)"></div>
+              <div style="width:21%;background:var(--primary)"></div>
+              <div style="width:36%;background:var(--border-md)"></div>
+            </div>
+          </div>
+
+          <!-- Prochaines échéances -->
+          <div class="info-block">
+            <div class="info-block__title">Prochaines échéances</div>
+            <div class="due-item"><div><strong>Plans PRO RDC + SS</strong> — A. Dupont</div><span class="due-badge" style="background:var(--red-l);color:var(--red)">06/03 J–2</span></div>
+            <div class="due-item"><div><strong>Plans PRO R+1 à R+4</strong> — A. Dupont</div><span class="due-badge" style="background:var(--orange-l);color:var(--orange)">12/03 J–8</span></div>
+            <div class="due-item"><div><strong>Coordination réseaux fluides</strong> — M. Lefort</div><span class="due-badge" style="background:var(--primary-l);color:var(--primary)">14/03 J–10</span></div>
+            <div class="due-item"><div><strong>Modèle BIM PRO</strong> — L. Chen</div><span class="due-badge" style="background:var(--grey-l);color:var(--text-3)">18/03 J–14</span></div>
+          </div>
+
+          <!-- Lien charge -->
+          <div style="background:var(--blue-l);border:1px solid rgba(43,94,167,.3);border-radius:var(--r-sm);padding:10px 14px;font-size:12.5px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="color:var(--blue)"><strong>Charge liée aux tâches :</strong> A. Dupont a 30h de tâches sur les 2 prochaines semaines.</div>
+            <button class="btn btn--ghost btn--sm" style="border-color:var(--blue);color:var(--blue)">Voir planning →</button>
+          </div>
+
+        </div>
+
+        <!-- Panneau détail tâche -->
+        <div class="task-detail-panel">
+          <div class="panel-section">
+            <div style="font-size:15px;font-weight:700;margin-bottom:4px">Plans PRO niveaux RDC + SS</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge badge--red">J–2 ⚠</span><span class="badge badge--orange">Livrable</span><span class="tag tag--urgent">urgent</span></div>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section__title">Métadonnées</div>
+            <div class="meta-row"><span class="meta-label">Projet</span><span class="meta-value text-primary">Rés. Les Oliviers</span></div>
+            <div class="meta-row"><span class="meta-label">Phase</span><span class="meta-value">PRO (Projet)</span></div>
+            <div class="meta-row"><span class="meta-label">Priorité</span><span class="meta-value text-red">● Haute</span></div>
+            <div class="meta-row"><span class="meta-label">Assignée à</span><span class="meta-value">A. Dupont</span></div>
+            <div class="meta-row"><span class="meta-label">Échéance</span><span class="meta-value text-red">06/03/2026 (J–2) ⚠</span></div>
+            <div class="meta-row"><span class="meta-label">Estimation</span><span class="meta-value">14h</span></div>
+            <div class="meta-row"><span class="meta-label">Temps passé</span><span class="meta-value text-orange">10h (71%)</span></div>
+            <div class="meta-row"><span class="meta-label">Dépend. aval</span><span class="meta-value"><span style="color:var(--purple);font-weight:600">Bloque → CCTP</span></span></div>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section__title">Sous-tâches (2 / 3)</div>
+            <div class="checklist-item checklist-item--done"><input type="checkbox" checked disabled><span>Plans RDC — fichier déposé (6h)</span></div>
+            <div class="checklist-item checklist-item--done"><input type="checkbox" checked disabled><span>Plans SS — fichier déposé (3h)</span></div>
+            <div class="checklist-item"><input type="checkbox"><span style="font-weight:600">Vérification cotations + légendes (~1h)</span></div>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section__title">Commentaires (2)</div>
+            <div class="comment">
+              <div class="comment__header"><span class="comment__author text-primary">M. Lefort</span><span class="comment__date">03/03 09:15</span></div>
+              <div class="comment__text">Attention : le BET structure a modifié le voile SS. Vérifier la descente de charges avant de finaliser.</div>
+            </div>
+            <div class="comment">
+              <div class="comment__header"><span class="comment__author text-primary">A. Dupont</span><span class="comment__date">03/03 11:30</span></div>
+              <div class="comment__text">Pris en compte, j'intègre le plan révisé. Finition prévue demain matin.</div>
+            </div>
+            <textarea class="form-textarea form-input" rows="2" placeholder="Écrire un commentaire…" style="margin-top:6px;font-size:12.5px"></textarea>
+          </div>
+
+          <div class="panel-section">
+            <div class="panel-section__title">Pièces jointes (2)</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <div class="file-pill">📐 PRO_RDC_Ind-B.dwg<span style="font-size:10px;color:var(--text-3);margin-left:4px">2.4 Mo</span></div>
+              <div class="file-pill">📐 PRO_SS_Ind-A.dwg<span style="font-size:10px;color:var(--text-3);margin-left:4px">1.8 Mo</span></div>
+            </div>
+            <div style="margin-top:8px"><button class="btn btn--ghost btn--sm" onclick="return false">+ Joindre un fichier</button></div>
+          </div>
+
+          <div class="panel-section">
+            <div style="display:flex;gap:6px">
+              <button class="btn btn--primary" style="flex:1;justify-content:center;font-size:12px" onclick="return false">✓ Passer en revue</button>
+              <button class="btn btn--ghost" style="font-size:12px" onclick="return false">Voir dans 1.4 GED →</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script>
+  function showView(v){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('page--on'));
+    document.getElementById('page-'+v).classList.add('page--on');
+    const bc=document.getElementById('bc');
+    if(v==='kanban') bc.innerHTML='<a onclick="return false">Tâches</a> / <a onclick="return false">Rés. Oliviers</a> / <strong>Phase PRO</strong>';
+    if(v==='detail') bc.innerHTML='<a onclick="showView(\'kanban\')">Tâches</a> / <a onclick="showView(\'kanban\')">Phase PRO</a> / <strong>Plans PRO RDC + SS</strong>';
+    window.scrollTo(0,0);
+  }
+  function openModal(id){document.getElementById(id).classList.add('modal-overlay--on');document.body.style.overflow='hidden'}
+  function closeModal(id){document.getElementById(id).classList.remove('modal-overlay--on');document.body.style.overflow=''}
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay--on').forEach(m=>closeModal(m.id))});
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+const TASKS_KEY='taches';
+function getTaches(){ return GAAStore.get(TASKS_KEY)||[]; }
+function saveTache(t){ const list=getTaches(); const i=list.findIndex(x=>x.id===t.id); if(i>=0)list[i]=t; else list.push(t); GAAStore.set(TASKS_KEY,list); }
+function deleteTache(id){ GAAStore.set(TASKS_KEY,getTaches().filter(t=>t.id!==id)); }
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+}
+
+// ── Init modal ────────────────────────────────────────────
+function initModalTask(){
+  // Peupler select assigné depuis le store
+  const assignSel=document.querySelector('#modal-task select:nth-of-type(2), #modal-task .form-group:nth-of-type(3) select');
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  if(assignSel){
+    assignSel.innerHTML=users.map(u=>`<option value="${u.id}">${u.nom}</option>`).join('');
+  }
+  // Date échéance = dans 7j par défaut
+  const dateInp=document.querySelector('#modal-task input[type="date"]');
+  if(dateInp){
+    const d=new Date(Date.now()+7*86400000);
+    dateInp.value=d.toISOString().split('T')[0];
+  }
+  // Patcher bouton Créer
+  const btn=document.querySelector('#modal-task .modal__ft .btn--primary');
+  if(btn) btn.onclick=creerTache;
+}
+
+function creerTache(){
+  const modal=document.getElementById('modal-task');
+  const inputs=modal.querySelectorAll('input,select,textarea');
+  const titre=inputs[0]?.value?.trim();
+  const type=inputs[1]?.value||'Livrable';
+  const priorite=inputs[2]?.value||'Normale';
+  const assigneId=inputs[3]?.value;
+  const echeance=inputs[4]?.value||'';
+  const estimation=parseFloat(inputs[5]?.value)||0;
+  const tags=inputs[6]?.value?.split(',').map(t=>t.trim()).filter(Boolean)||[];
+  const desc=inputs[7]?.value?.trim()||'';
+
+  if(!titre){showToast('Le titre est requis','error');return;}
+
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+  const assigne=GAAStore.getUtilisateurs().find(u=>u.id===assigneId)||GAAStore.getMe();
+  const tache={
+    id:'task-'+Date.now(),
+    titre,type,priorite,
+    assigne_id:assigne?.id,
+    assigne_nom:assigne?.nom||'—',
+    echeance,estimation,tags,desc,
+    statut:'a_faire',
+    projet_id:projet?.id,
+    projet_nom:projet?.nom||'—',
+    phase:projet?.phase_courante||'—',
+    created_at:new Date().toISOString(),
+    created_by:GAAStore.getMe()?.nom,
+  };
+  saveTache(tache);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Tâche "${titre}" créée — ${assigne?.nom||'—'}`,'1.9 Tâches');
+  closeModal('modal-task');
+  renderKanbanTaches();
+  showToast(`Tâche "${titre}" créée ✓`,'success');
+}
+
+// ── Kanban tâches dynamique ───────────────────────────────
+function renderKanbanTaches(){
+  const taches=getTaches();
+  if(!taches.length) return;
+
+  const colMap={'a_faire':0,'en_cours':1,'en_revue':2,'termine':3};
+  const cols=document.querySelectorAll('.kb-col');
+
+  Object.entries(colMap).forEach(([statut,idx])=>{
+    const col=cols[idx];
+    if(!col) return;
+    const cards=col.querySelector('.kb-col__cards');
+    if(!cards) return;
+    const colTaches=taches.filter(t=>t.statut===statut);
+    if(!colTaches.length) return;
+
+    const prioColor={Normale:'var(--primary)',Haute:'var(--orange)',Critique:'var(--red)'};
+    const html=colTaches.map(t=>`
+      <div class="task-card" data-task-id="${t.id}" style="border-left:3px solid ${prioColor[t.priorite]||'var(--primary)'}">
+        <div class="task-card__title">${t.titre}</div>
+        <div class="task-card__meta">${t.type}${t.estimation?' · Estimé '+t.estimation+'h':''}</div>
+        ${t.tags?.length?`<div class="task-card__tags">${t.tags.map(tag=>`<span class="tag">${tag}</span>`).join('')}</div>`:''}
+        <div class="task-card__assign">👤 ${t.assigne_nom}</div>
+        ${t.echeance?`<div class="task-card__due">${formatEcheance(t.echeance)}</div>`:''}
+        <div style="display:flex;gap:4px;margin-top:6px">
+          ${statut!=='termine'?`<button class="btn btn--ghost btn--sm" style="flex:1;font-size:11px" onclick="avancerTache('${t.id}')">→</button>`:''}
+          <button class="btn btn--ghost btn--sm" style="font-size:11px;color:var(--red)" onclick="supprimerTache('${t.id}')">✕</button>
+        </div>
+      </div>`).join('');
+
+    const addBtn=cards.querySelector('.add-btn')||col.querySelector('.add-btn');
+    const tempDiv=document.createElement('div');
+    tempDiv.innerHTML=html;
+    [...tempDiv.children].forEach(el=>cards.appendChild(el));
+
+    // Mettre à jour le compteur
+    const cnt=col.querySelector('.kb-col__count');
+    if(cnt){
+      const staticCount=cards.querySelectorAll('.task-card:not([data-task-id])').length;
+      cnt.textContent=colTaches.length+staticCount;
+    }
+  });
+
+  // Sous-titre avancement
+  const tousStatuts=getTaches();
+  const total=tousStatuts.length+14; // + 14 statiques
+  const done=tousStatuts.filter(t=>t.statut==='termine').length+4;
+  const sub=document.querySelector('#page-kanban > div > p');
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+  if(sub&&projet) sub.textContent=`Phase ${projet.phase_courante} · ${total} tâches · ${Math.round(done/total*100)}% avancement`;
+}
+
+function formatEcheance(dateStr){
+  const d=new Date(dateStr);
+  const now=new Date();
+  const diff=Math.round((d-now)/86400000);
+  const fmt=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+  if(diff<0) return `📅 ${fmt} <span style="color:var(--red)">(J${diff})</span>`;
+  if(diff<=3) return `📅 ${fmt} <span style="color:var(--orange)">(J+${diff}) ⚠</span>`;
+  return `📅 ${fmt} (J+${diff})`;
+}
+
+function avancerTache(id){
+  const t=getTaches().find(x=>x.id===id);
+  if(!t) return;
+  const order=['a_faire','en_cours','en_revue','termine'];
+  const idx=order.indexOf(t.statut);
+  if(idx>=order.length-1) return;
+  t.statut=order[idx+1];
+  saveTache(t);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Tâche "${t.titre}" → ${t.statut}`,'1.9 Tâches');
+  // Déplacer la carte
+  const card=document.querySelector(`[data-task-id="${id}"]`);
+  if(card) card.remove();
+  renderKanbanTaches();
+  showToast(`"${t.titre}" → ${t.statut==='en_cours'?'En cours':t.statut==='en_revue'?'En revue':'Terminé'}`,'success');
+}
+
+function supprimerTache(id){
+  const t=getTaches().find(x=>x.id===id);
+  if(!t||!confirm(`Supprimer "${t.titre}" ?`)) return;
+  deleteTache(id);
+  document.querySelector(`[data-task-id="${id}"]`)?.remove();
+  showToast(`"${t.titre}" supprimée`,'');
+}
+
+let _tt7;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_tt7);_tt7=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  initModalTask();
+  renderKanbanTaches();
+  // Titre projet
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+  const h=document.querySelector('#page-kanban h1');
+  if(h&&projet) h.textContent=`${projet.nom} — Tâches`;
+});
+
+</script>
+</body>
+</html>

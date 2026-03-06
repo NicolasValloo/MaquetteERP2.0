@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Prototype fonctionnel</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F4F3EF;
+      --surface: #fff;
+      --border: #E2E0D8;
+      --text: #1C1B18;
+      --text-2: #6B6860;
+      --text-3: #9B998F;
+      --primary: #1B4965;
+      --primary-l: #EAF1F6;
+      --accent: #C75B37;
+      --green: #2D6A4F;
+      --green-l: #E8F5EE;
+      --orange: #B8860B;
+      --orange-l: #FDF6DC;
+      --purple: #6A3D9A;
+      --purple-l: #F3EEF9;
+      --grey-l: #F0EFEB;
+      --font: 'Sora', sans-serif;
+      --mono: 'DM Mono', monospace;
+      --r: 8px;
+      --shadow: 0 1px 3px rgba(0,0,0,.07);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    .header {
+      background: var(--primary);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .header__logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+    }
+    .header__logo-mark {
+      width: 30px; height: 30px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; color: #fff;
+    }
+    .header__meta {
+      font-size: 12px;
+      color: rgba(255,255,255,.5);
+      font-family: var(--mono);
+    }
+    .header__badge {
+      background: rgba(255,255,255,.12);
+      color: rgba(255,255,255,.8);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,.15);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #0f2d40 100%);
+      padding: 48px 32px 40px;
+      color: #fff;
+    }
+    .hero__inner { max-width: 900px; margin: 0 auto; }
+    .hero__title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+    .hero__sub {
+      font-size: 14px;
+      color: rgba(255,255,255,.65);
+      line-height: 1.6;
+      max-width: 600px;
+      margin-bottom: 28px;
+    }
+    .hero__stats {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .hero__stat { }
+    .hero__stat-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      font-family: var(--mono);
+    }
+    .hero__stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,.5);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-top: 2px;
+    }
+    .hero__notice {
+      margin-top: 20px;
+      background: rgba(199,91,55,.2);
+      border: 1px solid rgba(199,91,55,.4);
+      border-radius: var(--r);
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,.8);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 560px;
+    }
+
+    /* ── Main layout ── */
+    .main { max-width: 900px; margin: 0 auto; padding: 32px; }
+
+    /* ── Sections ── */
+    .section { margin-bottom: 36px; }
+    .section__hd {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section__icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .section__title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .section__count {
+      font-size: 11px;
+      color: var(--text-3);
+      font-family: var(--mono);
+      margin-left: auto;
+    }
+
+    /* ── Cards ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      overflow: hidden;
+      transition: all .15s;
+      cursor: pointer;
+    }
+    .card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .card__top {
+      padding: 14px 16px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .card__icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .card__num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-3);
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+    .card__title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .card__desc {
+      padding: 0 16px 14px;
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.5;
+    }
+    .card__footer {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--grey-l);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card__tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .card__arrow {
+      font-size: 12px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Familles couleurs */
+    .fam-metier    .card__icon { background: var(--primary-l); }
+    .fam-plateforme .card__icon { background: var(--purple-l); }
+    .fam-integration .card__icon { background: var(--orange-l); }
+    .fam-avance    .card__icon { background: var(--green-l); }
+
+    .fam-metier     .section__icon { background: var(--primary-l); color: var(--primary); }
+    .fam-plateforme .section__icon { background: var(--purple-l); color: var(--purple); }
+    .fam-integration .section__icon { background: var(--orange-l); color: var(--orange); }
+    .fam-avance     .section__icon { background: var(--green-l); color: var(--green); }
+
+    /* ── Quickstart ── */
+    .quickstart {
+      background: var(--primary-l);
+      border: 1px solid rgba(27,73,101,.15);
+      border-radius: var(--r);
+      padding: 16px 20px;
+      margin-bottom: 32px;
+    }
+    .quickstart__title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 10px;
+    }
+    .quickstart__flow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .qs-step {
+      background: #fff;
+      border: 1px solid rgba(27,73,101,.2);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .12s;
+      white-space: nowrap;
+    }
+    .qs-step:hover { background: var(--primary); color: #fff; }
+    .qs-arrow { font-size: 11px; color: var(--text-3); }
+
+    /* ── Footer ── */
+    .footer {
+      background: var(--primary);
+      color: rgba(255,255,255,.4);
+      padding: 20px 32px;
+      font-size: 12px;
+      text-align: center;
+      font-family: var(--mono);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ───────────────────────────── -->
+<header class="header">
+  <div class="header__logo">
+    <div class="header__logo-mark">G</div>
+    GAA — Gestion Agence Architecte
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="header__meta">Prototype fonctionnel · v0.1</span>
+    <span class="header__badge">21 modules</span>
+  </div>
+</header>
+
+<!-- ── Hero ─────────────────────────────── -->
+<section class="hero">
+  <div class="hero__inner">
+    <h1 class="hero__title">Prototype fonctionnel GAA</h1>
+    <p class="hero__sub">
+      Logiciel de gestion pour agences d'architecture — 21 modules HTML interactifs,
+      données persistées en localStorage, aucune dépendance serveur.
+    </p>
+    <div class="hero__stats">
+      <div class="hero__stat">
+        <div class="hero__stat-val">21</div>
+        <div class="hero__stat-label">Modules</div>
+      </div>
+      <div class="hero__stat">
+        <div class="hero__stat-val">~1,3 Mo</div>
+        <div class="hero__stat-label">Total</div>
+      </div>
+      <div class="hero__stat">
+        <div class="hero__stat-val">localStorage</div>
+        <div class="hero__stat-label">Store partagé</div>
+      </div>
+      <div class="hero__stat">
+        <div class="hero__stat-val">0</div>
+        <div class="hero__stat-label">Dépendance serveur</div>
+      </div>
+    </div>
+    <div class="hero__notice">
+      ⚠ Prototype de démonstration — les données sont stockées localement dans votre navigateur.
+      Réinitialisables via la console : <code style="font-family:var(--mono);font-size:11px">localStorage.clear()</code>
+    </div>
+  </div>
+</section>
+
+<!-- ── Main ─────────────────────────────── -->
+<main class="main">
+
+  <!-- Parcours de démonstration recommandé -->
+  <div class="quickstart">
+    <div class="quickstart__title">🚀 Parcours de démonstration recommandé</div>
+    <div class="quickstart__flow">
+      <a class="qs-step" href="module-2-1-auth.html">1. Onboarding agence</a>
+      <span class="qs-arrow">→</span>
+      <a class="qs-step" href="parcours-creation-projet.html">2. Créer un projet</a>
+      <span class="qs-arrow">→</span>
+      <a class="qs-step" href="module-2-2-dashboard.html">3. Dashboard</a>
+      <span class="qs-arrow">→</span>
+      <a class="qs-step" href="module-1-2-phases-mop.html">4. Phases MOP</a>
+      <span class="qs-arrow">→</span>
+      <a class="qs-step" href="module-1-3-gestion-temps.html">5. Saisir du temps</a>
+      <span class="qs-arrow">→</span>
+      <a class="qs-step" href="module-1-5-finance-facturation.html">6. Facturer</a>
+      <span class="qs-arrow">→</span>
+      <a class="qs-step" href="module-4-1-reporting.html">7. Reporting</a>
+    </div>
+  </div>
+
+  <!-- ── PLATEFORME ── -->
+  <section class="section fam-plateforme">
+    <div class="section__hd">
+      <div class="section__icon">⚙</div>
+      <span class="section__title">Plateforme SaaS</span>
+      <span class="section__count">5 modules</span>
+    </div>
+    <div class="cards">
+
+      <a class="card" href="module-2-1-auth.html">
+        <div class="card__top">
+          <div class="card__icon">🔐</div>
+          <div>
+            <div class="card__num">2.1</div>
+            <div class="card__title">Authentification & Onboarding</div>
+          </div>
+        </div>
+        <div class="card__desc">Connexion, 2FA, wizard de création d'agence, gestion des sessions actives</div>
+        <div class="card__footer"><span class="card__tag">Démarrage</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-2-2-dashboard.html">
+        <div class="card__top">
+          <div class="card__icon">📊</div>
+          <div>
+            <div class="card__num">2.2</div>
+            <div class="card__title">Tableau de bord</div>
+          </div>
+        </div>
+        <div class="card__desc">Vue synthétique agence : KPIs temps réel, alertes actives, activité récente</div>
+        <div class="card__footer"><span class="card__tag">Navigation</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-2-3-roles.html">
+        <div class="card__top">
+          <div class="card__icon">🛡</div>
+          <div>
+            <div class="card__num">2.3</div>
+            <div class="card__title">Rôles & Permissions</div>
+          </div>
+        </div>
+        <div class="card__desc">Matrice de droits par module, héritage de rôles, création de rôles personnalisés</div>
+        <div class="card__footer"><span class="card__tag">Administration</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-2-4-2-6.html">
+        <div class="card__top">
+          <div class="card__icon">🏢</div>
+          <div>
+            <div class="card__num">2.4 – 2.6</div>
+            <div class="card__title">Multi-agences · Notifications</div>
+          </div>
+        </div>
+        <div class="card__desc">Gestion multi-entités, consolidation direction, centre de notifications et préférences</div>
+        <div class="card__footer"><span class="card__tag">Multi-tenant</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-2-5-admin-fonctionnel.html">
+        <div class="card__top">
+          <div class="card__icon">⚙</div>
+          <div>
+            <div class="card__num">2.5</div>
+            <div class="card__title">Administration agence</div>
+          </div>
+        </div>
+        <div class="card__desc">Paramètres, taux horaires, numérotation automatique, branding, équipe, phases MOP</div>
+        <div class="card__footer"><span class="card__tag">Configuration</span><span class="card__arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ── CŒUR MÉTIER ── -->
+  <section class="section fam-metier">
+    <div class="section__hd">
+      <div class="section__icon">🏗</div>
+      <span class="section__title">Cœur métier</span>
+      <span class="section__count">11 modules</span>
+    </div>
+    <div class="cards">
+
+      <a class="card" href="parcours-creation-projet.html">
+        <div class="card__top">
+          <div class="card__icon">✨</div>
+          <div>
+            <div class="card__num">Parcours</div>
+            <div class="card__title">Création de projet</div>
+          </div>
+        </div>
+        <div class="card__desc">Wizard de création pas à pas — client, mission, devis, phases, équipe</div>
+        <div class="card__footer"><span class="card__tag">Point d'entrée</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-1-portefeuille-projets.html">
+        <div class="card__top">
+          <div class="card__icon">📁</div>
+          <div>
+            <div class="card__num">1.1</div>
+            <div class="card__title">Portefeuille projets</div>
+          </div>
+        </div>
+        <div class="card__desc">Liste, filtres, KPIs, cycle de vie des projets — de la prospection à l'archivage</div>
+        <div class="card__footer"><span class="card__tag">Projets</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-2-phases-mop.html">
+        <div class="card__top">
+          <div class="card__icon">📅</div>
+          <div>
+            <div class="card__num">1.2</div>
+            <div class="card__title">Phases MOP</div>
+          </div>
+        </div>
+        <div class="card__desc">Gantt dynamique, validation de phases, avancement, calendrier ESQ→AOR</div>
+        <div class="card__footer"><span class="card__tag">Planning</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-3-gestion-temps.html">
+        <div class="card__top">
+          <div class="card__icon">⏱</div>
+          <div>
+            <div class="card__num">1.3</div>
+            <div class="card__title">Gestion du temps</div>
+          </div>
+        </div>
+        <div class="card__desc">Saisie des imputations, chronomètre intégré, feuilles de temps, taux horaires</div>
+        <div class="card__footer"><span class="card__tag">Temps</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-4-ged-projet.html">
+        <div class="card__top">
+          <div class="card__icon">📂</div>
+          <div>
+            <div class="card__num">1.4</div>
+            <div class="card__title">GED & Documents</div>
+          </div>
+        </div>
+        <div class="card__desc">Arborescence documentaire, dépôt, versioning, diffusion aux BETs et MOA</div>
+        <div class="card__footer"><span class="card__tag">Documents</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-5-finance-facturation.html">
+        <div class="card__top">
+          <div class="card__icon">💰</div>
+          <div>
+            <div class="card__num">1.5</div>
+            <div class="card__title">Finance & Facturation</div>
+          </div>
+        </div>
+        <div class="card__desc">Plan de facturation par phase, génération de factures, suivi des encaissements</div>
+        <div class="card__footer"><span class="card__tag">Finance</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-6-crm.html">
+        <div class="card__top">
+          <div class="card__icon">👥</div>
+          <div>
+            <div class="card__num">1.6</div>
+            <div class="card__title">CRM Commercial</div>
+          </div>
+        </div>
+        <div class="card__desc">Pipeline Kanban, opportunités, contacts, organisations, conversion en projet</div>
+        <div class="card__footer"><span class="card__tag">Commercial</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-7-planning-charge.html">
+        <div class="card__top">
+          <div class="card__icon">📈</div>
+          <div>
+            <div class="card__num">1.7</div>
+            <div class="card__title">Planning de charge</div>
+          </div>
+        </div>
+        <div class="card__desc">Grille hebdomadaire par collaborateur, taux d'occupation, détection de surcharge</div>
+        <div class="card__footer"><span class="card__tag">RH / Charge</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-8-chantier.html">
+        <div class="card__top">
+          <div class="card__icon">🏗</div>
+          <div>
+            <div class="card__num">1.8</div>
+            <div class="card__title">Suivi de chantier</div>
+          </div>
+        </div>
+        <div class="card__desc">Comptes-rendus de visite, observations par lot, levées, VISA, diffusion automatique</div>
+        <div class="card__footer"><span class="card__tag">Chantier</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-9-taches.html">
+        <div class="card__top">
+          <div class="card__icon">✅</div>
+          <div>
+            <div class="card__num">1.9</div>
+            <div class="card__title">Tâches & Livrables</div>
+          </div>
+        </div>
+        <div class="card__desc">Kanban par projet/phase, sous-tâches, dépendances, priorités, tâches récurrentes</div>
+        <div class="card__footer"><span class="card__tag">Production</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-1-10-assurances.html">
+        <div class="card__top">
+          <div class="card__icon">🛡</div>
+          <div>
+            <div class="card__num">1.10</div>
+            <div class="card__title">Assurances</div>
+          </div>
+        </div>
+        <div class="card__desc">Polices RC Pro et Décennale, alertes de renouvellement, déclaration de sinistres</div>
+        <div class="card__footer"><span class="card__tag">Obligations légales</span><span class="card__arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ── INTÉGRATIONS ── -->
+  <section class="section fam-integration">
+    <div class="section__hd">
+      <div class="section__icon">🔌</div>
+      <span class="section__title">Intégrations & Data</span>
+      <span class="section__count">1 module</span>
+    </div>
+    <div class="cards">
+
+      <a class="card" href="module-3-x-integrations.html">
+        <div class="card__top">
+          <div class="card__icon">🔌</div>
+          <div>
+            <div class="card__num">3.x</div>
+            <div class="card__title">Intégrations & Connecteurs</div>
+          </div>
+        </div>
+        <div class="card__desc">Agenda, email, stockage cloud (Drive / OneDrive), outils comptables, migration de données</div>
+        <div class="card__footer"><span class="card__tag">Connecteurs</span><span class="card__arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ── AVANCÉ ── -->
+  <section class="section fam-avance">
+    <div class="section__hd">
+      <div class="section__icon">🔬</div>
+      <span class="section__title">Modules avancés & collaboratifs</span>
+      <span class="section__count">3 modules</span>
+    </div>
+    <div class="cards">
+
+      <a class="card" href="module-4-1-reporting.html">
+        <div class="card__top">
+          <div class="card__icon">📊</div>
+          <div>
+            <div class="card__num">4.1</div>
+            <div class="card__title">Reporting & BI</div>
+          </div>
+        </div>
+        <div class="card__desc">Tableaux de bord analytiques, rentabilité par projet et collaborateur, exports PDF/Excel</div>
+        <div class="card__footer"><span class="card__tag">Analytics</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-4-2-4-3-alertes-workflows.html">
+        <div class="card__top">
+          <div class="card__icon">⚡</div>
+          <div>
+            <div class="card__num">4.2 – 4.3</div>
+            <div class="card__title">Alertes & Workflows</div>
+          </div>
+        </div>
+        <div class="card__desc">Moteur de règles métier, automatisations configurables, historique d'exécution</div>
+        <div class="card__footer"><span class="card__tag">Automatisation</span><span class="card__arrow">→</span></div>
+      </a>
+
+      <a class="card" href="module-4-4-4-5-4-6.html">
+        <div class="card__top">
+          <div class="card__icon">💬</div>
+          <div>
+            <div class="card__num">4.4 – 4.6</div>
+            <div class="card__title">Connaissances · Portail · Messagerie</div>
+          </div>
+        </div>
+        <div class="card__desc">Base de connaissances agence, portail client MOA, messagerie interne contextuelle</div>
+        <div class="card__footer"><span class="card__tag">Collaboratif</span><span class="card__arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- ── Note technique ── -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;font-size:12.5px;color:var(--text-2);line-height:1.7">
+    <strong style="color:var(--text);display:block;margin-bottom:6px">Note technique</strong>
+    Tous les modules partagent un store commun (<code style="font-family:var(--mono);font-size:11.5px;background:var(--grey-l);padding:1px 5px;border-radius:3px">localStorage</code>, clés préfixées <code style="font-family:var(--mono);font-size:11.5px;background:var(--grey-l);padding:1px 5px;border-radius:3px">gaa_*</code>).
+    Les données créées dans un module sont immédiatement disponibles dans les autres — par exemple, un projet créé dans le portefeuille apparaît dans le dashboard, les phases MOP, la facturation, etc.
+    Prototype statique, aucune communication réseau. Stack cible : Django + htmx + PostgreSQL.
+  </div>
+
+</main>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  GAA — Prototype fonctionnel · 21 modules · Données en localStorage · Stack cible : Django 5 + htmx + PostgreSQL
+</footer>
+
+</body>
+</html>

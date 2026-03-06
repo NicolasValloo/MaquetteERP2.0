@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — 4.1 Reporting & BI</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --sw:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+    .nav{width:var(--sw);background:var(--primary);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px;font-size:20px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px;color:#fff}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:14px 20px 3px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+    .wrap{margin-left:var(--sw);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50}
+    /* Tabs vue */
+    .view-tabs{display:flex;gap:2px;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:3px}
+    .vtab{padding:6px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap}
+    .vtab--on{background:var(--surface);color:var(--primary);font-weight:700;box-shadow:var(--shadow)}
+    .page{padding:24px;display:none;flex-direction:column;gap:18px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .card__hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .card__title{font-size:13px;font-weight:700}
+    .card__sub{font-size:12px;color:var(--text-3);margin-top:2px}
+    .tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+    .tbl th{background:var(--grey-l);padding:7px 12px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap}
+    .tbl th:not(:first-child){text-align:right}
+    .tbl td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .tbl td:not(:first-child){text-align:right}
+    .tbl tr:last-child td{border-bottom:none}
+    .tbl tr:hover td{background:rgba(27,73,101,.018)}
+    .tbl .total-row td{background:var(--primary-l);font-weight:700;border-top:2px solid var(--primary)}
+    .mono{font-family:var(--mono)}
+    /* KPI */
+    .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+    .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+    .kpi-label{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .kpi-val{font-size:22px;font-weight:700;font-family:var(--mono)}
+    .kpi-trend{font-size:12px;margin-top:4px;font-weight:600}
+    .kpi-trend--up{color:var(--green)}
+    .kpi-trend--down{color:var(--red)}
+    .kpi-trend--neutral{color:var(--text-3)}
+    /* Graphiques SVG-like */
+    .chart-wrap{position:relative;padding:16px}
+    /* Barres empilées */
+    .bar-chart{display:flex;align-items:flex-end;gap:8px;height:120px;padding-bottom:4px}
+    .bar-group{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+    .bar-stack{width:100%;display:flex;flex-direction:column;border-radius:3px 3px 0 0;overflow:hidden}
+    .bar-seg{width:100%;min-height:2px}
+    .bar-label{font-size:10px;color:var(--text-3);margin-top:4px;text-align:center;white-space:nowrap}
+    /* Jauge rentabilité */
+    .gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:10px}
+    .gauge-arc{width:120px;height:60px;position:relative;overflow:hidden}
+    .gauge-arc-bg{width:120px;height:120px;border-radius:50%;background:conic-gradient(from 180deg at 50% 50%, #E2E0D8 0deg, #E2E0D8 180deg, transparent 180deg);position:absolute;top:0}
+    .gauge-arc-fill{width:120px;height:120px;border-radius:50%;position:absolute;top:0}
+    .gauge-val{font-size:22px;font-weight:700;font-family:var(--mono);text-align:center;margin-top:-4px}
+    /* Pipeline camembert simple */
+    .pie-wrap{display:flex;gap:16px;align-items:center;padding:12px}
+    .pie{width:80px;height:80px;border-radius:50%;flex-shrink:0}
+    .pie-legend{display:flex;flex-direction:column;gap:5px;font-size:12.5px}
+    .pie-item{display:flex;align-items:center;gap:6px}
+    .pie-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+    /* Prévisionnel table */
+    .prev-table{overflow-x:auto}
+    .prev-table table{min-width:900px}
+    .prev-table .proj-row td{border-bottom:1px solid var(--border)}
+    .prev-table .proj-row:last-child td{border-bottom:none}
+    .prev-table .month-header{background:var(--grey-l);text-align:center;font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;padding:6px 8px;border:1px solid var(--border)}
+    .prev-table .proj-cell{font-size:11.5px;font-family:var(--mono);text-align:center;padding:7px 8px;border:1px solid var(--border)}
+    .prev-table .proj-name{font-size:12.5px;font-weight:700;padding:7px 12px;border:1px solid var(--border);white-space:nowrap}
+    .prev-table .total-cell{background:var(--primary-l);font-weight:700;font-family:var(--mono);font-size:12px;text-align:center;padding:7px 8px;border:1px solid var(--border)}
+    /* Scatter plot rentabilité */
+    .scatter{position:relative;width:100%;height:160px;border-left:2px solid var(--border);border-bottom:2px solid var(--border)}
+    .scatter-dot{position:absolute;border-radius:50%;cursor:pointer;transition:transform .15s}
+    .scatter-dot:hover{transform:scale(1.4)}
+    .scatter-x{display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-top:4px;padding:0 2px}
+    /* Filtres */
+    .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .form-select{padding:6px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none;background:var(--surface)}
+    .form-input{padding:6px 10px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none;background:var(--surface)}
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav__logo"><div class="nav__dot"></div>GAA</div>
+  <div class="nav__sec">Pilotage</div>
+  <div class="nav__item"><span>⊞</span> Dashboard</div>
+  <div class="nav__item nav__item--on"><span>📊</span> Reporting & BI</div>
+  <div class="nav__sec">Avancé</div>
+  <div class="nav__item"><span>🔔</span> Alertes</div>
+  <div class="nav__item"><span>⚡</span> Workflows</div>
+  <div class="nav__item"><span>📚</span> Connaissances</div>
+  <div class="nav__user"><div class="nav__avatar">DG</div><div><div style="font-weight:600;font-size:12px;color:#fff">D. Garnier</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Dirigeant</div></div></div>
+</nav>
+
+<div class="wrap">
+  <header class="topbar">
+    <div style="font-size:13px;color:var(--text-2);flex:1">Pilotage / <strong>Reporting & BI</strong></div>
+    <div class="view-tabs">
+      <div class="vtab vtab--on" onclick="showView('direction')">Direction</div>
+      <div class="vtab" onclick="showView('projets')">Par projet</div>
+      <div class="vtab" onclick="showView('previsionnel')">Prévisionnel</div>
+      <div class="vtab" onclick="showView('pipeline')">Pipeline commercial</div>
+      <div class="vtab" onclick="showView('rapports')">Rapports</div>
+    </div>
+    <button class="btn btn--ghost btn--sm">⬇ Exporter PDF</button>
+  </header>
+
+  <!-- ═══ VUE DIRECTION ═══ -->
+  <main class="page page--on" id="view-direction">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+      <div><h1 style="font-size:20px;font-weight:700;letter-spacing:-.3px">Tableau de bord direction</h1><p style="font-size:13px;color:var(--text-2);margin-top:2px">Mars 2026 · Agence Paris + Lyon consolidé</p></div>
+      <div class="filters">
+        <select class="form-select"><option>Mars 2026</option><option>T1 2026</option><option>Exercice 2026</option></select>
+        <select class="form-select"><option>Toutes les agences</option><option>Paris</option><option>Lyon</option></select>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">CA confirmé YTD</div><div class="kpi-val" style="color:var(--primary)">410 k€</div><div class="kpi-trend kpi-trend--up">↑ +68 k€ vs mars 2025</div></div>
+      <div class="kpi-card"><div class="kpi-label">CA prév. pondéré</div><div class="kpi-val" style="color:var(--orange)">119 k€</div><div class="kpi-trend kpi-trend--neutral">Pipeline actif</div></div>
+      <div class="kpi-card"><div class="kpi-label">Rentabilité globale</div><div class="kpi-val" style="color:var(--green)">69%</div><div class="kpi-trend kpi-trend--down">↓ −3 pts vs 2025</div></div>
+      <div class="kpi-card"><div class="kpi-label">Taux occupation</div><div class="kpi-val" style="color:var(--primary)">88%</div><div class="kpi-trend kpi-trend--up">↑ +4 pts S10</div></div>
+      <div class="kpi-card"><div class="kpi-label">Délai paiement moy.</div><div class="kpi-val" style="color:var(--orange)">47 j</div><div class="kpi-trend kpi-trend--down">↓ −5j vs obj. 42j</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+      <!-- CA mensuel barres empilées -->
+      <div class="card">
+        <div class="card__hd"><div class="card__title">CA mensuel — Confirmé vs Prévisionnel pondéré</div><span style="font-size:12px;color:var(--text-3)">En k€</span></div>
+        <div class="chart-wrap">
+          <div class="bar-chart">
+            <div class="bar-group"><div class="bar-stack" style="height:90px"><div class="bar-seg" style="flex:1;background:var(--primary)"></div></div><div class="bar-label">Jan<br><span class="mono" style="font-size:10px;color:var(--primary);font-weight:700">90k</span></div></div>
+            <div class="bar-group"><div class="bar-stack" style="height:110px"><div class="bar-seg" style="flex:1;background:var(--primary)"></div></div><div class="bar-label">Fév<br><span class="mono" style="font-size:10px;color:var(--primary);font-weight:700">110k</span></div></div>
+            <div class="bar-group"><div class="bar-stack" style="height:90px"><div class="bar-seg" style="height:50px;background:var(--primary)"></div><div class="bar-seg" style="height:40px;background:var(--orange);opacity:.55;background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.3) 3px,rgba(255,255,255,.3) 4px)"></div></div><div class="bar-label" style="font-weight:700;color:var(--primary)">Mar ●<br><span class="mono" style="font-size:10px;color:var(--primary);font-weight:700">50+40k</span></div></div>
+            <div class="bar-group"><div class="bar-stack" style="height:80px;opacity:.5"><div class="bar-seg" style="flex:1;background:var(--orange);background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.3) 3px,rgba(255,255,255,.3) 4px)"></div></div><div class="bar-label">Avr<br><span class="mono" style="font-size:10px;color:var(--orange);font-weight:700">~80k</span></div></div>
+            <div class="bar-group"><div class="bar-stack" style="height:100px;opacity:.45"><div class="bar-seg" style="flex:1;background:var(--orange);background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.3) 3px,rgba(255,255,255,.3) 4px)"></div></div><div class="bar-label">Mai<br><span class="mono" style="font-size:10px;color:var(--orange);font-weight:700">~100k</span></div></div>
+            <div class="bar-group"><div class="bar-stack" style="height:60px;opacity:.35"><div class="bar-seg" style="flex:1;background:var(--border)"></div></div><div class="bar-label">Jun<br><span class="mono" style="font-size:10px;color:var(--text-3);font-weight:700">~60k</span></div></div>
+          </div>
+          <div style="display:flex;gap:14px;font-size:11.5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+            <span><span style="display:inline-block;width:10px;height:8px;background:var(--primary);border-radius:2px;margin-right:4px"></span>Confirmé</span>
+            <span><span style="display:inline-block;width:10px;height:8px;background:var(--orange);opacity:.55;border-radius:2px;margin-right:4px"></span>Prévisionnel pondéré</span>
+            <span><span style="display:inline-block;width:10px;height:8px;background:var(--border);border-radius:2px;margin-right:4px"></span>Estimé brouillon</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rentabilité par phase -->
+      <div class="card">
+        <div class="card__hd"><div class="card__title">Rentabilité par phase</div><span style="font-size:12px;color:var(--text-3)">Marge nette cible : 15%</span></div>
+        <div style="padding:14px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>ESQ</span><span class="mono" style="color:var(--green);font-weight:700">22%</span></div>
+              <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:73%;height:100%;background:var(--green);border-radius:4px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>APD</span><span class="mono" style="color:var(--red);font-weight:700">5% ⚠</span></div>
+              <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:17%;height:100%;background:var(--red);border-radius:4px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>PRO</span><span class="mono" style="color:var(--primary);font-weight:700">18%</span></div>
+              <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:60%;height:100%;background:var(--primary);border-radius:4px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>DCE</span><span class="mono" style="color:var(--green);font-weight:700">24%</span></div>
+              <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:80%;height:100%;background:var(--green);border-radius:4px"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>DET</span><span class="mono" style="color:var(--orange);font-weight:700">12%</span></div>
+              <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:40%;height:100%;background:var(--orange);border-radius:4px"></div></div>
+            </div>
+            <div style="padding-top:8px;border-top:1px solid var(--border);background:var(--primary-l);margin:-8px -14px -14px;padding:10px 14px;font-size:12.5px;display:flex;justify-content:space-between">
+              <span style="font-weight:700">Moyenne globale</span><span class="mono" style="font-weight:700;color:var(--primary)">69%</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;font-size:12px;color:var(--red);background:var(--red-l);border-radius:var(--r-sm);padding:8px 10px">⚠ Phase APD en dérive : 2 projets tirent la moyenne vers le bas. <span style="font-weight:700;cursor:pointer">Analyser →</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rentabilité par projet — nuage de points -->
+    <div class="card">
+      <div class="card__hd"><div><div class="card__title">Analyse rentabilité × CA — Comparaison projets</div><div class="card__sub">Taille = budget honoraires · Couleur = type de mission</div></div><div class="filters"><select class="form-select"><option>12 derniers mois</option><option>2025</option><option>Tout</option></select></div></div>
+      <div class="chart-wrap">
+        <div style="display:flex;gap:8px;font-size:10.5px;color:var(--text-3);margin-bottom:6px">
+          <span>↑ Rentabilité (%)</span>
+        </div>
+        <div class="scatter">
+          <!-- Axe Y labels -->
+          <div style="position:absolute;left:-30px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;color:var(--text-3);text-align:right;padding:0 4px">
+            <span>30%</span><span>20%</span><span style="color:var(--orange);font-weight:700">15% cible</span><span>10%</span><span>0%</span>
+          </div>
+          <!-- ligne cible -->
+          <div style="position:absolute;left:0;right:0;bottom:50%;border-top:1px dashed var(--orange);opacity:.5"></div>
+          <!-- Points projets -->
+          <div class="scatter-dot" style="width:28px;height:28px;background:var(--primary);opacity:.8;left:15%;bottom:73%;transform:translate(-50%,50%)" title="Rés. Les Oliviers — 255k€ — 22%"></div>
+          <div class="scatter-dot" style="width:22px;height:22px;background:var(--green);opacity:.8;left:35%;bottom:40%;transform:translate(-50%,50%)" title="V. Hugo — 180k€ — 12%"></div>
+          <div class="scatter-dot" style="width:18px;height:18px;background:var(--red);opacity:.8;left:55%;bottom:17%;transform:translate(-50%,50%)" title="Diagnostic Bâtiment A — 45k€ — 5%"></div>
+          <div class="scatter-dot" style="width:32px;height:32px;background:var(--primary);opacity:.8;left:72%;bottom:80%;transform:translate(-50%,50%)" title="Rés. Les Cèdres — 310k€ — 24%"></div>
+          <div class="scatter-dot" style="width:14px;height:14px;background:var(--orange);opacity:.8;left:85%;bottom:60%;transform:translate(-50%,50%)" title="École Jules-Ferry — 145k€ — 18%"></div>
+          <!-- Labels -->
+          <div style="position:absolute;left:14%;bottom:73%;margin-top:16px;font-size:10px;color:var(--primary);transform:translateY(24px);white-space:nowrap">Oliviers</div>
+          <div style="position:absolute;left:34%;bottom:40%;margin-top:16px;font-size:10px;color:var(--green);transform:translateY(24px);white-space:nowrap">V. Hugo</div>
+          <div style="position:absolute;left:54%;bottom:17%;margin-top:16px;font-size:10px;color:var(--red);transform:translateY(24px);white-space:nowrap">Diag. A</div>
+          <div style="position:absolute;left:71%;bottom:80%;margin-top:16px;font-size:10px;color:var(--primary);transform:translateY(24px);white-space:nowrap">Les Cèdres</div>
+          <div style="position:absolute;left:84%;bottom:60%;margin-top:16px;font-size:10px;color:var(--orange);transform:translateY(24px);white-space:nowrap">Jules-Ferry</div>
+        </div>
+        <div class="scatter-x" style="margin-top:28px"><span>50k€</span><span>150k€</span><span>250k€</span><span>350k€ →  Budget honoraires</span></div>
+        <div style="display:flex;gap:12px;font-size:11.5px;margin-top:12px">
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--primary);border-radius:50%;margin-right:4px"></span>MOE</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:50%;margin-right:4px"></span>OPC</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--orange);border-radius:50%;margin-right:4px"></span>Concours</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:50%;margin-right:4px"></span>Diagnostic</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ VUE PAR PROJET ═══ -->
+  <main class="page" id="view-projets">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+      <div><h1 style="font-size:20px;font-weight:700;letter-spacing:-.3px">Rentabilité par projet</h1></div>
+      <div class="filters">
+        <select class="form-select"><option>Tous les types</option><option>MOE</option><option>OPC</option></select>
+        <select class="form-select"><option>En cours</option><option>Archivés</option><option>Tous</option></select>
+        <button class="btn btn--ghost btn--sm">⬇ Excel</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card__body" style="padding:0">
+        <table class="tbl">
+          <thead><tr><th>Projet</th><th>Type</th><th>Phase</th><th>Budget HT</th><th>Facturé</th><th>Encaissé</th><th>H budgétées</th><th>H passées</th><th>Rentabilité</th><th>Marge €</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="font-weight:700">Rés. Les Oliviers</div><div style="font-size:11px;color:var(--text-3)">M. Lefort</div></td>
+              <td><span class="badge badge--blue">MOE</span></td>
+              <td>PRO</td>
+              <td class="mono">255 000 €</td>
+              <td class="mono">153 000 €</td>
+              <td class="mono">115 000 €</td>
+              <td class="mono">1 200 h</td>
+              <td class="mono" style="color:var(--red);font-weight:700">1 290 h ⚠</td>
+              <td><span class="badge badge--orange">72% (−3pts)</span></td>
+              <td class="mono" style="color:var(--orange)">+56 250 €</td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:700">Groupe scolaire V. Hugo</div><div style="font-size:11px;color:var(--text-3)">M. Lefort</div></td>
+              <td><span class="badge badge--blue">MOE</span></td>
+              <td>APD</td>
+              <td class="mono">180 000 €</td>
+              <td class="mono">27 000 €</td>
+              <td class="mono">27 000 €</td>
+              <td class="mono">380 h</td>
+              <td class="mono">370 h</td>
+              <td><span class="badge badge--orange">65%</span></td>
+              <td class="mono" style="color:var(--orange)">+17 550 €</td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:700">Rés. Les Cèdres</div><div style="font-size:11px;color:var(--text-3)">S. Moreau</div></td>
+              <td><span class="badge badge--blue">MOE</span></td>
+              <td>DET 🏗</td>
+              <td class="mono">310 000 €</td>
+              <td class="mono">279 000 €</td>
+              <td class="mono">260 500 €</td>
+              <td class="mono">2 100 h</td>
+              <td class="mono">1 980 h</td>
+              <td><span class="badge badge--green">76%</span></td>
+              <td class="mono" style="color:var(--green)">+74 400 €</td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:700">École Jules-Ferry</div><div style="font-size:11px;color:var(--text-3)">M. Lefort</div></td>
+              <td><span class="badge badge--blue">MOE</span></td>
+              <td>ESQ</td>
+              <td class="mono">145 000 €</td>
+              <td class="mono">0 €</td>
+              <td class="mono">0 €</td>
+              <td class="mono">140 h</td>
+              <td class="mono">17 h</td>
+              <td><span class="badge badge--grey">—</span></td>
+              <td class="mono" style="color:var(--text-3)">—</td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="3"><strong>TOTAL / Moyenne</strong></td>
+              <td class="mono">890 000 €</td>
+              <td class="mono">459 000 €</td>
+              <td class="mono">402 500 €</td>
+              <td class="mono">3 820 h</td>
+              <td class="mono">3 657 h</td>
+              <td><span class="badge badge--blue">74% moy.</span></td>
+              <td class="mono" style="color:var(--primary)">+148 200 €</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ VUE PRÉVISIONNEL ═══ -->
+  <main class="page" id="view-previsionnel">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+      <div><h1 style="font-size:20px;font-weight:700;letter-spacing:-.3px">Prévisionnel financier détaillé</h1><p style="font-size:13px;color:var(--text-2);margin-top:2px">Montants de facturation par projet × mois</p></div>
+      <div class="filters"><select class="form-select"><option>2026</option><option>2027</option></select><button class="btn btn--ghost btn--sm">⬇ Excel</button></div>
+    </div>
+    <div class="card">
+      <div class="card__hd">
+        <div class="card__title">Plan de facturation 2026</div>
+        <div style="display:flex;gap:8px;font-size:11.5px">
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--primary);border-radius:2px;margin-right:4px"></span>Confirmé</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--orange);opacity:.5;border-radius:2px;margin-right:4px"></span>Prév. pondéré</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--border);border-radius:2px;margin-right:4px"></span>Estimé brouillon</span>
+        </div>
+      </div>
+      <div class="prev-table">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr>
+              <th style="background:var(--grey-l);padding:7px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);border:1px solid var(--border);position:sticky;left:0;min-width:180px">Projet</th>
+              <th class="month-header">Jan</th><th class="month-header">Fév</th>
+              <th class="month-header" style="background:var(--primary-l);color:var(--primary)">Mar ●</th>
+              <th class="month-header">Avr</th><th class="month-header">Mai</th>
+              <th class="month-header">Jun</th><th class="month-header">Jul</th>
+              <th class="month-header">Aoû</th><th class="month-header">Sep</th>
+              <th class="month-header">Oct</th><th class="month-header">Nov</th>
+              <th class="month-header">Déc</th>
+              <th style="background:var(--primary-l);padding:6px 8px;font-size:11px;font-weight:700;color:var(--primary);text-align:center;border:1px solid var(--border)">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="proj-row">
+              <td class="proj-name" style="font-size:12px;padding:7px 12px;border:1px solid var(--border);white-space:nowrap;position:sticky;left:0;background:var(--surface)"><strong>Rés. Les Oliviers</strong><br><span style="font-size:10.5px;color:var(--text-3);font-weight:400">PRO → DET → AOR</span></td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">38 250</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">38 250</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.1);font-weight:700;color:var(--primary)">—</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">38 250</td>
+              <td class="proj-cell">—</td><td class="proj-cell">38 250</td>
+              <td class="proj-cell">—</td><td class="proj-cell">25 500</td>
+              <td class="proj-cell">25 500</td><td class="proj-cell">—</td>
+              <td class="proj-cell">—</td><td class="proj-cell">—</td>
+              <td class="total-cell">204 000</td>
+            </tr>
+            <tr class="proj-row">
+              <td class="proj-name" style="font-size:12px;padding:7px 12px;border:1px solid var(--border);white-space:nowrap;position:sticky;left:0;background:var(--surface)"><strong>Groupe scolaire V. Hugo</strong><br><span style="font-size:10.5px;color:var(--text-3);font-weight:400">APD → PRO → DCE</span></td>
+              <td class="proj-cell">—</td><td class="proj-cell">27 000</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.1);font-weight:700;color:var(--primary)">—</td>
+              <td class="proj-cell">—</td><td class="proj-cell">27 000</td>
+              <td class="proj-cell" style="background:rgba(184,134,11,.08);color:var(--orange)">~18 000</td>
+              <td class="proj-cell" style="background:rgba(184,134,11,.08);color:var(--orange)">~18 000</td>
+              <td class="proj-cell">—</td><td class="proj-cell">—</td>
+              <td class="proj-cell">—</td><td class="proj-cell">—</td><td class="proj-cell">—</td>
+              <td class="total-cell">90 000</td>
+            </tr>
+            <tr class="proj-row">
+              <td class="proj-name" style="font-size:12px;padding:7px 12px;border:1px solid var(--border);white-space:nowrap;position:sticky;left:0;background:var(--surface)"><strong>École Jules-Ferry</strong><br><span style="font-size:10.5px;color:var(--text-3);font-weight:400">ESQ → … → AOR</span></td>
+              <td class="proj-cell">—</td><td class="proj-cell">—</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.1)">—</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">11 600</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">11 600</td>
+              <td class="proj-cell">—</td><td class="proj-cell" style="background:rgba(27,73,101,.06)">11 600</td>
+              <td class="proj-cell">—</td><td class="proj-cell" style="background:rgba(27,73,101,.06)">21 750</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">21 750</td>
+              <td class="proj-cell" style="background:rgba(27,73,101,.06)">21 750</td>
+              <td class="proj-cell">—</td>
+              <td class="total-cell">100 050</td>
+            </tr>
+            <tr style="border-top:2px solid var(--primary)">
+              <td style="background:var(--primary-l);padding:8px 12px;font-weight:700;font-size:12px;border:1px solid var(--border);position:sticky;left:0">TOTAL</td>
+              <td class="total-cell">38 250</td>
+              <td class="total-cell">65 250</td>
+              <td class="total-cell" style="color:var(--primary)">—</td>
+              <td class="total-cell">49 850</td>
+              <td class="total-cell">38 600</td>
+              <td class="total-cell" style="color:var(--orange)">~56 250</td>
+              <td class="total-cell" style="color:var(--orange)">~29 600</td>
+              <td class="total-cell">25 500</td>
+              <td class="total-cell">47 250</td>
+              <td class="total-cell">21 750</td>
+              <td class="total-cell">21 750</td>
+              <td class="total-cell">—</td>
+              <td class="total-cell" style="color:var(--primary);font-size:13px">394 050</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══ PIPELINE ═══ -->
+  <main class="page" id="view-pipeline">
+    <div><h1 style="font-size:20px;font-weight:700;letter-spacing:-.3px">Analyse pipeline commercial</h1></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div class="kpi-card"><div class="kpi-label">Taux conversion devis→acté</div><div class="kpi-val" style="color:var(--green)">62%</div><div class="kpi-trend kpi-trend--up">↑ +7pts vs 2025</div></div>
+      <div class="kpi-card"><div class="kpi-label">Délai moyen signature</div><div class="kpi-val" style="color:var(--orange)">38 j</div><div class="kpi-trend kpi-trend--neutral">Privé : 22j · Public : 68j</div></div>
+      <div class="kpi-card"><div class="kpi-label">Devis en attente</div><div class="kpi-val" style="color:var(--primary)">3</div><div class="kpi-trend kpi-trend--neutral">119 k€ pondéré</div></div>
+      <div class="kpi-card"><div class="kpi-label">Devis autonomes non conv.</div><div class="kpi-val" style="color:var(--orange)">2</div><div class="kpi-trend kpi-trend--down">↑ dont 1 > 30j</div></div>
+    </div>
+    <div class="card">
+      <div class="card__hd"><div class="card__title">Suivi des devis — Âge × Statut</div></div>
+      <table class="tbl">
+        <thead><tr><th style="text-align:left">Devis</th><th style="text-align:left">Client / Projet</th><th>Montant HT</th><th>Envoyé le</th><th>Âge</th><th>Statut</th><th>Probabilité</th><th>Prév. pondéré</th></tr></thead>
+        <tbody>
+          <tr><td class="mono" style="font-weight:700">D-2026-007</td><td>Parc Est — Commune Rezé</td><td class="mono">80 000 €</td><td class="mono" style="font-size:12px">17/02</td><td><span class="badge badge--orange">18 j</span></td><td><span class="badge badge--orange">En attente</span></td><td><input type="range" value="70" min="0" max="100" style="width:70px"> <span class="mono" style="font-size:12px">70%</span></td><td class="mono" style="color:var(--orange)">56 000 €</td></tr>
+          <tr><td class="mono" style="font-weight:700">D-2026-005</td><td>Résidence T. (privé)</td><td class="mono">55 000 €</td><td class="mono" style="font-size:12px">28/01</td><td><span class="badge badge--red">38 j ⚠</span></td><td><span class="badge badge--orange">En attente</span></td><td><input type="range" value="50" min="0" max="100" style="width:70px"> <span class="mono" style="font-size:12px">50%</span></td><td class="mono" style="color:var(--orange)">27 500 €</td></tr>
+          <tr><td class="mono" style="font-weight:700">DA-2026-002</td><td>Diagnostic (autonome)</td><td class="mono">18 000 €</td><td class="mono" style="font-size:12px">05/02</td><td><span class="badge badge--orange">29 j</span></td><td><span class="badge badge--purple">Devis auto</span></td><td><input type="range" value="40" min="0" max="100" style="width:70px"> <span class="mono" style="font-size:12px">40%</span></td><td class="mono" style="color:var(--orange)">7 200 €</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ═══ RAPPORTS ═══ -->
+  <main class="page" id="view-rapports">
+    <div><h1 style="font-size:20px;font-weight:700;letter-spacing:-.3px">Rapports prédéfinis & personnalisés</h1></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface);cursor:pointer" onclick="">
+        <div style="font-size:18px;margin-bottom:6px">📊</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">Bilan annuel par projet</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">CA, heures, rentabilité, phases</div>
+        <button class="btn btn--ghost btn--sm">⬇ Générer PDF</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface);cursor:pointer">
+        <div style="font-size:18px;margin-bottom:6px">👤</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">Bilan par collaborateur</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Heures, taux occupation, projets</div>
+        <button class="btn btn--ghost btn--sm">⬇ Générer PDF</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface);cursor:pointer">
+        <div style="font-size:18px;margin-bottom:6px">⏱</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">Temps passé (justification MOA)</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Par phase, par collaborateur</div>
+        <button class="btn btn--ghost btn--sm">⬇ Générer PDF</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface);cursor:pointer">
+        <div style="font-size:18px;margin-bottom:6px">💰</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">Suivi des encours</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Facturé vs encaissé vs en attente</div>
+        <button class="btn btn--ghost btn--sm">⬇ Générer PDF</button>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface);cursor:pointer">
+        <div style="font-size:18px;margin-bottom:6px">🏗</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:3px">Rapport inter-agences</div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Consolidé Paris + Lyon</div>
+        <button class="btn btn--ghost btn--sm">⬇ Générer PDF</button>
+      </div>
+      <div style="border:2px dashed var(--border);border-radius:var(--r);padding:14px;cursor:pointer;text-align:center;color:var(--text-3)">
+        <div style="font-size:24px;margin-bottom:6px">+</div>
+        <div style="font-weight:600;font-size:13px">Rapport personnalisé</div>
+        <div style="font-size:12px;margin-top:4px">Filtres multicritères · PDF / Excel / CSV</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function showView(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--on'));
+    document.getElementById('view-' + id).classList.add('page--on');
+    document.querySelectorAll('.vtab').forEach(t => t.classList.remove('vtab--on'));
+    event.currentTarget.classList.add('vtab--on');
+    window.scrollTo(0, 0);
+  }
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaToastT;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_gaaToastT);_gaaToastT=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+}
+
+function fmt€(n){return Math.round(n).toLocaleString('fr-FR')+' €';}
+function fmtK(n){return Math.round(n/1000)+' k€';}
+
+// ── KPIs depuis store ─────────────────────────────────────
+function renderKPIs(){
+  const projets=GAAStore.getProjets();
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const enCours=projets.filter(p=>p.statut==='en_cours');
+  const enAttente=projets.filter(p=>p.statut==='en_attente');
+  const ca=enCours.reduce((s,p)=>s+(p.honoraires_ht||0),0);
+  const prev=enAttente.reduce((s,p)=>s+(p.honoraires_ht||0)*0.6,0);
+
+  // Tableau de bord — cellules
+  const rows=document.querySelectorAll('.data-table tbody tr, table tbody tr');
+  rows.forEach(row=>{
+    const label=row.querySelector('td:first-child')?.textContent?.trim();
+    if(label?.includes('CA confirmé'))    row.querySelector('td:nth-child(2)').textContent=fmtK(ca);
+    if(label?.includes('prévisionnel'))   row.querySelector('td:nth-child(2)').textContent=fmtK(prev);
+    if(label?.includes('actifs'))         row.querySelector('td:nth-child(2)').textContent=enCours.length;
+    if(label?.includes('Collaborateurs')) row.querySelector('td:nth-child(2)').textContent=users.length;
+  });
+
+  // KPI cards
+  const kpis=document.querySelectorAll('.kpi-card__value');
+  if(kpis[0]) kpis[0].textContent=fmtK(ca);
+  if(kpis[1]) kpis[1].textContent=fmtK(prev);
+  if(kpis[2]) kpis[2].textContent=enCours.length;
+}
+
+// ── Tableau rentabilité depuis store ─────────────────────
+function renderRentabilite(){
+  const tbody=document.querySelector('table:last-of-type tbody, .data-table:last-of-type tbody');
+  if(!tbody) return;
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  if(!projets.length) return;
+  // Enrichir les lignes existantes avec les vrais noms de projets
+  const rows=tbody.querySelectorAll('tr');
+  rows.forEach((row,i)=>{
+    if(projets[i]){
+      const td=row.querySelector('td:first-child');
+      if(td&&!td.querySelector('strong')?.textContent?.includes('Total'))
+        if(td.querySelector('strong')) td.querySelector('strong').textContent=projets[i].nom;
+    }
+  });
+}
+
+// ── Génération rapport ────────────────────────────────────
+document.querySelectorAll('.btn--ghost').forEach(btn=>{
+  if(btn.textContent.includes('Générer PDF')||btn.textContent.includes('Exporter')){
+    btn.addEventListener('click',()=>{
+      GAAStore.addAudit(GAAStore.getMe()?.nom,'Rapport généré — export PDF','4.1 Reporting');
+      showToast('Rapport généré et téléchargé ✓','success');
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderKPIs();
+  renderRentabilite();
+});
+
+</script>
+</body>
+</html>

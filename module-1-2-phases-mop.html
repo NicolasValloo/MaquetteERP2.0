@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     GAA — Module 1.2 — Gestion des phases et missions MOP
+     Maquette fonctionnelle HTML (statique, simulant Django/htmx)
+     Écrans : planning-phases.html (Gantt + Tableau) + detail-phase.html
+     ============================================================ -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.2 — Phases MOP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================
+       VARIABLES & RESET
+    ============================================= */
+    :root {
+      --c-bg:        #F4F3EF;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E0D8;
+      --c-border-md: #C8C5BB;
+      --c-text:      #1C1B18;
+      --c-text-2:    #6B6860;
+      --c-text-3:    #9B998F;
+      --c-primary:   #1B4965;
+      --c-primary-l: #EAF1F6;
+      --c-accent:    #C75B37;
+      --c-green:     #2D6A4F;
+      --c-green-l:   #E8F5EE;
+      --c-orange:    #B8860B;
+      --c-orange-l:  #FDF6DC;
+      --c-red:       #C0392B;
+      --c-red-l:     #FDECEA;
+      --c-grey-l:    #F0EFEB;
+      --sidebar-w:   220px;
+      --header-h:    52px;
+      --font-main:   'Sora', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07);
+      --shadow-md:   0 4px 12px rgba(0,0,0,0.08);
+      --radius-sm:   4px;
+      --radius:      8px;
+      --radius-lg:   12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: var(--font-main); background: var(--c-bg); color: var(--c-text); line-height: 1.5; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+
+    /* =============================================
+       LAYOUT
+    ============================================= */
+    .shell { display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .nav-sidebar {
+      width: var(--sidebar-w); background: var(--c-primary); color: #fff;
+      display: flex; flex-direction: column; flex-shrink: 0;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto;
+    }
+    .nav-sidebar__logo { padding: 20px 20px 16px; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; }
+    .nav-sidebar__logo-dot { width: 8px; height: 8px; background: var(--c-accent); border-radius: 50%; }
+    .nav-sidebar__section { padding: 16px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .nav-sidebar__item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: background 0.15s; position: relative; }
+    .nav-sidebar__item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-sidebar__item--active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .nav-sidebar__item--active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--c-accent); border-radius: 0 2px 2px 0; }
+    .nav-sidebar__icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-sidebar__badge { margin-left: auto; background: rgba(255,255,255,0.15); font-size: 11px; font-family: var(--font-mono); padding: 1px 6px; border-radius: 10px; }
+    .nav-sidebar__user { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .nav-sidebar__avatar { width: 30px; height: 30px; background: var(--c-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+
+    /* Main */
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { height: var(--header-h); background: var(--c-surface); border-bottom: 1px solid var(--c-border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar__breadcrumb { font-size: 13px; color: var(--c-text-2); flex: 1; }
+    .topbar__breadcrumb a { color: var(--c-primary); }
+    .topbar__search { display: flex; align-items: center; gap: 6px; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 5px 10px; font-size: 12.5px; color: var(--c-text-3); width: 200px; }
+    .topbar__avatar { width: 32px; height: 32px; background: var(--c-primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+
+    /* Pages */
+    .page { padding: 28px; display: none; flex-direction: column; gap: 20px; }
+    .page--active { display: flex; }
+
+    /* =============================================
+       COMPOSANTS RÉUTILISABLES
+    ============================================= */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .btn--primary { background: var(--c-primary); color: #fff; border-color: var(--c-primary); }
+    .btn--primary:hover { background: #153d52; }
+    .btn--ghost { background: transparent; color: var(--c-text); border-color: var(--c-border-md); }
+    .btn--ghost:hover { background: var(--c-grey-l); }
+    .btn--danger-ghost { background: transparent; color: var(--c-red); border-color: var(--c-red); }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+    .badge--green  { background: var(--c-green-l); color: var(--c-green); }
+    .badge--blue   { background: var(--c-primary-l); color: var(--c-primary); }
+    .badge--orange { background: var(--c-orange-l); color: var(--c-orange); }
+    .badge--grey   { background: var(--c-grey-l); color: var(--c-text-2); }
+    .badge--red    { background: var(--c-red-l); color: var(--c-red); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card__label { font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .kpi-card__value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px; font-family: var(--font-mono); }
+    .kpi-card__detail { font-size: 11.5px; color: var(--c-text-3); }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow-sm); }
+    .toolbar__spacer { flex: 1; }
+
+    .view-toggle { display: flex; border: 1px solid var(--c-border); border-radius: var(--radius-sm); overflow: hidden; }
+    .view-toggle__btn { padding: 5px 12px; font-size: 12.5px; cursor: pointer; background: var(--c-bg); color: var(--c-text-2); border: none; font-family: var(--font-main); font-weight: 500; }
+    .view-toggle__btn--active { background: var(--c-primary); color: #fff; }
+    .view-toggle__btn:not(:last-child) { border-right: 1px solid var(--c-border); }
+
+    .info-block { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .info-block__title { font-size: 12px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .info-block__title a { font-size: 11px; color: var(--c-primary); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+    .text-mono { font-family: var(--font-mono); }
+    .text-green { color: var(--c-green); }
+    .text-orange { color: var(--c-orange); }
+    .text-red { color: var(--c-red); }
+    .text-muted { color: var(--c-text-3); }
+
+    /* Alert banner */
+    .alert-banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+    .alert-banner--warn { background: var(--c-orange-l); border: 1px solid #d4a017; color: #7a5c00; }
+    .alert-banner--info { background: var(--c-primary-l); border: 1px solid #a8c4d8; color: var(--c-primary); }
+
+    /* =============================================
+       GANTT
+    ============================================= */
+    .gantt-wrap {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .gantt-container {
+      overflow-x: auto;
+      min-width: 0;
+    }
+
+    .gantt-inner {
+      min-width: 900px;
+      padding: 0;
+    }
+
+    /* En-tête colonnes mois */
+    .gantt-header {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      border-bottom: 2px solid var(--c-border);
+      background: var(--c-grey-l);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .gantt-header__label {
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--c-text-2);
+      border-right: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+    }
+
+    .gantt-months-row {
+      display: grid;
+      grid-template-columns: repeat(18, 1fr);
+    }
+
+    .gantt-month-cell {
+      padding: 8px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--c-text-2);
+      text-align: center;
+      border-right: 1px solid var(--c-border);
+    }
+
+    .gantt-month-cell:last-child { border-right: none; }
+
+    /* Ligne phase */
+    .gantt-row {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      border-bottom: 1px solid var(--c-border);
+      transition: background 0.1s;
+    }
+
+    .gantt-row:last-child { border-bottom: none; }
+    .gantt-row:hover { background: rgba(27,73,101,0.02); }
+
+    .gantt-row__label {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-right: 1px solid var(--c-border);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .gantt-row__label:hover { color: var(--c-primary); }
+
+    .gantt-row__label--active { color: var(--c-primary); font-weight: 700; }
+    .gantt-row__label--done { color: var(--c-green); }
+    .gantt-row__label--upcoming { color: var(--c-text-3); }
+
+    .gantt-row__track {
+      position: relative;
+      height: 44px;
+      display: grid;
+      grid-template-columns: repeat(18, 1fr);
+    }
+
+    /* Colonnes alternées fond */
+    .gantt-col-bg {
+      height: 100%;
+      border-right: 1px solid rgba(0,0,0,0.04);
+    }
+
+    .gantt-col-bg--today { background: rgba(27,73,101,0.04); }
+
+    /* Barre Gantt positionnée en absolute */
+    .gantt-bar {
+      position: absolute;
+      top: 8px;
+      height: 28px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: pointer;
+      transition: filter 0.15s, transform 0.1s;
+      z-index: 2;
+    }
+
+    .gantt-bar:hover { filter: brightness(0.92); transform: translateY(-1px); }
+
+    .gantt-bar--done    { background: var(--c-green);   color: #fff; }
+    .gantt-bar--active  { background: var(--c-primary); color: #fff; }
+    .gantt-bar--upcoming{ background: var(--c-grey-l);  color: var(--c-text-2); border: 1px dashed var(--c-border-md); }
+    .gantt-bar--delay   { background: var(--c-red);     color: #fff; opacity: 0.75; }
+
+    /* Jalon (losange) */
+    .gantt-milestone {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 11px;
+      height: 11px;
+      background: var(--c-orange);
+      z-index: 3;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .gantt-milestone:hover { transform: translateY(-50%) rotate(45deg) scale(1.3); }
+
+    /* Ligne aujourd'hui */
+    .gantt-today-line {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: var(--c-red);
+      opacity: 0.6;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .gantt-today-line::before {
+      content: 'Auj.';
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--c-red);
+      background: var(--c-surface);
+      padding: 0 3px;
+      white-space: nowrap;
+    }
+
+    /* =============================================
+       TABLEAU DES PHASES
+    ============================================= */
+    .table-wrap { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table thead th { background: var(--c-grey-l); border-bottom: 1px solid var(--c-border); padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; cursor: pointer; }
+    .data-table thead th:hover { color: var(--c-text); }
+    .data-table tbody tr { border-bottom: 1px solid var(--c-border); transition: background 0.1s; cursor: pointer; }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody tr:hover { background: var(--c-primary-l); }
+    .data-table tbody tr.row--active { background: rgba(27,73,101,0.04); }
+    .data-table tbody tr.row--muted { opacity: 0.55; }
+    .data-table td { padding: 10px 14px; vertical-align: middle; }
+
+    /* Progress bar */
+    .progress-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .progress-bar { flex: 1; height: 6px; background: var(--c-border); border-radius: 3px; overflow: hidden; min-width: 60px; }
+    .progress-bar__fill { height: 100%; border-radius: 3px; }
+    .progress-bar__fill--green  { background: var(--c-green); }
+    .progress-bar__fill--blue   { background: var(--c-primary); }
+    .progress-bar__fill--orange { background: var(--c-orange); }
+    .progress-bar__fill--red    { background: var(--c-red); }
+
+    /* =============================================
+       DÉTAIL PHASE — PAGE 2
+    ============================================= */
+    .phase-nav {
+      display: flex;
+      gap: 3px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .phase-nav__pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .phase-nav__pill--done { background: var(--c-green-l); color: var(--c-green); }
+    .phase-nav__pill--active { background: var(--c-primary); color: #fff; }
+    .phase-nav__pill--upcoming { background: var(--c-grey-l); color: var(--c-text-3); }
+    .phase-nav__pill--upcoming:hover { background: var(--c-border); color: var(--c-text-2); }
+
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* Info fields */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-item__label { font-size: 11px; font-weight: 600; color: var(--c-text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .field-item__value { font-size: 13px; font-weight: 500; }
+
+    /* Tâches liste */
+    .task-list { display: flex; flex-direction: column; }
+    .task-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--c-border); font-size: 12.5px; }
+    .task-item:last-child { border-bottom: none; }
+    .task-item__icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+    .task-item__label { flex: 1; }
+    .task-item__label--done { text-decoration: line-through; color: var(--c-text-3); }
+    .task-item__label--active { color: var(--c-primary); font-weight: 600; }
+    .task-item__assignee { font-size: 11.5px; color: var(--c-text-3); white-space: nowrap; }
+
+    /* Charge collab */
+    .charge-list { display: flex; flex-direction: column; gap: 8px; }
+    .charge-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--c-border); }
+    .charge-row:last-child { border-bottom: none; }
+    .charge-row__name { width: 140px; font-size: 12.5px; font-weight: 500; flex-shrink: 0; }
+    .charge-row__bar { flex: 1; }
+    .charge-row__count { font-size: 12px; font-family: var(--font-mono); color: var(--c-text-2); white-space: nowrap; width: 80px; text-align: right; }
+
+    /* Docs liste */
+    .doc-list { display: flex; flex-direction: column; }
+    .doc-item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--c-border); font-size: 12.5px; cursor: pointer; }
+    .doc-item:last-child { border-bottom: none; }
+    .doc-item:hover .doc-item__name { color: var(--c-primary); text-decoration: underline; }
+    .doc-item__icon { font-size: 16px; }
+    .doc-item__name { flex: 1; }
+    .doc-item__meta { font-size: 11.5px; color: var(--c-text-3); white-space: nowrap; }
+
+    /* Jalon facturation card */
+    .jalon-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .jalon-card__row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
+    .jalon-card__row:last-child { margin-bottom: 0; border-top: 1px dashed var(--c-border); padding-top: 6px; margin-top: 6px; }
+    .jalon-card__label { color: var(--c-text-2); }
+    .jalon-card__value { font-weight: 600; }
+
+    /* Modale validation phase */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay--open { display: flex; }
+    .modal { background: var(--c-surface); border-radius: var(--radius-lg); width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modal-in 0.2s ease; }
+    @keyframes modal-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal__header { padding: 20px 24px; border-bottom: 1px solid var(--c-border); display: flex; align-items: center; justify-content: space-between; }
+    .modal__title { font-size: 16px; font-weight: 700; }
+    .modal__close { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--c-grey-l); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--c-text-2); }
+    .modal__body { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .modal__footer { padding: 16px 24px; border-top: 1px solid var(--c-border); display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12.5px; font-weight: 600; }
+    .form-input { padding: 8px 11px; border: 1px solid var(--c-border-md); border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; color: var(--c-text); outline: none; transition: border-color 0.15s; }
+    .form-input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(27,73,101,0.12); }
+
+    /* Cascade list */
+    .cascade-list { display: flex; flex-direction: column; gap: 6px; }
+    .cascade-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 6px 10px; background: var(--c-grey-l); border-radius: var(--radius-sm); }
+    .cascade-item__icon { font-size: 14px; }
+    .cascade-item__text { flex: 1; }
+    .cascade-item__module { font-size: 11px; color: var(--c-text-3); font-family: var(--font-mono); }
+
+    @media (max-width: 1024px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     MODALE — VALIDATION DE PHASE
+     Simule : hx-post="/phases/apd/valider/" hx-confirm="..."
+============================================================ -->
+<div class="modal-overlay" id="modal-validation" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title">Valider la phase APD</h2>
+      <button class="modal__close" onclick="closeModal()" aria-label="Fermer">×</button>
+    </div>
+    <div class="modal__body">
+
+      <div class="alert-banner alert-banner--info">
+        ℹ️ La validation de cette phase déclenchera automatiquement une série d'actions.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="date-fin-reelle">Date de fin réelle <span style="color:var(--c-red)">*</span></label>
+        <input class="form-input" id="date-fin-reelle" type="date" value="2025-09-08">
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--c-text-2);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Actions déclenchées automatiquement</div>
+        <div class="cascade-list">
+          <div class="cascade-item">
+            <span class="cascade-item__icon">📅</span>
+            <span class="cascade-item__text">Date réelle de fin enregistrée — écart calculé (+8j)</span>
+            <span class="cascade-item__module">1.2</span>
+          </div>
+          <div class="cascade-item">
+            <span class="cascade-item__icon">▶️</span>
+            <span class="cascade-item__text">Phase PRO ouverte — statut "En cours"</span>
+            <span class="cascade-item__module">1.2</span>
+          </div>
+          <div class="cascade-item">
+            <span class="cascade-item__icon">✅</span>
+            <span class="cascade-item__text">5 tâches PRO générées et assignées</span>
+            <span class="cascade-item__module">1.9</span>
+          </div>
+          <div class="cascade-item">
+            <span class="cascade-item__icon">💰</span>
+            <span class="cascade-item__text">Proposition de facture APD — 51 000 € HT</span>
+            <span class="cascade-item__module">1.5</span>
+          </div>
+          <div class="cascade-item">
+            <span class="cascade-item__icon">🔔</span>
+            <span class="cascade-item__text">Notification équipe projet + MOA (portail)</span>
+            <span class="cascade-item__module">2.6</span>
+          </div>
+          <div class="cascade-item">
+            <span class="cascade-item__icon">📆</span>
+            <span class="cascade-item__text">Jalons calendrier mis à jour (décalage +8j)</span>
+            <span class="cascade-item__module">3.5</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal()">Annuler</button>
+      <!-- hx-post="/phases/apd/valider/" hx-target="#page-detail" hx-swap="outerHTML" -->
+      <button class="btn btn--primary" onclick="closeModal()">Confirmer la validation →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="nav-sidebar" aria-label="Navigation principale">
+    <div class="nav-sidebar__logo">
+      <span class="nav-sidebar__logo-dot"></span>GAA
+    </div>
+    <div class="nav-sidebar__section">Pilotage</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">⬜</span> Tableau de bord</a>
+    <a class="nav-sidebar__item nav-sidebar__item--active" href="#" onclick="return false"><span class="nav-sidebar__icon">📁</span> Projets <span class="nav-sidebar__badge">12</span></a>
+    <div class="nav-sidebar__section">Commercial</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📄</span> Devis</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">👥</span> CRM</a>
+    <div class="nav-sidebar__section">Opérationnel</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">⏱</span> Temps</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📂</span> Documents</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">✓</span> Tâches</a>
+    <div class="nav-sidebar__section">Finance</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">💰</span> Facturation</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📊</span> Reporting</a>
+    <div class="nav-sidebar__user">
+      <div class="nav-sidebar__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,0.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main-wrap">
+
+    <header class="topbar">
+      <div class="topbar__breadcrumb" id="breadcrumb">
+        <a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <strong>Phases</strong>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="topbar__search"><span>🔍</span><span>Rechercher dans GAA…</span></div>
+        <div class="topbar__avatar">ML</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         PAGE 1 — PLANNING PHASES (GANTT + TABLEAU)
+    ================================================ -->
+    <main class="page page--active" id="page-gantt">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Phases — Groupe scolaire Victor Hugo</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">MOE complète · 8 phases · Acté le 15/03/2025</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost">Exporter</button>
+          <!-- hx-post="/projets/1/phases/recalculer/" hx-target="#page-gantt" -->
+          <button class="btn btn--primary">↻ Recalculer</button>
+        </div>
+      </div>
+
+      <!-- Alerte dérive -->
+      <div class="alert-banner alert-banner--warn">
+        ⚠️ <div><strong>Phase APS — dérive détectée :</strong> temps passé 107% du budget (96h / 90h). Valider la phase avec ce dépassement ?<span style="margin-left:12px;font-weight:600;cursor:pointer;text-decoration:underline">Voir détail APS →</span></div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Avancement global</div>
+          <div class="kpi-card__value">38%</div>
+          <div class="kpi-card__detail">Phase active : <strong>APD</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Durée totale prév.</div>
+          <div class="kpi-card__value">34 mois</div>
+          <div class="kpi-card__detail">avr. 2025 → fév. 2028</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Écart calendrier</div>
+          <div class="kpi-card__value text-orange">+8 j</div>
+          <div class="kpi-card__detail">APS : +8j de retard cumulé</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Budget heures restant</div>
+          <div class="kpi-card__value">138 h</div>
+          <div class="kpi-card__detail">sur 480h budget total</div>
+        </div>
+      </div>
+
+      <!-- Toolbar bascule -->
+      <div class="toolbar">
+        <!-- hx-get="/projets/1/phases/?vue=gantt" hx-target="#vue-content" -->
+        <div class="view-toggle">
+          <button class="view-toggle__btn view-toggle__btn--active" id="btn-gantt" onclick="switchView('gantt')">📊 Gantt</button>
+          <button class="view-toggle__btn" id="btn-tableau" onclick="switchView('tableau')">☰ Tableau</button>
+        </div>
+
+        <select style="appearance:none;background:var(--c-bg);border:1px solid var(--c-border);border-radius:var(--radius-sm);padding:5px 28px 5px 10px;font-family:var(--font-main);font-size:12.5px;cursor:pointer;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 8px center">
+          <option>Zoom : Mois</option>
+          <option>Zoom : Trimestre</option>
+          <option>Zoom : Semaine</option>
+        </select>
+
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer">
+          <input type="checkbox" checked> Afficher jalons
+        </label>
+
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer">
+          <input type="checkbox" checked> Aujourd'hui
+        </label>
+      </div>
+
+      <!-- CONTENU SWITCHABLE -->
+      <div id="vue-content">
+
+        <!-- VUE GANTT -->
+        <div id="vue-gantt">
+          <div class="gantt-wrap">
+            <div class="gantt-container">
+              <div class="gantt-inner">
+
+                <!-- En-tête -->
+                <div class="gantt-header">
+                  <div class="gantt-header__label">Phase</div>
+                  <div class="gantt-months-row">
+                    <div class="gantt-month-cell">Avr 25</div>
+                    <div class="gantt-month-cell">Mai</div>
+                    <div class="gantt-month-cell">Juin</div>
+                    <div class="gantt-month-cell">Juil</div>
+                    <div class="gantt-month-cell">Août</div>
+                    <div class="gantt-month-cell">Sep</div>
+                    <div class="gantt-month-cell">Oct</div>
+                    <div class="gantt-month-cell">Nov</div>
+                    <div class="gantt-month-cell">Déc</div>
+                    <div class="gantt-month-cell">Jan 26</div>
+                    <div class="gantt-month-cell">Fév</div>
+                    <div class="gantt-month-cell">Mar</div>
+                    <div class="gantt-month-cell">Avr</div>
+                    <div class="gantt-month-cell">Sep 26</div>
+                    <div class="gantt-month-cell">…</div>
+                    <div class="gantt-month-cell">Sep 27</div>
+                    <div class="gantt-month-cell">…</div>
+                    <div class="gantt-month-cell">Fév 28</div>
+                  </div>
+                </div>
+
+                <!-- Wrapper des lignes (position relative pour la ligne aujourd'hui) -->
+                <div style="position:relative">
+
+                  <!-- Ligne aujourd'hui -->
+                  <div class="gantt-today-line" style="left: calc(180px + 38% )"></div>
+
+                  <!-- ESQ — Validée -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--done" onclick="showPage('detail')">
+                      ✓ ESQ
+                      <span class="badge badge--green" style="font-size:10px;padding:1px 6px">Validée</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--done" style="left:0%;width:12%" onclick="showPage('detail')" title="ESQ — 15/03 → 14/05/2025 (45j)">✓ ESQ · 45j</div>
+                      <!-- Jalon facturation -->
+                      <div class="gantt-milestone" style="left:calc(12% - 6px);top:calc(50% - 6px)" title="Jalon : 25 500 € — Facturé ✓"></div>
+                    </div>
+                  </div>
+
+                  <!-- APS — Validée avec retard -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--done" onclick="showPage('detail')">
+                      ✓ APS
+                      <span class="badge badge--green" style="font-size:10px;padding:1px 6px">Validée</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--done" style="left:12%;width:13.5%" onclick="showPage('detail')" title="APS — 15/05 → 08/07/2025 (54j)">✓ APS · 46j</div>
+                      <!-- Barre retard -->
+                      <div class="gantt-bar gantt-bar--delay" style="left:25.5%;width:2.5%;font-size:10px" title="Retard : +8 jours">+8j</div>
+                      <div class="gantt-milestone" style="left:calc(28% - 6px);top:calc(50% - 6px)" title="Jalon : 38 250 € — Facturé ✓"></div>
+                    </div>
+                  </div>
+
+                  <!-- APD — En cours -->
+                  <div class="gantt-row" style="background:rgba(27,73,101,0.03)">
+                    <div class="gantt-row__label gantt-row__label--active" onclick="showPage('detail')">
+                      ● APD
+                      <span class="badge badge--blue" style="font-size:10px;padding:1px 6px">En cours</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--active" style="left:28%;width:18%" onclick="showPage('detail')" title="APD — 09/07/2025 → 31/08/2025 (54j)">En cours · 62j</div>
+                      <div class="gantt-milestone" style="left:calc(46% - 6px);top:calc(50% - 6px)" title="Jalon : 51 000 € — En attente validation"></div>
+                    </div>
+                  </div>
+
+                  <!-- PRO — À venir -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--upcoming" onclick="showPage('detail')">
+                      PRO
+                      <span class="badge badge--grey" style="font-size:10px;padding:1px 6px">À venir</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--upcoming" style="left:46%;width:15%" onclick="showPage('detail')" title="PRO — 01/09 → 30/11/2025 (90j)">PRO · 90j</div>
+                      <div class="gantt-milestone" style="left:calc(61% - 6px);top:calc(50% - 6px);background:var(--c-text-3)" title="Jalon : 38 250 €"></div>
+                    </div>
+                  </div>
+
+                  <!-- DCE — À venir -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--upcoming" onclick="showPage('detail')">
+                      DCE
+                      <span class="badge badge--grey" style="font-size:10px;padding:1px 6px">À venir</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--upcoming" style="left:61%;width:8%" onclick="showPage('detail')">DCE · 45j</div>
+                      <div class="gantt-milestone" style="left:calc(69% - 6px);top:calc(50% - 6px);background:var(--c-text-3)" title="Jalon : 25 500 €"></div>
+                    </div>
+                  </div>
+
+                  <!-- ACT — À venir -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--upcoming" onclick="showPage('detail')">
+                      ACT
+                      <span class="badge badge--grey" style="font-size:10px;padding:1px 6px">À venir</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--upcoming" style="left:69%;width:5%" onclick="showPage('detail')">ACT · 30j</div>
+                    </div>
+                  </div>
+
+                  <!-- DET — À venir -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--upcoming" onclick="showPage('detail')">
+                      DET
+                      <span class="badge badge--grey" style="font-size:10px;padding:1px 6px">À venir</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--upcoming" style="left:74%;width:18%" onclick="showPage('detail')">DET · 8 mois</div>
+                      <div class="gantt-milestone" style="left:calc(92% - 6px);top:calc(50% - 6px);background:var(--c-text-3)" title="Jalon : 63 750 €"></div>
+                    </div>
+                  </div>
+
+                  <!-- AOR — À venir -->
+                  <div class="gantt-row">
+                    <div class="gantt-row__label gantt-row__label--upcoming" onclick="showPage('detail')">
+                      AOR
+                      <span class="badge badge--grey" style="font-size:10px;padding:1px 6px">À venir</span>
+                    </div>
+                    <div class="gantt-row__track">
+                      <div class="gantt-bar gantt-bar--upcoming" style="left:92%;width:7%" onclick="showPage('detail')">AOR · 2 mois</div>
+                      <div class="gantt-milestone" style="left:calc(99% - 6px);top:calc(50% - 6px);background:var(--c-text-3)" title="Jalon : 12 750 €"></div>
+                    </div>
+                  </div>
+
+                </div><!-- /relative -->
+
+              </div><!-- /gantt-inner -->
+            </div><!-- /gantt-container -->
+          </div><!-- /gantt-wrap -->
+
+          <!-- Légende -->
+          <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--c-text-2);padding:4px 2px">
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:20px;height:10px;border-radius:2px;background:var(--c-green);display:inline-block"></span> Validée</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:20px;height:10px;border-radius:2px;background:var(--c-primary);display:inline-block"></span> En cours</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:20px;height:10px;border-radius:2px;background:var(--c-grey-l);border:1px dashed var(--c-border-md);display:inline-block"></span> À venir</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:20px;height:10px;border-radius:2px;background:var(--c-red);opacity:.75;display:inline-block"></span> Retard</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;background:var(--c-orange);transform:rotate(45deg);display:inline-block"></span> Jalon de facturation</div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="width:2px;height:16px;background:var(--c-red);display:inline-block"></span> Aujourd'hui</div>
+          </div>
+        </div>
+
+        <!-- VUE TABLEAU (masquée par défaut) -->
+        <div id="vue-tableau" style="display:none">
+          <div class="table-wrap">
+            <table class="data-table" aria-label="Tableau des phases">
+              <thead>
+                <tr>
+                  <th>Phase</th>
+                  <th>Statut</th>
+                  <th>Honoraires</th>
+                  <th>Ratio</th>
+                  <th>Budget h</th>
+                  <th>Temps passé</th>
+                  <th>Consommation</th>
+                  <th>Fin prévue</th>
+                  <th>Fin réelle</th>
+                  <th>Écart</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onclick="showPage('detail')">
+                  <td><strong>ESQ</strong></td>
+                  <td><span class="badge badge--green">Validée</span></td>
+                  <td class="text-mono">25 500 €</td>
+                  <td>10%</td>
+                  <td class="text-mono">60 h</td>
+                  <td class="text-mono">58 h</td>
+                  <td>
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--green" style="width:97%"></div></div>
+                      <span class="text-green" style="font-size:12px;font-family:var(--font-mono)">97%</span>
+                    </div>
+                  </td>
+                  <td class="text-mono" style="font-size:12px">14/05/25</td>
+                  <td class="text-mono" style="font-size:12px">14/05/25</td>
+                  <td class="text-green text-mono">-1j</td>
+                </tr>
+                <tr onclick="showPage('detail')">
+                  <td><strong>APS</strong></td>
+                  <td><span class="badge badge--green">Validée</span></td>
+                  <td class="text-mono">38 250 €</td>
+                  <td>15%</td>
+                  <td class="text-mono">90 h</td>
+                  <td class="text-mono">96 h</td>
+                  <td>
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--orange" style="width:100%"></div></div>
+                      <span class="text-orange" style="font-size:12px;font-family:var(--font-mono)">107%</span>
+                    </div>
+                  </td>
+                  <td class="text-mono" style="font-size:12px">30/06/25</td>
+                  <td class="text-mono" style="font-size:12px">08/07/25</td>
+                  <td class="text-red text-mono">+8j</td>
+                </tr>
+                <tr class="row--active" onclick="showPage('detail')">
+                  <td><strong style="color:var(--c-primary)">APD ●</strong></td>
+                  <td><span class="badge badge--blue">En cours</span></td>
+                  <td class="text-mono">51 000 €</td>
+                  <td>20%</td>
+                  <td class="text-mono">120 h</td>
+                  <td class="text-mono">84 h</td>
+                  <td>
+                    <div class="progress-bar-wrap">
+                      <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--blue" style="width:70%"></div></div>
+                      <span style="font-size:12px;font-family:var(--font-mono);color:var(--c-primary)">70%</span>
+                    </div>
+                  </td>
+                  <td class="text-mono" style="font-size:12px">31/08/25</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                </tr>
+                <tr class="row--muted" onclick="showPage('detail')">
+                  <td>PRO</td>
+                  <td><span class="badge badge--grey">À venir</span></td>
+                  <td class="text-mono">38 250 €</td>
+                  <td>15%</td>
+                  <td class="text-mono">90 h</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-mono" style="font-size:12px">30/11/25</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                </tr>
+                <tr class="row--muted" onclick="showPage('detail')">
+                  <td>DCE</td>
+                  <td><span class="badge badge--grey">À venir</span></td>
+                  <td class="text-mono">25 500 €</td>
+                  <td>10%</td>
+                  <td class="text-mono">50 h</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-mono" style="font-size:12px">15/01/26</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                </tr>
+                <tr class="row--muted" onclick="showPage('detail')">
+                  <td>ACT</td>
+                  <td><span class="badge badge--grey">À venir</span></td>
+                  <td class="text-mono">12 750 €</td>
+                  <td>5%</td>
+                  <td class="text-mono">30 h</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-mono" style="font-size:12px">15/02/26</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                </tr>
+                <tr class="row--muted" onclick="showPage('detail')">
+                  <td>DET</td>
+                  <td><span class="badge badge--grey">À venir</span></td>
+                  <td class="text-mono">51 000 €</td>
+                  <td>20%</td>
+                  <td class="text-mono">120 h</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-mono" style="font-size:12px">15/10/27</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                </tr>
+                <tr class="row--muted" onclick="showPage('detail')">
+                  <td>AOR</td>
+                  <td><span class="badge badge--grey">À venir</span></td>
+                  <td class="text-mono">12 750 €</td>
+                  <td>5%</td>
+                  <td class="text-mono">20 h</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-mono" style="font-size:12px">15/02/28</td>
+                  <td class="text-muted">—</td>
+                  <td class="text-muted">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Totaux -->
+          <div style="display:flex;justify-content:flex-end;gap:24px;padding:10px 14px;background:var(--c-grey-l);border:1px solid var(--c-border);border-radius:var(--radius);font-size:12.5px">
+            <span>Total honoraires : <strong class="text-mono">255 000 €</strong></span>
+            <span>Total budget heures : <strong class="text-mono">480 h</strong></span>
+            <span>Temps passé : <strong class="text-mono">238 h (50%)</strong></span>
+          </div>
+        </div>
+
+      </div><!-- /vue-content -->
+    </main>
+
+    <!-- ================================================
+         PAGE 2 — DÉTAIL PHASE APD
+         Simule : detail-phase.html?projet=1&phase=apd
+    ================================================ -->
+    <main class="page" id="page-detail">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+            <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Phase APD — Avant-Projet Détaillé</h1>
+            <span class="badge badge--blue">En cours</span>
+          </div>
+          <p style="font-size:13px;color:var(--c-text-2)">Groupe scolaire Victor Hugo · MOE · Démarré le 09/07/2025</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost">Suspendre</button>
+          <button class="btn btn--ghost btn--danger-ghost">Annuler</button>
+          <!-- hx-get="/phases/apd/valider-form/" hx-target="#modal-validation" -->
+          <button class="btn btn--primary" onclick="openModal()">✓ Valider la phase</button>
+        </div>
+      </div>
+
+      <!-- Navigation entre phases -->
+      <div class="phase-nav" role="navigation" aria-label="Navigation entre phases">
+        <div class="phase-nav__pill phase-nav__pill--done" onclick="return false">✓ ESQ</div>
+        <div class="phase-nav__pill phase-nav__pill--done" onclick="return false">✓ APS</div>
+        <div class="phase-nav__pill phase-nav__pill--active">● APD</div>
+        <div class="phase-nav__pill phase-nav__pill--upcoming" onclick="return false">PRO</div>
+        <div class="phase-nav__pill phase-nav__pill--upcoming" onclick="return false">DCE</div>
+        <div class="phase-nav__pill phase-nav__pill--upcoming" onclick="return false">ACT</div>
+        <div class="phase-nav__pill phase-nav__pill--upcoming" onclick="return false">DET</div>
+        <div class="phase-nav__pill phase-nav__pill--upcoming" onclick="return false">AOR</div>
+      </div>
+
+      <!-- Contenu 2 colonnes -->
+      <div class="detail-grid">
+
+        <!-- Colonne gauche -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- Calendrier -->
+          <div class="info-block">
+            <div class="info-block__title">Calendrier</div>
+            <div class="field-grid">
+              <div>
+                <div class="field-item__label">Début prévu</div>
+                <div class="field-item__value">09/07/2025</div>
+              </div>
+              <div>
+                <div class="field-item__label">Fin prévue</div>
+                <div class="field-item__value">31/08/2025</div>
+              </div>
+              <div>
+                <div class="field-item__label">Début réel</div>
+                <div class="field-item__value">09/07/2025</div>
+              </div>
+              <div>
+                <div class="field-item__label">Fin réelle</div>
+                <div class="field-item__value text-muted">— (en cours)</div>
+              </div>
+              <div>
+                <div class="field-item__label">Durée prévue</div>
+                <div class="field-item__value">54 jours</div>
+              </div>
+              <div>
+                <div class="field-item__label">Écart actuel</div>
+                <div class="field-item__value text-green">0j — dans les temps</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Budget & honoraires -->
+          <div class="info-block">
+            <div class="info-block__title">Budget & honoraires</div>
+            <div class="field-grid" style="margin-bottom:12px">
+              <div>
+                <div class="field-item__label">Honoraires phase</div>
+                <div class="field-item__value text-mono" style="font-size:18px;font-weight:700">51 000 €</div>
+              </div>
+              <div>
+                <div class="field-item__label">Ratio / total</div>
+                <div class="field-item__value">20%</div>
+              </div>
+              <div>
+                <div class="field-item__label">Budget heures</div>
+                <div class="field-item__value text-mono">120 h</div>
+              </div>
+              <div>
+                <div class="field-item__label">Temps passé</div>
+                <div class="field-item__value text-mono">84 h <span style="font-size:12px;color:var(--c-primary)">(70%)</span></div>
+              </div>
+            </div>
+
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--c-text-2);margin-bottom:4px">
+                <span>Consommation heures</span>
+                <span class="text-mono">84h / 120h</span>
+              </div>
+              <div style="height:8px;background:var(--c-border);border-radius:4px;overflow:hidden;margin-bottom:4px">
+                <div style="width:70%;height:100%;background:var(--c-primary);border-radius:4px"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--c-text-3)">
+                <span>Seuil d'alerte : 110% (132h)</span>
+                <span class="text-green">✓ OK</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jalon de facturation -->
+          <div class="info-block">
+            <div class="info-block__title">
+              Jalon de facturation
+              <span class="badge badge--grey" style="font-size:10px">En attente validation phase</span>
+            </div>
+            <div class="jalon-card">
+              <div class="jalon-card__row">
+                <span class="jalon-card__label">Montant facturable</span>
+                <span class="jalon-card__value text-mono" style="font-size:16px">51 000 € HT</span>
+              </div>
+              <div class="jalon-card__row">
+                <span class="jalon-card__label">Déclenchement</span>
+                <span class="jalon-card__value">Validation de la phase</span>
+              </div>
+              <div class="jalon-card__row">
+                <span class="jalon-card__label">Source</span>
+                <span class="jalon-card__value">Devis n°2025-001 · Phase APD</span>
+              </div>
+              <div class="jalon-card__row" style="background:var(--c-primary-l);padding:8px;border-radius:var(--radius-sm);margin-top:6px;border-top:none;padding-top:8px;margin-top:6px">
+                <span style="font-size:12px;color:var(--c-primary)">💰 La validation génèrera automatiquement une proposition de facture dans le module 1.5</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Colonne droite -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- Tâches de la phase -->
+          <div class="info-block">
+            <div class="info-block__title">
+              Tâches de la phase
+              <!-- hx-get="/projets/1/taches/?phase=apd" hx-target="#taches-apd" -->
+              <a href="#">Gérer →</a>
+            </div>
+            <div class="task-list" id="taches-apd">
+              <div class="task-item">
+                <span class="task-item__icon">✅</span>
+                <span class="task-item__label task-item__label--done">Relevé existant complet</span>
+                <span class="task-item__assignee">T. Morel · 12/07</span>
+              </div>
+              <div class="task-item">
+                <span class="task-item__icon">✅</span>
+                <span class="task-item__label task-item__label--done">Études thermiques (BET Thermex)</span>
+                <span class="task-item__assignee">BET Thermex · 20/07</span>
+              </div>
+              <div class="task-item">
+                <span class="task-item__icon">🔵</span>
+                <span class="task-item__label task-item__label--active">Plans APD ind. B</span>
+                <span class="task-item__assignee">C. Petit · en cours</span>
+              </div>
+              <div class="task-item">
+                <span class="task-item__icon">⚪</span>
+                <span class="task-item__label">Notice descriptive</span>
+                <span class="task-item__assignee">M. Lefort · à faire</span>
+              </div>
+              <div class="task-item">
+                <span class="task-item__icon">⚪</span>
+                <span class="task-item__label">Estimation travaux (Économiste)</span>
+                <span class="task-item__assignee">M. Lefort · à faire</span>
+              </div>
+            </div>
+            <div style="margin-top:8px;font-size:12px;color:var(--c-text-3)">2/5 tâches complétées · 1 en cours · 2 à faire</div>
+          </div>
+
+          <!-- Charge par collaborateur -->
+          <div class="info-block">
+            <div class="info-block__title">
+              Charge par collaborateur
+              <!-- hx-get="/temps/?projet=1&phase=apd" hx-target="#charge-apd" -->
+              <a href="#">Voir détail →</a>
+            </div>
+            <div class="charge-list" id="charge-apd">
+              <div class="charge-row">
+                <span class="charge-row__name">M. Lefort<br><span style="font-size:11px;color:var(--c-text-3)">Chef de projet</span></span>
+                <div class="charge-row__bar">
+                  <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--blue" style="width:70%"></div></div>
+                </div>
+                <span class="charge-row__count text-mono">28h / 40h</span>
+              </div>
+              <div class="charge-row">
+                <span class="charge-row__name">C. Petit<br><span style="font-size:11px;color:var(--c-text-3)">Projeteur</span></span>
+                <div class="charge-row__bar">
+                  <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--orange" style="width:76%"></div></div>
+                </div>
+                <span class="charge-row__count text-mono text-orange">38h / 50h</span>
+              </div>
+              <div class="charge-row">
+                <span class="charge-row__name">T. Morel<br><span style="font-size:11px;color:var(--c-text-3)">Dessinateur</span></span>
+                <div class="charge-row__bar">
+                  <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--green" style="width:60%"></div></div>
+                </div>
+                <span class="charge-row__count text-mono text-green">18h / 30h</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documents liés -->
+          <div class="info-block">
+            <div class="info-block__title">
+              Documents liés à la phase
+              <!-- hx-get="/documents/?projet=1&phase=apd" hx-target="#docs-apd" -->
+              <a href="#">GED →</a>
+            </div>
+            <div class="doc-list" id="docs-apd">
+              <div class="doc-item">
+                <span class="doc-item__icon">📐</span>
+                <span class="doc-item__name">Plans APD ind. B</span>
+                <span class="badge badge--blue" style="font-size:10px">ind. B</span>
+                <span class="doc-item__meta">C. Petit · 28/02</span>
+              </div>
+              <div class="doc-item">
+                <span class="doc-item__icon">📄</span>
+                <span class="doc-item__name">Étude thermique</span>
+                <span class="badge badge--grey" style="font-size:10px">PDF</span>
+                <span class="doc-item__meta">BET Thermex · 20/07</span>
+              </div>
+              <div class="doc-item">
+                <span class="doc-item__icon">📝</span>
+                <span class="doc-item__name">CR réunion MOA — validation programme</span>
+                <span class="badge badge--grey" style="font-size:10px">PDF</span>
+                <span class="doc-item__meta">M. Lefort · 28/02</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Retour -->
+      <div>
+        <button class="btn btn--ghost" onclick="showPage('gantt')">← Retour au planning</button>
+      </div>
+
+    </main>
+
+  </div><!-- /main-wrap -->
+</div><!-- /shell -->
+
+<script>
+  /* ---- Navigation pages ---- */
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+    document.getElementById('page-' + name).classList.add('page--active');
+
+    const bc = document.getElementById('breadcrumb');
+    if (name === 'gantt') {
+      bc.innerHTML = '<a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <strong>Phases</strong>';
+    } else if (name === 'detail') {
+      bc.innerHTML = '<a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <a href="#" onclick="showPage(\'gantt\');return false">Phases</a> / <strong>APD</strong>';
+    }
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- Bascule Gantt / Tableau ---- */
+  function switchView(view) {
+    const btnG = document.getElementById('btn-gantt');
+    const btnT = document.getElementById('btn-tableau');
+    const vueG = document.getElementById('vue-gantt');
+    const vueT = document.getElementById('vue-tableau');
+
+    if (view === 'gantt') {
+      btnG.classList.add('view-toggle__btn--active');
+      btnT.classList.remove('view-toggle__btn--active');
+      vueG.style.display = 'block';
+      vueT.style.display = 'none';
+    } else {
+      btnT.classList.add('view-toggle__btn--active');
+      btnG.classList.remove('view-toggle__btn--active');
+      vueG.style.display = 'none';
+      vueT.style.display = 'block';
+    }
+  }
+
+  /* ---- Modale validation ---- */
+  function openModal() {
+    document.getElementById('modal-validation').classList.add('modal-overlay--open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-validation').classList.remove('modal-overlay--open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('modal-validation').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+// ── Helpers ──────────────────────────────────────────────
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+}
+
+function getProjetCourant(){
+  // Cherche d'abord le projet en cours le plus récent
+  const ps=GAAStore.getProjets();
+  return ps.find(p=>p.statut==='en_cours')||ps[0]||null;
+}
+
+// ── Gantt dynamique ────────────────────────────────────────
+function renderGantt(){
+  const p=getProjetCourant();
+  if(!p||!p.phases) return;
+
+  // Mise à jour du titre
+  document.querySelectorAll('h1').forEach(el=>{
+    if(el.textContent.includes('Hugo')||el.textContent.includes('Phases')){
+      el.textContent=`Phases MOP — ${p.nom}`;
+    }
+  });
+
+  // Mettre à jour le tableau (vue tableau)
+  const tbody=document.querySelector('#vue-tableau tbody');
+  if(tbody){
+    tbody.innerHTML=p.phases.map(ph=>{
+      const sCfg={valide:{label:'Validée',cls:'badge--green',icon:'✓'},en_cours:{label:'En cours',cls:'badge--blue',icon:'●'},a_venir:{label:'À venir',cls:'badge--grey',icon:''}};
+      const s=sCfg[ph.statut]||sCfg.a_venir;
+      const pct=ph.avancement!==undefined?ph.avancement+'%':'—';
+      return `<tr onclick="showPage('detail')" style="cursor:pointer">
+        <td><strong style="font-family:var(--mono)">${ph.code}</strong></td>
+        <td>${ph.libelle||ph.code}</td>
+        <td><span class="badge ${s.cls}">${s.label}</span></td>
+        <td>${ph.date_debut||'—'}</td>
+        <td>${ph.date_fin||'—'}</td>
+        <td>
+          ${ph.avancement!==undefined?`
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+                <div style="height:100%;background:var(--primary);width:${ph.avancement}%"></div>
+              </div>
+              <span style="font-family:var(--mono);font-size:12px">${pct}</span>
+            </div>` : '—'}
+        </td>
+        <td><button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();ouvrirPhase('${ph.code}','${p.id}')">Détail</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // KPIs bandeau
+  const done=p.phases.filter(ph=>ph.statut==='valide').length;
+  const total=p.phases.length;
+  const pctDone=Math.round(done/total*100);
+  document.querySelectorAll('[data-kpi="phases_done"]').forEach(el=>el.textContent=`${done}/${total}`);
+  document.querySelectorAll('[data-kpi="pct_done"]').forEach(el=>el.textContent=pctDone+'%');
+
+  // Breadcrumb
+  const bc=document.getElementById('breadcrumb');
+  if(bc) bc.innerHTML=`<a href="#">Projets</a> / <a href="#">${p.nom}</a> / <strong>Phases MOP</strong>`;
+}
+
+// ── Validation d'une phase ────────────────────────────────
+function validerPhase(projetId, phaseCode){
+  const p=GAAStore.getProjet(projetId);
+  if(!p) return;
+  const ph=p.phases.find(x=>x.code===phaseCode);
+  if(!ph) return;
+  ph.statut='valide';
+  ph.date_fin_reelle=new Date().toISOString().split('T')[0];
+  // Passer la suivante en cours
+  const idx=p.phases.indexOf(ph);
+  if(idx+1<p.phases.length){
+    p.phases[idx+1].statut='en_cours';
+    p.phases[idx+1].avancement=0;
+    p.phases[idx+1].date_debut=new Date().toISOString().split('T')[0];
+    p.phase_courante=p.phases[idx+1].code;
+  }
+  GAAStore.saveProjet(p);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Phase ${phaseCode} validée — ${p.nom}`,'1.2 Phases');
+  renderGantt();
+  closeModal();
+  showToast(`Phase ${phaseCode} validée ✓`,'success');
+}
+
+function ouvrirPhase(code, projetId){
+  _currentPhase={code,projetId};
+  const p=GAAStore.getProjet(projetId);
+  const ph=p?.phases?.find(x=>x.code===code);
+  if(!ph) return;
+
+  // Mettre à jour le modal validation
+  const modal=document.getElementById('modal-validation');
+  if(modal){
+    const t=modal.querySelector('.modal__title');
+    if(t) t.textContent=`Valider la phase ${code} — ${p.nom}`;
+    // Patcher le bouton confirmer
+    const btn=modal.querySelector('.btn--primary');
+    if(btn) btn.onclick=()=>validerPhase(projetId,code);
+  }
+  showPage('detail');
+
+  // Détail page
+  const h=document.querySelector('#page-detail h1,[id="page-detail"] h1');
+  if(h) h.textContent=`Phase ${code} — ${p.nom}`;
+}
+
+let _currentPhase=null;
+
+// ── Avancement slider ─────────────────────────────────────
+function updateAvancement(val){
+  const p=getProjetCourant();
+  if(!p||!_currentPhase) return;
+  const ph=p.phases?.find(x=>x.code===_currentPhase.code);
+  if(!ph) return;
+  ph.avancement=parseInt(val);
+  GAAStore.saveProjet(p);
+  document.querySelectorAll('.avancement-val').forEach(el=>el.textContent=val+'%');
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let _tt;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_tt);_tt=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderGantt();
+  // Patcher sélecteur projet si présent
+  const sel=document.querySelector('select[id*="projet"],select[name*="projet"]');
+  if(sel){
+    sel.innerHTML=GAAStore.getProjets().filter(p=>p.statut==='en_cours').map(p=>`<option value="${p.id}">${p.nom}</option>`).join('');
+    sel.addEventListener('change',renderGantt);
+  }
+});
+
+</script>
+</body>
+</html>

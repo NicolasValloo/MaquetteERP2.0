@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — 1.10 Assurances & obligations légales</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --sw:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex}
+    /* sidebar */
+    .nav{width:var(--sw);background:var(--primary);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px;font-size:20px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px;color:#fff}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:14px 20px 3px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+    .wrap{margin-left:var(--sw);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50}
+    .page{padding:24px;display:flex;flex-direction:column;gap:18px}
+    /* composants */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .card__hd{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .card__title{font-size:13px;font-weight:700}
+    .card__sub{font-size:12px;color:var(--text-3);margin-top:2px}
+    .card__body{padding:0}
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{background:var(--grey-l);padding:8px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap}
+    .tbl td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .tbl tr:last-child td{border-bottom:none}
+    .tbl tr:hover td{background:rgba(27,73,101,.02)}
+    /* police card */
+    .police-card{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .police-header{padding:14px 16px;display:flex;align-items:flex-start;gap:14px}
+    .police-icon{width:42px;height:42px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .police-body{padding:0 16px 14px;display:flex;flex-direction:column;gap:8px}
+    .police-row{display:flex;justify-content:space-between;font-size:12.5px;gap:10px;padding:4px 0;border-bottom:1px solid var(--border)}
+    .police-row:last-child{border-bottom:none}
+    .police-label{color:var(--text-3)}
+    .police-val{font-weight:600;text-align:right;font-family:var(--mono);font-size:12px}
+    /* timeline renouvellement */
+    .timeline-bar{height:10px;border-radius:5px;background:var(--border);position:relative;overflow:visible;margin:8px 0}
+    .timeline-fill{height:100%;border-radius:5px;position:absolute;left:0;top:0}
+    .timeline-marker{position:absolute;top:-4px;width:2px;height:18px;background:var(--red)}
+    .timeline-label{position:absolute;top:18px;font-size:10px;color:var(--red);font-weight:700;white-space:nowrap;transform:translateX(-50%)}
+    /* obligations */
+    .oblig-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px}
+    .oblig-row:last-child{border-bottom:none}
+    .oblig-icon{font-size:18px;flex-shrink:0;width:28px;text-align:center}
+    .oblig-name{font-weight:600;flex:1}
+    .oblig-due{font-family:var(--mono);font-size:12px;color:var(--text-3)}
+    /* sinistres */
+    .sinistre-row{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px}
+    .sinistre-row:last-child{border-bottom:none}
+    /* attestations projet */
+    .proj-assur{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12.5px}
+    .proj-assur:last-child{border-bottom:none}
+    /* modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .overlay--on{display:flex}
+    .modal{background:var(--surface);border-radius:12px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal__hd{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface)}
+    .modal__title{font-size:15px;font-weight:700}
+    .modal__x{width:28px;height:28px;border-radius:50%;border:none;background:var(--grey-l);cursor:pointer;font-size:16px;color:var(--text-2)}
+    .modal__body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+    .modal__ft{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .fg{display:flex;flex-direction:column;gap:5px}
+    .fl{font-size:12.5px;font-weight:600}
+    .fi{padding:8px 11px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;outline:none}
+    .fi:focus{border-color:var(--primary)}
+    .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .mono{font-family:var(--mono)}
+    .text-red{color:var(--red)}.text-orange{color:var(--orange)}.text-green{color:var(--green)}
+  </style>
+</head>
+<body>
+
+<div class="overlay" id="modal-police">
+  <div class="modal">
+    <div class="modal__hd"><span class="modal__title">Nouvelle police d'assurance</span><button class="modal__x" onclick="closeM('modal-police')">×</button></div>
+    <div class="modal__body">
+      <div class="fg"><label class="fl">Type de police <span style="color:var(--red)">*</span></label>
+        <select class="fi"><option>RC Professionnelle</option><option>Décennale</option><option>Dommages-Ouvrage</option><option>Multirisque professionnelle</option></select></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Assureur <span style="color:var(--red)">*</span></label><input class="fi" value="Allianz"></div>
+        <div class="fg"><label class="fl">N° de police</label><input class="fi mono" value="ALZ-2026-0045-FR"></div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Date de début</label><input class="fi" type="date" value="2026-01-01"></div>
+        <div class="fg"><label class="fl">Date d'échéance <span style="color:var(--red)">*</span></label><input class="fi" type="date" value="2027-01-01"></div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Plafond de garantie</label><input class="fi mono" value="2 000 000 €"></div>
+        <div class="fg"><label class="fl">Prime annuelle HT</label><input class="fi mono" value="4 200 €"></div>
+      </div>
+      <div class="fg"><label class="fl">Alertes de renouvellement</label>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" checked> J–90</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" checked> J–60</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox" checked> J–30</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer"><input type="checkbox"> J–15</label>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Attestation (PDF)</label>
+        <div style="border:2px dashed var(--border-md);border-radius:var(--r-sm);padding:16px;text-align:center;cursor:pointer;color:var(--text-3)">📎 Déposer le fichier ou cliquer</div>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeM('modal-police')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeM('modal-police')">Enregistrer la police</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modal-sinistre">
+  <div class="modal">
+    <div class="modal__hd"><span class="modal__title">Déclarer un sinistre / réclamation</span><button class="modal__x" onclick="closeM('modal-sinistre')">×</button></div>
+    <div class="modal__body">
+      <div class="fg"><label class="fl">Police concernée</label><select class="fi"><option>RC Pro — Allianz — ALZ-RC-2026</option><option>Décennale — MMA — MMA-DEC-2025</option></select></div>
+      <div class="fg"><label class="fl">Projet lié</label><select class="fi"><option>Résidence Les Oliviers</option><option>Groupe scolaire V. Hugo</option><option>Résidence Les Cèdres</option></select></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Date du sinistre</label><input class="fi" type="date" value="2026-02-28"></div>
+        <div class="fg"><label class="fl">N° de sinistre assureur</label><input class="fi mono" placeholder="Ex. : SIN-2026-XXX"></div>
+      </div>
+      <div class="fg"><label class="fl">Nature du sinistre</label><input class="fi" value="Réclamation MOA — erreur de cote plan APD"></div>
+      <div class="fg"><label class="fl">Description</label><textarea class="fi" style="min-height:70px">MOA conteste le dimensionnement d'une pièce indiqué sur les plans APD. Demande de remise en conformité à notre charge.</textarea></div>
+      <div class="fg"><label class="fl">Montant réclamé</label><input class="fi mono" value="8 500 €"></div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeM('modal-sinistre')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeM('modal-sinistre')">Enregistrer le sinistre</button>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="nav__logo"><div class="nav__dot"></div>GAA</div>
+  <div class="nav__sec">Projets</div>
+  <div class="nav__item"><span>📁</span> Portefeuille</div>
+  <div class="nav__item"><span>⏱</span> Temps</div>
+  <div class="nav__sec">Agence</div>
+  <div class="nav__item nav__item--on"><span>🛡</span> Assurances</div>
+  <div class="nav__item"><span>⚙</span> Paramètres</div>
+  <div class="nav__user"><div class="nav__avatar">ML</div><div><div style="font-weight:600;font-size:12px;color:#fff">M. Lefort</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Chef de projet</div></div></div>
+</nav>
+
+<div class="wrap">
+  <header class="topbar">
+    <div style="font-size:13px;color:var(--text-2);flex:1">Agence / <strong>Assurances & obligations légales</strong></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn--ghost btn--sm" onclick="openM('modal-sinistre')">⚠ Déclarer un sinistre</button>
+      <button class="btn btn--primary btn--sm" onclick="openM('modal-police')">+ Nouvelle police</button>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+      <div class="card" style="padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px">RC Professionnelle</div>
+        <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--green)">✓ Valide</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px">Échéance 01/04/2027 — 391j</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px">Décennale</div>
+        <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--orange)">⚠ J–45</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px">Échéance 20/04/2026 — Renouveler</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px">Sinistres ouverts</div>
+        <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--red)">1</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px">RC Pro — Rés. Les Oliviers</div>
+      </div>
+      <div class="card" style="padding:14px 16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px">Obligations en attente</div>
+        <div style="font-size:22px;font-weight:700;font-family:var(--mono);color:var(--orange)">2</div>
+        <div style="font-size:12px;color:var(--text-3);margin-top:3px">Formation DPC + Ordre renouvellement</div>
+      </div>
+    </div>
+
+    <!-- Polices d'assurance -->
+    <div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px">Registre des polices d'assurance</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+        <!-- RC Pro -->
+        <div class="police-card">
+          <div class="police-header" style="background:var(--green-l);border-bottom:1px solid rgba(45,106,79,.2)">
+            <div class="police-icon" style="background:rgba(45,106,79,.2)">🛡</div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:700">RC Professionnelle</div>
+              <div style="font-size:12px;color:var(--text-2);margin-top:2px">Allianz · N° ALZ-RC-2026-0012</div>
+            </div>
+            <span class="badge badge--green">Valide</span>
+          </div>
+          <div class="police-body">
+            <div class="police-row"><span class="police-label">Période</span><span class="police-val">01/04/2026 → 01/04/2027</span></div>
+            <div class="police-row"><span class="police-label">Plafond garantie</span><span class="police-val">5 000 000 €</span></div>
+            <div class="police-row"><span class="police-label">Franchise</span><span class="police-val">1 500 €</span></div>
+            <div class="police-row"><span class="police-label">Prime annuelle</span><span class="police-val">6 200 € HT</span></div>
+            <div class="police-row"><span class="police-label">Prochaine alerte</span><span class="police-val text-green">J–300 (pas d'urgence)</span></div>
+            <!-- Barre renouvellement -->
+            <div style="margin-top:8px">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Temps écoulé depuis souscription</div>
+              <div class="timeline-bar"><div class="timeline-fill" style="width:8%;background:var(--green)"></div></div>
+              <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);margin-top:2px"><span>01/04/2026</span><span>01/04/2027</span></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <button class="btn btn--ghost btn--sm">📎 Voir attestation</button>
+              <button class="btn btn--ghost btn--sm">📤 Envoyer</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Décennale -->
+        <div class="police-card" style="border-color:rgba(184,134,11,.4)">
+          <div class="police-header" style="background:var(--orange-l);border-bottom:1px solid rgba(184,134,11,.3)">
+            <div class="police-icon" style="background:rgba(184,134,11,.2)">🏗</div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:700">Assurance Décennale</div>
+              <div style="font-size:12px;color:var(--text-2);margin-top:2px">MMA · N° MMA-DEC-2025-ARCh</div>
+            </div>
+            <span class="badge badge--orange">⚠ J–45</span>
+          </div>
+          <div class="police-body">
+            <div style="background:var(--orange-l);border:1px solid rgba(184,134,11,.3);border-radius:var(--r-sm);padding:8px 10px;font-size:12.5px;color:var(--orange);margin-bottom:4px">
+              ⚠ Renouvellement requis avant le <strong>20 avril 2026</strong>. Contactez votre courtier dès maintenant.
+            </div>
+            <div class="police-row"><span class="police-label">Période</span><span class="police-val">20/04/2025 → 20/04/2026</span></div>
+            <div class="police-row"><span class="police-label">Plafond garantie</span><span class="police-val">2 000 000 €</span></div>
+            <div class="police-row"><span class="police-label">Marchés couverts</span><span class="police-val">Logement + ERP + Tertiaire</span></div>
+            <div class="police-row"><span class="police-label">Prime annuelle</span><span class="police-val">4 800 € HT</span></div>
+            <div class="police-row"><span class="police-label">Alerte active</span><span class="police-val text-orange">J–45 (envoyée il y a 3j)</span></div>
+            <div style="margin-top:8px">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Temps avant échéance</div>
+              <div class="timeline-bar"><div class="timeline-fill" style="width:88%;background:var(--orange)"></div>
+                <div class="timeline-marker" style="left:88%"><span class="timeline-label">Auj.</span></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);margin-top:18px"><span>20/04/2025</span><span style="color:var(--red);font-weight:700">20/04/2026</span></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:6px">
+              <button class="btn btn--ghost btn--sm">📎 Voir attestation</button>
+              <button class="btn btn--primary btn--sm" onclick="openM('modal-police')">⟳ Renouveler</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attestations par projet -->
+    <div class="card">
+      <div class="card__hd">
+        <div><div class="card__title">Attestations par projet</div><div class="card__sub">Statut des attestations déposées pour chaque projet actif</div></div>
+        <button class="btn btn--ghost btn--sm">⬇ Exporter tout</button>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Projet</th><th>RC Pro</th><th>Décennale</th><th>Déclaration ouverture chantier</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div style="font-weight:700">Résidence Les Oliviers</div><div style="font-size:11.5px;color:var(--text-3)">Phase PRO</div></td>
+            <td><span class="badge badge--green">✓ Déposée</span></td>
+            <td><span class="badge badge--green">✓ Déposée</span></td>
+            <td><span class="badge badge--grey">— Non applicable (PRO)</span></td>
+            <td><button class="btn btn--ghost btn--sm">📤 Envoyer</button></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:700">Résidence Les Cèdres</div><div style="font-size:11.5px;color:var(--text-3)">Phase DET 🏗</div></td>
+            <td><span class="badge badge--green">✓ Déposée</span></td>
+            <td><span class="badge badge--green">✓ Déposée</span></td>
+            <td><span class="badge badge--green">✓ Déposée 15/09/2025</span></td>
+            <td><button class="btn btn--ghost btn--sm">📤 Envoyer</button></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:700">Groupe scolaire V. Hugo</div><div style="font-size:11.5px;color:var(--text-3)">Phase APD</div></td>
+            <td><span class="badge badge--green">✓ Déposée</span></td>
+            <td><span class="badge badge--orange">⚠ À mettre à jour (décennale expire J–45)</span></td>
+            <td><span class="badge badge--grey">— Non applicable (APD)</span></td>
+            <td><button class="btn btn--primary btn--sm">Mettre à jour</button></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:700">École Jules-Ferry</div><div style="font-size:11.5px;color:var(--text-3)">Phase ESQ</div></td>
+            <td><span class="badge badge--orange">⚠ À déposer</span></td>
+            <td><span class="badge badge--orange">⚠ À déposer</span></td>
+            <td><span class="badge badge--grey">—</span></td>
+            <td><button class="btn btn--primary btn--sm">Déposer</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+      <!-- Obligations périodiques -->
+      <div class="card">
+        <div class="card__hd"><div><div class="card__title">Obligations périodiques</div><div class="card__sub">Inscription Ordre, formations, certifications</div></div><button class="btn btn--ghost btn--sm">+ Ajouter</button></div>
+        <div class="card__body">
+          <div class="oblig-row">
+            <span class="oblig-icon">🏛</span>
+            <div style="flex:1"><div class="oblig-name">Inscription au Tableau de l'Ordre</div><div style="font-size:11.5px;color:var(--text-3)">CROA Île-de-France · N° INS-12345</div></div>
+            <span class="badge badge--orange">⚠ Renouvellement 31/03</span>
+          </div>
+          <div class="oblig-row">
+            <span class="oblig-icon">📚</span>
+            <div style="flex:1"><div class="oblig-name">Formation continue DPC — 2026</div><div style="font-size:11.5px;color:var(--text-3)">20h obligatoires / an · 8h validées</div></div>
+            <span class="badge badge--orange">12h restantes</span>
+          </div>
+          <div class="oblig-row">
+            <span class="oblig-icon">🔐</span>
+            <div style="font-weight:600;flex:1">RGPD — DPO déclaration CNIL<div style="font-size:11.5px;color:var(--text-3)">Registre de traitement à jour</div></div>
+            <span class="badge badge--green">✓ À jour</span>
+          </div>
+          <div class="oblig-row">
+            <span class="oblig-icon">🧯</span>
+            <div style="font-weight:600;flex:1">Formation SST — Secouriste<div style="font-size:11.5px;color:var(--text-3)">M. Lefort · Validée 12/2024</div></div>
+            <span class="badge badge--green">✓ Valide</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sinistres -->
+      <div class="card">
+        <div class="card__hd"><div><div class="card__title">Sinistres & réclamations</div><div class="card__sub">1 sinistre ouvert</div></div><button class="btn btn--ghost btn--sm btn--sm" onclick="openM('modal-sinistre')">+ Déclarer</button></div>
+        <div class="card__body">
+          <div class="sinistre-row" style="background:var(--red-l)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:700">SIN-2026-001 — RC Pro</div>
+              <span class="badge badge--red">Ouvert</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-2)">Résidence Les Oliviers · Réclamation MOA sur cote plan APD</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:4px;display:flex;justify-content:space-between">
+              <span>Déclaré 28/02/2026</span>
+              <span>Montant réclamé : <strong style="color:var(--red)">8 500 €</strong></span>
+            </div>
+            <div style="font-size:12px;margin-top:6px">N° assureur : en attente d'attribution · <span style="color:var(--primary);cursor:pointer;font-weight:600">Ajouter le N°</span></div>
+          </div>
+          <div class="sinistre-row" style="opacity:.6">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:700">SIN-2024-003 — Décennale</div>
+              <span class="badge badge--green">Clôturé</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-2)">Résidence Les Pins · Infiltration toiture — résolue</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:4px;display:flex;justify-content:space-between">
+              <span>Clôturé 15/06/2025</span><span>Indemnisation : <strong>0 €</strong> (travaux repris)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function openM(id){document.getElementById(id).classList.add('overlay--on');document.body.style.overflow='hidden'}
+  function closeM(id){document.getElementById(id).classList.remove('overlay--on');document.body.style.overflow=''}
+  document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeM(o.id)}));
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaToastTimer;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_gaaToastTimer);_gaaToastTimer=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+  document.querySelectorAll('.nav__user > div > div:first-child,.nav-sidebar__user > div > div:first-child').forEach(el=>el.textContent=me?.nom||'M. Lefort');
+}
+
+const ASSUR_KEY='assurances_polices';
+const SINIS_KEY='assurances_sinistres';
+function getPolices(){ return GAAStore.get(ASSUR_KEY)||[]; }
+function savePolice(p){ const list=getPolices(); const i=list.findIndex(x=>x.id===p.id); if(i>=0)list[i]=p; else list.push(p); GAAStore.set(ASSUR_KEY,list); }
+function getSinistres(){ return GAAStore.get(SINIS_KEY)||[]; }
+function saveSinistre(s){ const list=getSinistres(); const i=list.findIndex(x=>x.id===s.id); if(i>=0)list[i]=s; else list.push(s); GAAStore.set(SINIS_KEY,list); }
+
+// ── Init modaux ───────────────────────────────────────────
+function initModaux(){
+  // Select projets dans modal sinistre
+  const projSel=document.querySelector('#modal-sinistre .fi:nth-of-type(2),#modal-sinistre select:nth-of-type(2)');
+  if(projSel){
+    const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+    projSel.innerHTML=projets.map(p=>`<option value="${p.id}">${p.nom}</option>`).join('');
+  }
+  // Patcher boutons
+  document.querySelector('#modal-police .modal__ft .btn--primary')?.addEventListener('click',enregistrerPolice);
+  document.querySelector('#modal-sinistre .modal__ft .btn--primary')?.addEventListener('click',enregistrerSinistre);
+}
+
+function enregistrerPolice(){
+  const inputs=document.querySelectorAll('#modal-police .fi');
+  const type=inputs[0]?.value||'RC Professionnelle';
+  const assureur=inputs[1]?.value?.trim()||'Allianz';
+  const numero=inputs[2]?.value?.trim()||'';
+  const debut=inputs[3]?.value||'';
+  const echeance=inputs[4]?.value||'';
+  const plafond=inputs[5]?.value?.trim()||'';
+  const prime=inputs[6]?.value?.trim()||'';
+  if(!assureur){showToast('Assureur requis','error');return;}
+  // Calculer jours restants
+  const joursRestants=echeance?Math.round((new Date(echeance)-new Date())/86400000):null;
+  const police={
+    id:'pol-'+Date.now(),type,assureur,numero,debut,echeance,plafond,prime,
+    statut:joursRestants!==null&&joursRestants<90?'a_renouveler':'valide',
+    jours_restants:joursRestants,
+    created_at:new Date().toISOString(),
+  };
+  savePolice(police);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Police ${type} — ${assureur} ajoutée`,'1.10 Assurances');
+  closeM('modal-police');
+  renderPolices();
+  renderKPIs();
+  showToast(`Police ${type} enregistrée ✓`,'success');
+}
+
+function enregistrerSinistre(){
+  const polSel=document.querySelector('#modal-sinistre select:first-of-type');
+  const projSel=document.querySelector('#modal-sinistre select:nth-of-type(2)');
+  const inputs=document.querySelectorAll('#modal-sinistre input[type="date"],#modal-sinistre input:not([type="date"])');
+  const nature=document.querySelector('#modal-sinistre .fi[value]')?.value||'';
+  const desc=document.querySelector('#modal-sinistre textarea')?.value?.trim()||'';
+  const montant=document.querySelector('#modal-sinistre .mono:last-of-type')?.value||'0';
+  const sinis={
+    id:'sin-'+Date.now(),
+    police:polSel?.options[polSel.selectedIndex]?.text||'—',
+    projet_id:projSel?.value,
+    projet_nom:projSel?.options[projSel?.selectedIndex]?.text||'—',
+    date:document.querySelector('#modal-sinistre input[type="date"]')?.value||'',
+    nature,desc,montant,statut:'ouvert',
+    created_at:new Date().toISOString(),
+  };
+  saveSinistre(sinis);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Sinistre déclaré — ${sinis.nature||'—'} — ${sinis.projet_nom}`,'1.10 Assurances');
+  closeM('modal-sinistre');
+  renderSinistres();
+  renderKPIs();
+  showToast('Sinistre enregistré ✓','success');
+}
+
+// ── Tableau polices ───────────────────────────────────────
+function renderPolices(){
+  const polices=getPolices();
+  if(!polices.length)return;
+  const tbody=document.querySelector('table tbody');
+  if(!tbody)return;
+  polices.forEach(p=>{
+    if(tbody.querySelector(`[data-pol-id="${p.id}"]`))return;
+    const joursLabel=p.jours_restants!==null
+      ? (p.jours_restants<0?`<span style="color:var(--red)">Expirée</span>`
+        :p.jours_restants<90?`<span style="color:var(--orange)">J–${p.jours_restants}</span>`
+        :`<span style="color:var(--green)">J–${p.jours_restants}</span>`)
+      :'—';
+    const tr=document.createElement('tr');
+    tr.dataset.polId=p.id;
+    tr.innerHTML=`
+      <td><strong>${p.type}</strong></td>
+      <td>${p.assureur}</td>
+      <td class="mono" style="font-size:12px">${p.numero||'—'}</td>
+      <td>${p.debut||'—'}</td>
+      <td>${p.echeance||'—'}</td>
+      <td>${joursLabel}</td>
+      <td>${p.plafond||'—'}</td>
+      <td>${p.prime||'—'}</td>
+      <td><button class="btn btn--ghost btn--sm" onclick="renouvelerPolice('${p.id}')">⟳ Renouveler</button></td>`;
+    tbody.insertBefore(tr,tbody.firstChild);
+  });
+}
+
+function renderSinistres(){
+  const sinistres=getSinistres();
+  if(!sinistres.length)return;
+  // Mettre à jour le sous-titre de la section sinistres
+  const sinCard=document.querySelector('.card__sub');
+  if(sinCard) sinCard.textContent=`${sinistres.filter(s=>s.statut==='ouvert').length} sinistre(s) ouvert(s)`;
+}
+
+function renouvelerPolice(id){
+  const p=getPolices().find(x=>x.id===id);if(!p)return;
+  // Décaler d'un an
+  if(p.echeance){
+    const d=new Date(p.echeance);d.setFullYear(d.getFullYear()+1);
+    p.echeance=d.toISOString().split('T')[0];
+    p.jours_restants=Math.round((d-new Date())/86400000);
+    p.statut='valide';
+    savePolice(p);
+    GAAStore.addAudit(GAAStore.getMe()?.nom,`Police ${p.type} renouvelée — ${p.assureur}`,'1.10 Assurances');
+    renderPolices();renderKPIs();
+    showToast(`Police ${p.type} renouvelée jusqu'au ${p.echeance} ✓`,'success');
+  }
+}
+
+// ── KPIs ──────────────────────────────────────────────────
+function renderKPIs(){
+  const polices=getPolices();
+  const sinistres=getSinistres();
+  const expires=polices.filter(p=>p.jours_restants!==null&&p.jours_restants<90&&p.jours_restants>=0);
+  const kpis=document.querySelectorAll('.kpi-value,[class*="kpi"] > *:nth-child(2)');
+  // Les alertes — mettre à jour le bandeau d'alerte si présent
+  if(expires.length){
+    const banner=document.querySelector('.alert-banner');
+    if(banner) banner.innerHTML=`⚠️ ${expires.length} police(s) à renouveler dans moins de 90 jours : ${expires.map(p=>p.type).join(', ')}`;
+  }
+  // Avatar
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+  const nameEl=document.querySelector('.nav__user > div > div:first-child');
+  if(nameEl) nameEl.textContent=me?.nom||'M. Lefort';
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  initModaux();
+  renderPolices();
+  renderSinistres();
+  renderKPIs();
+});
+
+</script>
+</body>
+</html>

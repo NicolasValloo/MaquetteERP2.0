@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     GAA — Module 1.5 — Gestion financière et facturation
+     Maquette fonctionnelle HTML (simulant Django/htmx)
+     Écrans : suivi-financier-projet.html / previsionnel-annuel.html
+     ============================================================ -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.5 — Finance & Facturation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg:        #F4F3EF;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E0D8;
+      --c-border-md: #C8C5BB;
+      --c-text:      #1C1B18;
+      --c-text-2:    #6B6860;
+      --c-text-3:    #9B998F;
+      --c-primary:   #1B4965;
+      --c-primary-l: #EAF1F6;
+      --c-accent:    #C75B37;
+      --c-green:     #2D6A4F;
+      --c-green-l:   #E8F5EE;
+      --c-orange:    #B8860B;
+      --c-orange-l:  #FDF6DC;
+      --c-red:       #C0392B;
+      --c-red-l:     #FDECEA;
+      --c-grey-l:    #F0EFEB;
+      --sidebar-w:   220px;
+      --header-h:    52px;
+      --font-main:   'Sora', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07);
+      --radius-sm:   4px; --radius: 8px; --radius-lg: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: var(--font-main); background: var(--c-bg); color: var(--c-text); line-height: 1.5; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+
+    /* Layout */
+    .shell { display: flex; min-height: 100vh; }
+    .nav-sidebar { width: var(--sidebar-w); background: var(--c-primary); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+    .nav-sidebar__logo { padding: 20px 20px 16px; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; }
+    .nav-sidebar__logo-dot { width: 8px; height: 8px; background: var(--c-accent); border-radius: 50%; }
+    .nav-sidebar__section { padding: 16px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .nav-sidebar__item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: background 0.15s; position: relative; }
+    .nav-sidebar__item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-sidebar__item--active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .nav-sidebar__item--active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--c-accent); border-radius: 0 2px 2px 0; }
+    .nav-sidebar__icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-sidebar__user { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .nav-sidebar__avatar { width: 30px; height: 30px; background: var(--c-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+    .topbar { height: var(--header-h); background: var(--c-surface); border-bottom: 1px solid var(--c-border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar__breadcrumb { font-size: 13px; color: var(--c-text-2); flex: 1; }
+    .topbar__breadcrumb a { color: var(--c-primary); }
+    .topbar__avatar { width: 32px; height: 32px; background: var(--c-primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .page { padding: 28px; display: none; flex-direction: column; gap: 20px; }
+    .page--active { display: flex; }
+
+    /* Composants */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .btn--primary { background: var(--c-primary); color: #fff; }
+    .btn--primary:hover { background: #153d52; }
+    .btn--ghost { background: transparent; color: var(--c-text); border-color: var(--c-border-md); }
+    .btn--ghost:hover { background: var(--c-grey-l); }
+    .btn--accent { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
+    .btn--sm { padding: 5px 10px; font-size: 12px; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge--green  { background: var(--c-green-l);  color: var(--c-green); }
+    .badge--blue   { background: var(--c-primary-l); color: var(--c-primary); }
+    .badge--orange { background: var(--c-orange-l); color: var(--c-orange); }
+    .badge--grey   { background: var(--c-grey-l);   color: var(--c-text-2); }
+    .badge--red    { background: var(--c-red-l);    color: var(--c-red); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card__label { font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .kpi-card__value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px; font-family: var(--font-mono); }
+    .kpi-card__detail { font-size: 11.5px; color: var(--c-text-3); }
+
+    /* Onglets */
+    .tabs-bar { display: flex; gap: 0; border-bottom: 2px solid var(--c-border); background: var(--c-surface); border-radius: var(--radius) var(--radius) 0 0; box-shadow: var(--shadow-sm); overflow-x: auto; }
+    .tab-item { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--c-text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; transition: all 0.15s; }
+    .tab-item:hover { color: var(--c-text); background: var(--c-grey-l); }
+    .tab-item--active { color: var(--c-primary); border-bottom-color: var(--c-primary); font-weight: 700; background: var(--c-surface); }
+
+    /* Tableau principal */
+    .table-wrap { background: var(--c-surface); border: 1px solid var(--c-border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table thead th { background: var(--c-grey-l); border-bottom: 1px solid var(--c-border); padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+    .data-table tbody tr { border-bottom: 1px solid var(--c-border); transition: background 0.1s; }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody tr:hover { background: var(--c-primary-l); }
+    .data-table td { padding: 10px 12px; vertical-align: middle; }
+    .data-table tr.row-active { background: rgba(27,73,101,0.04); }
+    .data-table tr.row-muted td { color: var(--c-text-3); }
+    .data-table tr.row-total { background: var(--c-grey-l); font-weight: 700; border-top: 2px solid var(--c-border); }
+    .data-table tr.row-total td { padding: 10px 12px; }
+    .mono { font-family: var(--font-mono); }
+    .align-right { text-align: right; }
+
+    .alert-banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+    .alert-banner--warn { background: var(--c-orange-l); border: 1px solid #d4a017; color: #7a5c00; }
+    .alert-banner--red  { background: var(--c-red-l); border: 1px solid rgba(192,57,43,0.4); color: var(--c-red); }
+
+    .info-block { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .info-block__title { font-size: 12px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .info-block__title a { font-size: 11px; color: var(--c-primary); font-weight: 500; text-transform: none; letter-spacing: 0; cursor: pointer; }
+
+    /* Progress bar */
+    .progress-wrap { display: flex; align-items: center; gap: 8px; }
+    .progress-bar { flex: 1; height: 8px; background: var(--c-border); border-radius: 4px; overflow: hidden; }
+    .progress-bar__fill { height: 100%; border-radius: 4px; }
+    .progress-bar__fill--green  { background: var(--c-green); }
+    .progress-bar__fill--blue   { background: var(--c-primary); }
+    .progress-bar__fill--orange { background: var(--c-orange); }
+    .progress-bar__fill--red    { background: var(--c-red); }
+
+    /* Filter select */
+    .filter-select { appearance: none; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 5px 28px 5px 10px; font-family: var(--font-main); font-size: 12.5px; color: var(--c-text); cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+
+    /* Toolbar */
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow-sm); }
+    .toolbar__spacer { flex: 1; }
+
+    /* =============================================
+       RENTABILITÉ
+    ============================================= */
+    .renta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .renta-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--c-border); font-size: 13px; }
+    .renta-row:last-child { border-bottom: none; }
+    .renta-row--total { font-weight: 700; border-top: 2px solid var(--c-border); border-bottom: none; padding-top: 8px; margin-top: 4px; }
+    .renta-row__label { color: var(--c-text-2); }
+    .renta-row__value { font-family: var(--font-mono); font-weight: 600; }
+
+    /* =============================================
+       SOUS-TRAITANTS
+    ============================================= */
+    .st-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--c-border); font-size: 12.5px; }
+    .st-row:last-child { border-bottom: none; }
+    .st-row__name { font-weight: 600; flex: 1; }
+    .st-row__detail { color: var(--c-text-3); font-size: 11.5px; flex: 1; }
+    .st-row__amount { font-family: var(--font-mono); font-weight: 600; min-width: 80px; text-align: right; }
+
+    /* =============================================
+       MODALE GÉNÉRATION FACTURE
+    ============================================= */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay--open { display: flex; }
+    .modal { background: var(--c-surface); border-radius: var(--radius-lg); width: 100%; max-width: 540px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modal-in 0.2s ease; }
+    .modal--wide { max-width: 680px; }
+    @keyframes modal-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal__header { padding: 20px 24px; border-bottom: 1px solid var(--c-border); display: flex; align-items: center; justify-content: space-between; }
+    .modal__title { font-size: 16px; font-weight: 700; }
+    .modal__close { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--c-grey-l); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--c-text-2); }
+    .modal__body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .modal__footer { padding: 14px 24px; border-top: 1px solid var(--c-border); display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12.5px; font-weight: 600; }
+    .form-input, .form-select { padding: 8px 11px; border: 1px solid var(--c-border-md); border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; color: var(--c-text); outline: none; transition: border-color 0.15s; }
+    .form-input:focus, .form-select:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(27,73,101,0.12); }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Récap facture */
+    .invoice-recap { background: var(--c-grey-l); border-radius: var(--radius-sm); padding: 12px 14px; }
+    .invoice-recap__row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+    .invoice-recap__row--total { font-weight: 700; border-top: 1px solid var(--c-border-md); padding-top: 6px; margin-top: 4px; }
+
+    /* =============================================
+       PRÉVISIONNEL — page 2
+    ============================================= */
+    .previ-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .previ-table thead th { background: var(--c-grey-l); border-bottom: 1px solid var(--c-border); padding: 8px 6px; text-align: center; font-size: 10.5px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+    .previ-table thead th:first-child { text-align: left; padding-left: 14px; min-width: 180px; }
+    .previ-table thead th:nth-child(2) { text-align: left; min-width: 80px; }
+    .previ-table thead th.col-today { background: var(--c-primary-l); color: var(--c-primary); }
+    .previ-table tbody tr { border-bottom: 1px solid var(--c-border); }
+    .previ-table tbody tr:hover { background: rgba(0,0,0,0.02); }
+    .previ-table td { padding: 7px 6px; vertical-align: middle; text-align: center; }
+    .previ-table td:first-child { text-align: left; padding-left: 14px; }
+    .previ-table td:nth-child(2) { text-align: left; }
+    .previ-table .cell-confirmed { color: var(--c-green); font-weight: 600; font-family: var(--font-mono); }
+    .previ-table .cell-forecast  { color: var(--c-orange); font-family: var(--font-mono); }
+    .previ-table .cell-draft     { color: var(--c-text-3); font-style: italic; font-family: var(--font-mono); }
+    .previ-table .row-subtotal-confirmed { background: rgba(45,106,79,0.05); }
+    .previ-table .row-subtotal-confirmed td { font-weight: 700; color: var(--c-green); }
+    .previ-table .row-subtotal-confirmed td:first-child { color: var(--c-green); }
+    .previ-table .row-subtotal-forecast { background: rgba(184,134,11,0.05); }
+    .previ-table .row-subtotal-forecast td { font-weight: 700; color: var(--c-orange); }
+    .previ-table .row-muted td { opacity: 0.5; }
+    .previ-table .row-total { background: var(--c-primary); color: #fff; }
+    .previ-table .row-total td { font-weight: 700; padding: 10px 6px; color: #fff; font-family: var(--font-mono); }
+    .previ-table .row-total td:first-child { font-family: var(--font-main); }
+
+    /* Simulation zone */
+    .simulation-card { border: 2px dashed var(--c-primary); border-radius: var(--radius); padding: 16px; background: rgba(27,73,101,0.03); }
+    .simulation-card__title { font-size: 14px; font-weight: 700; color: var(--c-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .scenario-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--c-border); font-size: 13px; }
+    .scenario-row:last-child { border-bottom: none; }
+    .scenario-row__label { color: var(--c-text-2); }
+    .scenario-row__value { font-family: var(--font-mono); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     MODALE — GÉNÉRER UNE FACTURE
+============================================================ -->
+<div class="modal-overlay" id="modal-facture" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title">Générer la facture — Phase APD</h2>
+      <button class="modal__close" onclick="closeModal('modal-facture')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">N° de facture</label>
+          <input class="form-input" type="text" value="F-2026-031" readonly style="background:var(--c-grey-l)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date d'émission</label>
+          <input class="form-input" type="date" value="2026-03-06">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client</label>
+        <input class="form-input" type="text" value="Ville de Nantes — Direction des Bâtiments" readonly style="background:var(--c-grey-l)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Objet</label>
+        <input class="form-input" type="text" value="Honoraires architecte — Groupe scolaire Victor Hugo — Phase APD">
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Échéance de paiement</label>
+          <select class="form-select">
+            <option>30 jours</option>
+            <option>45 jours</option>
+            <option>60 jours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mode de règlement</label>
+          <select class="form-select">
+            <option>Virement bancaire</option>
+            <option>Chèque</option>
+            <option>Chorus Pro</option>
+          </select>
+        </div>
+      </div>
+      <div class="invoice-recap">
+        <div class="invoice-recap__row"><span>Honoraires HT (phase APD)</span><span class="mono">51 000,00 €</span></div>
+        <div class="invoice-recap__row"><span>TVA 20%</span><span class="mono">10 200,00 €</span></div>
+        <div class="invoice-recap__row invoice-recap__row--total"><span>Total TTC</span><span class="mono" style="font-size:16px;color:var(--c-primary)">61 200,00 €</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--c-text-2)">
+        <input type="checkbox" id="chorus" checked>
+        <label for="chorus">Dépôt automatique sur Chorus Pro (marché public)</label>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--c-text-2)">
+        <input type="checkbox" id="ged" checked>
+        <label for="ged">Archiver dans la GED du projet (module 1.4)</label>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-facture')">Annuler</button>
+      <button class="btn btn--ghost" onclick="closeModal('modal-facture')">Prévisualiser</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-facture')">Générer et envoyer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALE — RELANCER LE CLIENT
+============================================================ -->
+<div class="modal-overlay" id="modal-relance" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title">Relancer — Facture F-2025-078</h2>
+      <button class="modal__close" onclick="closeModal('modal-relance')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="alert-banner alert-banner--warn">
+        ⚠️ <div><strong>Échéance dépassée</strong> de 6 jours. Montant restant dû : <strong>38 250 € TTC</strong>.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Destinataire</label>
+        <input class="form-input" type="text" value="direction.finances@nantes.fr">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type de relance</label>
+        <select class="form-select">
+          <option>1ère relance amiable</option>
+          <option>2ème relance</option>
+          <option>Mise en demeure</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message</label>
+        <textarea class="form-input" rows="4">Madame, Monsieur,
+
+Sauf erreur de notre part, nous n'avons pas reçu règlement de notre facture F-2025-078 d'un montant de 38 250,00 € TTC, arrivée à échéance le 28/02/2026.
+
+Nous vous remercions de bien vouloir régulariser cette situation dans les meilleurs délais.
+
+Cordialement,</textarea>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-relance')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-relance')">Envoyer la relance</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALE — MODE SIMULATION PRÉVISIONNEL
+============================================================ -->
+<div class="modal-overlay" id="modal-simulation" role="dialog" aria-modal="true">
+  <div class="modal modal--wide">
+    <div class="modal__header">
+      <h2 class="modal__title">Mode simulation — Prévisionnel 2026</h2>
+      <button class="modal__close" onclick="closeModal('modal-simulation')">×</button>
+    </div>
+    <div class="modal__body">
+      <p style="font-size:13px;color:var(--c-text-2)">Ajustez les probabilités de signature pour simuler différents scénarios sans modifier les données réelles.</p>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Projet</th>
+              <th>Montant total</th>
+              <th>Prob. actuelle</th>
+              <th>Simulation</th>
+              <th>Valeur pondérée</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>École Montreuil</strong></td>
+              <td class="mono">127 500 €</td>
+              <td><span class="badge badge--orange">65%</span></td>
+              <td><input type="range" min="0" max="100" value="65" style="width:80px"> <span>65%</span></td>
+              <td class="mono text-orange">82 875 €</td>
+            </tr>
+            <tr>
+              <td><strong>Clinique Lorient</strong></td>
+              <td class="mono">75 000 €</td>
+              <td><span class="badge badge--orange">40%</span></td>
+              <td><input type="range" min="0" max="100" value="40" style="width:80px"> <span>40%</span></td>
+              <td class="mono text-orange">30 000 €</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;padding:10px;background:var(--c-green-l);border-radius:var(--radius-sm);border:1px solid var(--c-green)">
+          <div style="font-size:11px;font-weight:700;color:var(--c-green);text-transform:uppercase;margin-bottom:4px">Scénario optimiste</div>
+          <div style="font-size:22px;font-weight:700;color:var(--c-green);font-family:var(--font-mono)">438 500 €</div>
+          <div style="font-size:11.5px;color:var(--c-green)">Probabilités +20%</div>
+        </div>
+        <div style="flex:1;padding:10px;background:var(--c-primary-l);border-radius:var(--radius-sm);border:1px solid var(--c-primary)">
+          <div style="font-size:11px;font-weight:700;color:var(--c-primary);text-transform:uppercase;margin-bottom:4px">Scénario réaliste</div>
+          <div style="font-size:22px;font-weight:700;color:var(--c-primary);font-family:var(--font-mono)">404 869 €</div>
+          <div style="font-size:11.5px;color:var(--c-primary)">Probabilités actuelles</div>
+        </div>
+        <div style="flex:1;padding:10px;background:var(--c-red-l);border-radius:var(--radius-sm);border:1px solid rgba(192,57,43,0.3)">
+          <div style="font-size:11px;font-weight:700;color:var(--c-red);text-transform:uppercase;margin-bottom:4px">Scénario pessimiste</div>
+          <div style="font-size:22px;font-weight:700;color:var(--c-red);font-family:var(--font-mono)">371 200 €</div>
+          <div style="font-size:11.5px;color:var(--c-red)">Probabilités -30%</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-simulation')">Fermer</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-simulation')">Sauvegarder scénario</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+  <nav class="nav-sidebar">
+    <div class="nav-sidebar__logo"><span class="nav-sidebar__logo-dot"></span>GAA</div>
+    <div class="nav-sidebar__section">Pilotage</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">⬜</span> Tableau de bord</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">📁</span> Projets</a>
+    <div class="nav-sidebar__section">Commercial</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">📄</span> Devis</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">👥</span> CRM</a>
+    <div class="nav-sidebar__section">Opérationnel</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">⏱</span> Temps</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">📂</span> Documents</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">✓</span> Tâches</a>
+    <div class="nav-sidebar__section">Finance</div>
+    <a class="nav-sidebar__item nav-sidebar__item--active" onclick="return false"><span class="nav-sidebar__icon">💰</span> Facturation</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">📊</span> Reporting</a>
+    <div class="nav-sidebar__user">
+      <div class="nav-sidebar__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,0.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar__breadcrumb" id="breadcrumb">
+        <a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <strong>Suivi financier</strong>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn--ghost btn--sm" onclick="showPage('previsionnel')">📊 Prévisionnel →</button>
+        <div class="topbar__avatar">ML</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         PAGE 1 — SUIVI FINANCIER PROJET
+    ================================================ -->
+    <main class="page page--active" id="page-finance">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Suivi financier — Groupe scolaire Victor Hugo</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">Devis D-2025-015 · Signé le 15/03/2025 · Forfait · MOE complète · TVA 20%</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn--ghost" onclick="return false">Exporter</button>
+          <button class="btn btn--ghost btn--sm" onclick="return false">Voir devis</button>
+          <button class="btn btn--ghost btn--sm" onclick="return false">Générer avenant</button>
+          <!-- hx-get="/factures/generer/?projet=1&phase=apd" -->
+          <button class="btn btn--primary" onclick="openModal('modal-facture')">💰 Générer facture APD</button>
+        </div>
+      </div>
+
+      <!-- Alerte encaissement -->
+      <div class="alert-banner alert-banner--warn">
+        ⚠️ <div><strong>Facture F-2025-078 (APS) — échéance dépassée</strong> de 6 jours. Reste dû : 38 250 € TTC.
+          <span style="margin-left:10px;font-weight:700;cursor:pointer;text-decoration:underline" onclick="openModal('modal-relance')">Relancer →</span>
+        </div>
+      </div>
+
+      <!-- KPIs financiers -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Honoraires contrat</div>
+          <div class="kpi-card__value">255 000 €</div>
+          <div class="kpi-card__detail">Forfait · Devis signé 15/03/25</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Facturé</div>
+          <div class="kpi-card__value text-green">63 750 €</div>
+          <div class="kpi-card__detail">25% — ESQ + APS</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Encaissé</div>
+          <div class="kpi-card__value" style="color:var(--c-green)">38 250 €</div>
+          <div class="kpi-card__detail">Reste dû : <strong style="color:var(--c-orange)">25 500 €</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Marge nette (phases terminées)</div>
+          <div class="kpi-card__value text-primary">68%</div>
+          <div class="kpi-card__detail">43 350 € · Honoraires − coût − ST − frais</div>
+        </div>
+      </div>
+
+      <!-- Barre de progression facturation -->
+      <div class="info-block" style="padding:14px 18px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--c-text-2);margin-bottom:6px">
+          <span>Avancement facturation</span>
+          <span class="mono">63 750 € facturé / 255 000 € total (25%)</span>
+        </div>
+        <div style="height:10px;background:var(--c-border);border-radius:5px;overflow:hidden;position:relative">
+          <div style="width:15%;height:100%;background:var(--c-green)"></div>
+          <div style="width:10%;height:100%;background:var(--c-orange);position:absolute;top:0;left:15%"></div>
+          <div style="width:20%;height:100%;background:rgba(27,73,101,0.2);position:absolute;top:0;left:25%;border-right:2px dashed var(--c-primary)"></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:6px;font-size:11.5px;color:var(--c-text-3)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:6px;background:var(--c-green);border-radius:2px;display:inline-block"></span>Encaissé (15%)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:6px;background:var(--c-orange);border-radius:2px;display:inline-block"></span>Facturé non payé (10%)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:6px;background:rgba(27,73,101,0.25);border-radius:2px;display:inline-block"></span>Phase active APD (20%)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:6px;background:var(--c-border);border-radius:2px;display:inline-block"></span>À venir (55%)</span>
+        </div>
+      </div>
+
+      <!-- Onglets -->
+      <div>
+        <div class="tabs-bar">
+          <div class="tab-item tab-item--active" id="tab-plan" onclick="switchTab('plan')">Plan de facturation</div>
+          <div class="tab-item" id="tab-renta" onclick="switchTab('renta')">Rentabilité</div>
+          <div class="tab-item" id="tab-st" onclick="switchTab('st')">Sous-traitants</div>
+          <div class="tab-item" id="tab-frais" onclick="switchTab('frais')">Frais & débours</div>
+        </div>
+
+        <!-- TAB: Plan de facturation -->
+        <div class="table-wrap" id="content-plan">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Phase</th>
+                <th class="align-right">Honoraires HT</th>
+                <th>Ratio</th>
+                <th class="align-right">Part agence</th>
+                <th class="align-right">Part ST</th>
+                <th>N° Facture</th>
+                <th>Statut facture</th>
+                <th class="align-right">Montant TTC</th>
+                <th class="align-right">Encaissé</th>
+                <th>Échéance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- ESQ — Payée -->
+              <tr>
+                <td><strong>ESQ</strong> <span class="badge badge--green" style="font-size:10px">Validée</span></td>
+                <td class="align-right mono">25 500 €</td>
+                <td>10%</td>
+                <td class="align-right mono">25 500 €</td>
+                <td class="align-right mono text-muted">—</td>
+                <td class="mono" style="font-size:12px">F-2025-042</td>
+                <td><span class="badge badge--green">Payée</span></td>
+                <td class="align-right mono">30 600 €</td>
+                <td class="align-right mono text-green">30 600 €</td>
+                <td class="mono text-green" style="font-size:12px">15/06/25</td>
+                <td><span style="font-size:12px;color:var(--c-primary);cursor:pointer">Voir</span></td>
+              </tr>
+
+              <!-- APS — Envoyée, retard -->
+              <tr style="background:rgba(184,134,11,0.03)">
+                <td><strong>APS</strong> <span class="badge badge--green" style="font-size:10px">Validée</span></td>
+                <td class="align-right mono">38 250 €</td>
+                <td>15%</td>
+                <td class="align-right mono">30 250 €</td>
+                <td class="align-right mono">8 000 €</td>
+                <td class="mono" style="font-size:12px">F-2025-078</td>
+                <td><span class="badge badge--orange">Envoyée</span></td>
+                <td class="align-right mono">45 900 €</td>
+                <td class="align-right mono text-orange">7 650 €</td>
+                <td class="mono text-red" style="font-size:12px;font-weight:600">28/02/26 ⚠</td>
+                <td>
+                  <div style="display:flex;gap:6px;font-size:12px">
+                    <span style="color:var(--c-primary);cursor:pointer">Voir</span>
+                    <span style="color:var(--c-red);cursor:pointer;font-weight:600" onclick="openModal('modal-relance')">Relancer</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- APD — En attente validation -->
+              <tr class="row-active">
+                <td><strong style="color:var(--c-primary)">APD ●</strong> <span class="badge badge--blue" style="font-size:10px">En cours</span></td>
+                <td class="align-right mono">51 000 €</td>
+                <td>20%</td>
+                <td class="align-right mono">38 000 €</td>
+                <td class="align-right mono">13 000 €</td>
+                <td class="mono text-muted" style="font-size:12px">—</td>
+                <td><span class="badge badge--grey">En attente</span></td>
+                <td class="mono text-muted align-right">—</td>
+                <td class="mono text-muted align-right">—</td>
+                <td class="mono text-muted" style="font-size:12px">~Août 26</td>
+                <td><span style="font-size:12px;color:var(--c-text-3)">À valider la phase</span></td>
+              </tr>
+
+              <!-- Phases à venir -->
+              <tr class="row-muted">
+                <td>PRO</td><td class="align-right mono">38 250 €</td><td>15%</td><td class="align-right mono">28 250 €</td><td class="align-right mono">10 000 €</td>
+                <td class="mono" style="font-size:12px">—</td><td>—</td><td class="mono align-right">—</td><td class="mono align-right">—</td><td class="mono" style="font-size:12px">~Nov 26</td><td></td>
+              </tr>
+              <tr class="row-muted">
+                <td>DCE</td><td class="align-right mono">25 500 €</td><td>10%</td><td class="align-right mono">20 500 €</td><td class="align-right mono">5 000 €</td>
+                <td class="mono" style="font-size:12px">—</td><td>—</td><td class="mono align-right">—</td><td class="mono align-right">—</td><td class="mono" style="font-size:12px">~Jan 27</td><td></td>
+              </tr>
+              <tr class="row-muted">
+                <td>DET</td><td class="align-right mono">51 000 €</td><td>20%</td><td class="align-right mono">38 000 €</td><td class="align-right mono">13 000 €</td>
+                <td class="mono" style="font-size:12px">—</td><td>—</td><td class="mono align-right">—</td><td class="mono align-right">—</td><td class="mono" style="font-size:12px">~Sep 27</td><td></td>
+              </tr>
+              <tr class="row-muted">
+                <td>AOR</td><td class="align-right mono">25 500 €</td><td>10%</td><td class="align-right mono">20 500 €</td><td class="align-right mono">5 000 €</td>
+                <td class="mono" style="font-size:12px">—</td><td>—</td><td class="mono align-right">—</td><td class="mono align-right">—</td><td class="mono" style="font-size:12px">~Fév 28</td><td></td>
+              </tr>
+
+              <!-- Total -->
+              <tr class="row-total">
+                <td style="font-family:var(--font-main)">TOTAL</td>
+                <td class="align-right mono">255 000 €</td>
+                <td>100%</td>
+                <td class="align-right mono">201 000 €</td>
+                <td class="align-right mono">54 000 €</td>
+                <td></td><td></td>
+                <td class="align-right mono">76 500 €</td>
+                <td class="align-right mono">38 250 €</td>
+                <td></td><td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TAB: Rentabilité (masqué par défaut) -->
+        <div class="table-wrap" id="content-renta" style="display:none;padding:20px">
+          <div class="renta-grid">
+            <div class="info-block">
+              <div class="info-block__title">Rentabilité — Phases terminées (ESQ + APS)</div>
+              <div class="renta-row">
+                <span class="renta-row__label">Honoraires facturés</span>
+                <span class="renta-row__value">63 750 €</span>
+              </div>
+              <div class="renta-row">
+                <span class="renta-row__label">Coût interne (154h × 75 €/h)</span>
+                <span class="renta-row__value text-red">− 11 550 €</span>
+              </div>
+              <div class="renta-row">
+                <span class="renta-row__label">Coût sous-traitants (BET Thermex)</span>
+                <span class="renta-row__value text-red">− 8 000 €</span>
+              </div>
+              <div class="renta-row">
+                <span class="renta-row__label">Frais & débours (déplacements)</span>
+                <span class="renta-row__value text-red">− 850 €</span>
+              </div>
+              <div class="renta-row renta-row--total">
+                <span class="renta-row__label">Marge nette</span>
+                <span class="renta-row__value text-green" style="font-size:18px">43 350 € <span style="font-size:13px">(68%)</span></span>
+              </div>
+              <div style="margin-top:12px">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--c-text-2);margin-bottom:4px"><span>Taux de marge</span><span class="mono">68%</span></div>
+                <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--green" style="width:68%"></div></div>
+              </div>
+            </div>
+            <div class="info-block">
+              <div class="info-block__title">Projection — Toutes phases</div>
+              <div class="renta-row">
+                <span class="renta-row__label">Honoraires totaux</span>
+                <span class="renta-row__value">255 000 €</span>
+              </div>
+              <div class="renta-row">
+                <span class="renta-row__label">Coût interne estimé (480h × 75€)</span>
+                <span class="renta-row__value text-red">− 36 000 €</span>
+              </div>
+              <div class="renta-row">
+                <span class="renta-row__label">Coût sous-traitants (total)</span>
+                <span class="renta-row__value text-red">− 54 000 €</span>
+              </div>
+              <div class="renta-row">
+                <span class="renta-row__label">Frais & débours (estimés)</span>
+                <span class="renta-row__value text-red">− 3 500 €</span>
+              </div>
+              <div class="renta-row renta-row--total">
+                <span class="renta-row__label">Marge projetée</span>
+                <span class="renta-row__value text-primary" style="font-size:18px">161 500 € <span style="font-size:13px">(63%)</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Sous-traitants (masqué par défaut) -->
+        <div class="table-wrap" id="content-st" style="display:none;padding:20px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="info-block">
+              <div class="info-block__title">
+                Factures sous-traitants — Groupe scolaire Victor Hugo
+                <button class="btn btn--ghost btn--sm" onclick="return false">+ Ajouter ST</button>
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Sous-traitant</th>
+                    <th>Lot</th>
+                    <th>Phase</th>
+                    <th class="align-right">Montant HT</th>
+                    <th>Statut</th>
+                    <th>Date réception</th>
+                    <th>Échéance règlement</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>BET Thermex</strong></td>
+                    <td>Fluides / Thermique</td>
+                    <td>ESQ + APS</td>
+                    <td class="align-right mono">8 000 €</td>
+                    <td><span class="badge badge--green">Réglé</span></td>
+                    <td class="mono" style="font-size:12px">20/07/25</td>
+                    <td class="mono text-green" style="font-size:12px">19/08/25</td>
+                    <td><span style="font-size:12px;color:var(--c-primary);cursor:pointer">Voir facture</span></td>
+                  </tr>
+                  <tr style="background:rgba(184,134,11,0.03)">
+                    <td><strong>BET Écobat</strong></td>
+                    <td>Structure</td>
+                    <td>APD</td>
+                    <td class="align-right mono">13 000 €</td>
+                    <td><span class="badge badge--blue">Reçue</span></td>
+                    <td class="mono" style="font-size:12px">28/02/26</td>
+                    <td class="mono" style="font-size:12px">29/03/26</td>
+                    <td>
+                      <div style="display:flex;gap:6px;font-size:12px">
+                        <span style="color:var(--c-primary);cursor:pointer">Voir</span>
+                        <span style="color:var(--c-green);cursor:pointer">Valider paiement</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="row-muted">
+                    <td><strong>BET Écobat</strong></td>
+                    <td>Structure</td>
+                    <td>PRO → AOR</td>
+                    <td class="align-right mono">33 000 €</td>
+                    <td><span class="badge badge--grey">Attendue</span></td>
+                    <td class="mono text-muted" style="font-size:12px">—</td>
+                    <td class="mono text-muted" style="font-size:12px">—</td>
+                    <td><span style="font-size:12px;color:var(--c-text-3)">Ordre de mission</span></td>
+                  </tr>
+                  <tr class="row-total">
+                    <td colspan="3">Total sous-traitants</td>
+                    <td class="align-right mono">54 000 €</td>
+                    <td colspan="4" style="font-family:var(--font-main);font-size:12.5px">dont <strong>13 000 € en attente de règlement</strong> · <strong>33 000 € à venir</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB: Frais & débours (masqué par défaut) -->
+        <div class="table-wrap" id="content-frais" style="display:none;padding:20px">
+          <div class="info-block">
+            <div class="info-block__title">
+              Frais & débours
+              <button class="btn btn--ghost btn--sm" onclick="return false">+ Ajouter frais</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Phase</th>
+                  <th>Date</th>
+                  <th class="align-right">Montant HT</th>
+                  <th>Refacturable</th>
+                  <th>Justificatif</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Déplacements — Réunion MOA</td>
+                  <td>APD</td>
+                  <td class="mono" style="font-size:12px">28/02/26</td>
+                  <td class="align-right mono">185 €</td>
+                  <td><span class="badge badge--green" style="font-size:10px">Oui</span></td>
+                  <td><span style="font-size:12px;color:var(--c-primary);cursor:pointer">Note de frais.pdf</span></td>
+                </tr>
+                <tr>
+                  <td>Reprographie plans APS</td>
+                  <td>APS</td>
+                  <td class="mono" style="font-size:12px">08/07/25</td>
+                  <td class="align-right mono">220 €</td>
+                  <td><span class="badge badge--green" style="font-size:10px">Oui</span></td>
+                  <td><span style="font-size:12px;color:var(--c-primary);cursor:pointer">Facture reprographie.pdf</span></td>
+                </tr>
+                <tr>
+                  <td>Frais postaux ESQ</td>
+                  <td>ESQ</td>
+                  <td class="mono" style="font-size:12px">14/05/25</td>
+                  <td class="align-right mono">45 €</td>
+                  <td><span class="badge badge--orange" style="font-size:10px">Non</span></td>
+                  <td class="text-muted">—</td>
+                </tr>
+                <tr class="row-total">
+                  <td colspan="3">Total frais & débours</td>
+                  <td class="align-right mono">450 €</td>
+                  <td colspan="2" style="font-family:var(--font-main)">dont <strong>405 € refacturables</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bandeau devis source -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow-sm)">
+        <div style="font-size:13px;color:var(--c-text-2)">
+          <strong style="color:var(--c-text)">Devis D-2025-015</strong> — Signé le 15/03/2025 · Forfait · MOE complète · TVA 20%
+          <span style="margin-left:10px;color:var(--c-green)">✓ Contrat d'honoraires généré et archivé en GED</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost btn--sm" onclick="return false">Voir devis</button>
+          <button class="btn btn--ghost btn--sm" onclick="return false">Générer avenant</button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ================================================
+         PAGE 2 — PRÉVISIONNEL ANNUEL
+    ================================================ -->
+    <main class="page" id="page-previsionnel">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Prévisionnel 2026</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">Vue direction · Consolidation tous projets</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost" onclick="return false">Export Excel</button>
+          <button class="btn btn--accent" onclick="openModal('modal-simulation')">🎯 Mode simulation</button>
+          <button class="btn btn--ghost btn--sm" onclick="showPage('finance')">← Retour projet</button>
+        </div>
+      </div>
+
+      <!-- KPIs annuels -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">CA confirmé 2026</div>
+          <div class="kpi-card__value text-green">420 000 €</div>
+          <div class="kpi-card__detail">Projets Acté + En cours</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">CA prévisionnel</div>
+          <div class="kpi-card__value text-orange">+117 000 €</div>
+          <div class="kpi-card__detail">Pondéré par probabilité pipeline</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Fourchette annuelle</div>
+          <div class="kpi-card__value" style="font-size:16px;padding-top:4px">468 — 612 k€</div>
+          <div class="kpi-card__detail">Min (prob. >80%) — Max (tous projets)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Encaissé YTD</div>
+          <div class="kpi-card__value">89 400 €</div>
+          <div class="kpi-card__detail">Janvier — Mars 2026</div>
+        </div>
+      </div>
+
+      <!-- Toolbar filtres -->
+      <div class="toolbar">
+        <select class="filter-select"><option>Chef de projet : Tous</option><option>M. Lefort</option><option>C. Martin</option></select>
+        <select class="filter-select"><option>Type : Tous</option><option>Marché public</option><option>Marché privé</option></select>
+        <select class="filter-select"><option>Programme : Tous</option><option>Scolaire</option><option>Santé</option></select>
+        <div class="toolbar__spacer"></div>
+        <div style="display:flex;border:1px solid var(--c-border);border-radius:var(--radius-sm);overflow:hidden">
+          <button style="padding:5px 12px;font-size:12.5px;background:var(--c-primary);color:#fff;border:none;cursor:pointer;font-family:var(--font-main);font-weight:500">Par mois</button>
+          <button style="padding:5px 12px;font-size:12.5px;background:var(--c-bg);color:var(--c-text-2);border:none;cursor:pointer;font-family:var(--font-main);border-left:1px solid var(--c-border)">Par trimestre</button>
+        </div>
+      </div>
+
+      <!-- Tableau prévisionnel -->
+      <div style="background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);overflow-x:auto">
+        <table class="previ-table">
+          <thead>
+            <tr>
+              <th>Projet</th>
+              <th>Statut</th>
+              <th>Prob.</th>
+              <th>Jan</th><th>Fév</th><th class="col-today">Mar ●</th><th>Avr</th><th>Mai</th><th>Jun</th>
+              <th>Jul</th><th>Aoû</th><th>Sep</th><th>Oct</th><th>Nov</th><th>Déc</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- CONFIRMÉS -->
+            <tr>
+              <td><strong>Groupe scolaire V. Hugo</strong></td>
+              <td><span class="badge badge--green" style="font-size:10px">En cours</span></td>
+              <td class="text-muted">—</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td>
+              <td></td><td class="cell-confirmed">51 000</td><td></td><td></td><td class="cell-confirmed">38 250</td><td></td>
+              <td class="cell-confirmed"><strong>89 250</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Médiathèque de Brest</strong></td>
+              <td><span class="badge badge--green" style="font-size:10px">En cours</span></td>
+              <td class="text-muted">—</td>
+              <td class="cell-confirmed">45 900</td><td></td><td></td><td></td><td></td><td class="cell-confirmed">38 000</td>
+              <td></td><td></td><td></td><td></td><td></td><td class="cell-confirmed">76 000</td>
+              <td class="cell-confirmed"><strong>159 900</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Résidence Les Tilleuls</strong></td>
+              <td><span class="badge badge--green" style="font-size:10px">En cours</span></td>
+              <td class="text-muted">—</td>
+              <td></td><td></td><td class="cell-confirmed">27 000</td><td></td><td></td><td></td>
+              <td class="cell-confirmed">18 000</td><td></td><td></td><td class="cell-confirmed">45 000</td><td></td><td></td>
+              <td class="cell-confirmed"><strong>90 000</strong></td>
+            </tr>
+
+            <!-- Sous-total confirmé -->
+            <tr class="row-subtotal-confirmed">
+              <td>Sous-total confirmé</td>
+              <td></td><td></td>
+              <td>45 900</td><td></td><td>27 000</td><td></td><td></td><td>38 000</td>
+              <td>18 000</td><td>51 000</td><td></td><td>45 000</td><td>38 250</td><td>76 000</td>
+              <td>339 150</td>
+            </tr>
+
+            <!-- PRÉVISIONNELS -->
+            <tr>
+              <td><strong style="color:var(--c-orange)">École Montreuil</strong></td>
+              <td><span class="badge badge--orange" style="font-size:10px">En attente</span></td>
+              <td class="cell-forecast">65%</td>
+              <td></td><td></td><td></td><td></td><td class="cell-forecast">8 288</td><td></td>
+              <td></td><td></td><td class="cell-forecast">12 431</td><td></td><td></td><td></td>
+              <td class="cell-forecast"><strong>20 719</strong></td>
+            </tr>
+            <tr>
+              <td><strong style="color:var(--c-orange)">Clinique Lorient</strong></td>
+              <td><span class="badge badge--orange" style="font-size:10px">En attente</span></td>
+              <td class="cell-forecast">40%</td>
+              <td></td><td></td><td></td><td></td><td></td><td class="cell-forecast">12 000</td>
+              <td></td><td></td><td></td><td class="cell-forecast">18 000</td><td></td><td></td>
+              <td class="cell-forecast"><strong>30 000</strong></td>
+            </tr>
+
+            <!-- Sous-total prévisionnel -->
+            <tr class="row-subtotal-forecast">
+              <td>Sous-total prévisionnel (pondéré)</td>
+              <td></td><td></td>
+              <td></td><td></td><td></td><td></td><td>8 288</td><td>12 000</td>
+              <td></td><td></td><td>12 431</td><td>18 000</td><td></td><td></td>
+              <td>50 719</td>
+            </tr>
+
+            <!-- BROUILLONS -->
+            <tr class="row-muted">
+              <td><strong>Diagnostic Mairie Vannes</strong></td>
+              <td><span class="badge badge--grey" style="font-size:10px">Brouillon</span></td>
+              <td class="text-muted">—</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td>
+              <td></td><td></td><td></td><td></td><td class="cell-draft">15 000</td><td></td>
+              <td class="cell-draft"><strong>15 000</strong></td>
+            </tr>
+
+            <!-- TOTAL GÉNÉRAL -->
+            <tr class="row-total">
+              <td>TOTAL</td><td></td><td></td>
+              <td>45 900</td><td></td><td>27 000</td><td></td><td>8 288</td><td>50 000</td>
+              <td>18 000</td><td>51 000</td><td>12 431</td><td>63 000</td><td>53 250</td><td>76 000</td>
+              <td>404 869</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Simulation + Historique -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+        <div class="simulation-card">
+          <div class="simulation-card__title">🎯 Mode simulation — Scénarios 2026</div>
+          <div class="scenario-row">
+            <span class="scenario-row__label">Scénario réaliste (actuel)</span>
+            <span class="scenario-row__value text-primary">404 869 €</span>
+          </div>
+          <div class="scenario-row">
+            <span class="scenario-row__label">Scénario optimiste (+20% proba.)</span>
+            <span class="scenario-row__value text-green">438 500 €</span>
+          </div>
+          <div class="scenario-row">
+            <span class="scenario-row__label">Scénario pessimiste (−30% proba.)</span>
+            <span class="scenario-row__value text-red">371 200 €</span>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn btn--primary btn--sm" onclick="openModal('modal-simulation')">Ajuster les probabilités →</button>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <div class="info-block__title">Historique des prévisions</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--c-border)">
+              <span class="text-muted">Prévision janvier 2026</span>
+              <span class="mono">385 000 €</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--c-border)">
+              <span class="text-muted">Prévision février 2026</span>
+              <span class="mono">398 000 €</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0">
+              <span style="font-weight:600">Prévision mars 2026 (actuel)</span>
+              <span class="mono" style="font-weight:700;color:var(--c-primary)">404 869 €</span>
+            </div>
+            <div style="font-size:12px;color:var(--c-green);margin-top:4px">↗ Tendance : +5,2% sur 3 mois</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Légende prévisionnel -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--c-text-2);padding:4px 2px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-green);display:inline-block"></span>Confirmé (Acté / En cours)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-orange);display:inline-block"></span>Prévisionnel pondéré (En attente)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-text-3);display:inline-block;opacity:0.5"></span>Brouillon (non inclus dans totaux)</span>
+      </div>
+
+    </main>
+
+  </div>
+</div>
+
+<script>
+  /* ---- Navigation pages ---- */
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+    document.getElementById('page-' + name).classList.add('page--active');
+    const bc = document.getElementById('breadcrumb');
+    if (name === 'finance') bc.innerHTML = '<a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <strong>Suivi financier</strong>';
+    if (name === 'previsionnel') bc.innerHTML = '<a href="#">Finance</a> / <strong>Prévisionnel 2026</strong>';
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- Onglets suivi financier ---- */
+  const tabs = ['plan','renta','st','frais'];
+  function switchTab(active) {
+    tabs.forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('tab-item--active', t === active);
+      document.getElementById('content-' + t).style.display = t === active ? 'block' : 'none';
+    });
+  }
+
+  /* ---- Modales ---- */
+  function openModal(id) { document.getElementById(id).classList.add('modal-overlay--open'); document.body.style.overflow = 'hidden'; }
+  function closeModal(id) { document.getElementById(id).classList.remove('modal-overlay--open'); document.body.style.overflow = ''; }
+  document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay--open').forEach(m => closeModal(m.id)); });
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+// ── Helpers ──────────────────────────────────────────────
+const FAC_KEY='factures';
+function getFacs(){ return GAAStore.get(FAC_KEY)||[]; }
+function saveFac(f){ const list=getFacs(); const i=list.findIndex(x=>x.id===f.id); if(i>=0)list[i]=f; else list.push(f); GAAStore.set(FAC_KEY,list); }
+function fmt€(n){ return n?Math.round(n).toLocaleString('fr-FR')+' €':'—'; }
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+}
+
+// ── Charger le projet courant dans la page ────────────────
+function loadProjetFinance(){
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  if(!projets.length) return;
+  const p=projets[0]; // Premier projet en cours
+
+  // Titre + sous-titre
+  const h1=document.querySelector('#page-finance h1');
+  if(h1) h1.textContent=`Suivi financier — ${p.nom}`;
+  const sub=document.querySelector('#page-finance p');
+  if(sub){
+    const devisNum=GAAStore.previewNumero('devis');
+    sub.textContent=`${p.id} · Chef de projet : ${p.chef_projet} · Forfait · MOE · TVA 20%`;
+  }
+
+  // KPIs
+  const facs=getFacs().filter(f=>f.projet_id===p.id);
+  const facture=facs.reduce((s,f)=>s+(f.montant_ht||0),0);
+  const encaisse=facs.filter(f=>f.statut==='payee').reduce((s,f)=>s+(f.montant_ht||0),0);
+  const hon=p.honoraires_ht||0;
+
+  const kpis=document.querySelectorAll('.kpi-card__value');
+  if(kpis[0]) kpis[0].textContent=fmt€(hon);
+  if(kpis[1]) kpis[1].textContent=fmt€(facture);
+  if(kpis[2]) kpis[2].textContent=fmt€(encaisse);
+
+  const details=document.querySelectorAll('.kpi-card__detail');
+  if(details[0]) details[0].textContent=`Forfait · Signé le ${p.date_debut||'—'}`;
+  if(details[1]&&hon>0) details[1].textContent=`${Math.round(facture/hon*100)}% — phases validées`;
+  if(details[2]) details[2].textContent=`Reste dû : ${fmt€(facture-encaisse)}`;
+
+  // Barre progression
+  const pctFac=hon>0?Math.round(facture/hon*100):0;
+  const pctEnc=hon>0?Math.round(encaisse/hon*100):0;
+  const barEnc=document.querySelector('#page-finance .info-block div[style*="height:10px"] > div:first-child');
+  if(barEnc) barEnc.style.width=pctEnc+'%';
+
+  // Breadcrumb
+  const bc=document.getElementById('breadcrumb');
+  if(bc) bc.innerHTML=`<a href="#">Projets</a> / <a href="#">${p.nom}</a> / <strong>Suivi financier</strong>`;
+
+  // Plan de facturation dynamique
+  renderPlanFacturation(p, facs);
+}
+
+function renderPlanFacturation(p, facs){
+  const tbody=document.querySelector('#content-plan tbody');
+  if(!tbody||!p.phases) return;
+  const hon=p.honoraires_ht||0;
+
+  tbody.innerHTML=p.phases.map(ph=>{
+    const montantHT=Math.round(hon*(ph.ratio||0)/100);
+    const fac=facs.find(f=>f.phase===ph.code&&f.projet_id===p.id);
+    const statutFac=fac?fac.statut:'a_facturer';
+    const numFac=fac?fac.id:'—';
+
+    const sCfg={payee:{label:'Payée',cls:'badge--green'},emise:{label:'Émise',cls:'badge--blue'},en_retard:{label:'En retard',cls:'badge--red'},a_facturer:{label:'À facturer',cls:'badge--grey'}};
+    const phaseCfg={valide:'badge--green',en_cours:'badge--blue',a_venir:'badge--grey'};
+    const s=sCfg[statutFac]||sCfg.a_facturer;
+
+    const canGenerate=ph.statut==='en_cours'&&statutFac==='a_facturer';
+    const btnGenerate=canGenerate
+      ?`<button class="btn btn--primary btn--sm" onclick="ouvrirModalFacture('${p.id}','${ph.code}',${montantHT})">Générer</button>`
+      :'—';
+
+    return `<tr>
+      <td><strong>${ph.code}</strong> <span class="badge ${phaseCfg[ph.statut]||'badge--grey'}" style="font-size:10px">${ph.statut==='valide'?'Validée':ph.statut==='en_cours'?'En cours':'À venir'}</span></td>
+      <td class="align-right mono">${fmt€(montantHT)}</td>
+      <td>${ph.ratio||0}%</td>
+      <td class="align-right mono">${fmt€(montantHT)}</td>
+      <td class="align-right mono text-muted">—</td>
+      <td class="mono" style="font-size:12px">${numFac}</td>
+      <td><span class="badge ${s.cls}">${s.label}</span></td>
+      <td class="align-right mono">${fac?fmt€(montantHT*1.2):'—'}</td>
+      <td class="align-right mono">${fac?.statut==='payee'?fmt€(montantHT*1.2):'—'}</td>
+      <td class="mono" style="font-size:12px">${fac?.date_echeance||'—'}</td>
+      <td>${btnGenerate}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal génération facture ──────────────────────────────
+function ouvrirModalFacture(projetId, phaseCode, montantHT){
+  _facContext={projetId,phaseCode,montantHT};
+  const modal=document.getElementById('modal-facture');
+  if(!modal) return;
+  const t=modal.querySelector('.modal__title');
+  const p=GAAStore.getProjet(projetId);
+  if(t) t.textContent=`Générer la facture — Phase ${phaseCode} — ${p?.nom||projetId}`;
+
+  // Pré-remplir montant
+  const montantEl=modal.querySelector('[id="fac-montant"],input[type="number"]');
+
+  // Patcher bouton confirmer
+  const btn=modal.querySelector('.modal__footer .btn--primary');
+  if(btn) btn.onclick=confirmerFacture;
+
+  openModal('modal-facture');
+}
+
+let _facContext=null;
+function confirmerFacture(){
+  if(!_facContext) return;
+  const {projetId,phaseCode,montantHT}=_facContext;
+  const id=GAAStore.nextNumero('facture');
+  const echeance=new Date(Date.now()+30*86400000).toISOString().split('T')[0];
+  const fac={
+    id,projet_id:projetId,phase:phaseCode,
+    montant_ht:montantHT,montant_ttc:Math.round(montantHT*1.2),
+    statut:'emise',date_emission:new Date().toISOString().split('T')[0],
+    date_echeance:echeance,
+  };
+  saveFac(fac);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Facture ${id} générée — ${phaseCode} — ${fmt€(montantHT)}`,'1.5 Finance');
+  closeModal('modal-facture');
+  loadProjetFinance();
+  showToast(`Facture ${id} générée ✓`,'success');
+}
+
+// ── Envoyer une relance ───────────────────────────────────
+document.querySelector('#modal-relance .btn--primary')?.addEventListener('click',()=>{
+  GAAStore.addAudit(GAAStore.getMe()?.nom,'Relance facture envoyée','1.5 Finance');
+  closeModal('modal-relance');
+  showToast('Relance envoyée ✓','success');
+});
+
+// ── Toast ─────────────────────────────────────────────────
+let _tt5;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_tt5);_tt5=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  loadProjetFinance();
+});
+
+</script>
+</body>
+</html>

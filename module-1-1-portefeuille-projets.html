@@ -1,0 +1,2563 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     GAA — Module 1.1 — Gestion des affaires / projets
+     Maquette fonctionnelle HTML (statique, simulant Django/htmx)
+     Écrans : portefeuille-projets.html + fiche-projet.html
+     ============================================================ -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.1 — Portefeuille projets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================
+       VARIABLES & RESET
+    ============================================= */
+    :root {
+      --c-bg:        #F4F3EF;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E0D8;
+      --c-border-md: #C8C5BB;
+      --c-text:      #1C1B18;
+      --c-text-2:    #6B6860;
+      --c-text-3:    #9B998F;
+      --c-primary:   #1B4965;
+      --c-primary-l: #EAF1F6;
+      --c-accent:    #C75B37;
+      --c-green:     #2D6A4F;
+      --c-green-l:   #E8F5EE;
+      --c-orange:    #B8860B;
+      --c-orange-l:  #FDF6DC;
+      --c-red:       #C0392B;
+      --c-red-l:     #FDECEA;
+      --c-blue-l:    #EAF1F6;
+      --c-grey-l:    #F0EFEB;
+
+      --radius-sm:   4px;
+      --radius:      8px;
+      --radius-lg:   12px;
+
+      --sidebar-w:   220px;
+      --header-h:    52px;
+
+      --font-main:   'Sora', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:   0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 14px; }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--c-bg);
+      color: var(--c-text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* =============================================
+       LAYOUT SHELL
+    ============================================= */
+    .shell {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* =============================================
+       SIDEBAR — nav-sidebar
+    ============================================= */
+    .nav-sidebar {
+      width: var(--sidebar-w);
+      background: var(--c-primary);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .nav-sidebar__logo {
+      padding: 20px 20px 16px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-sidebar__logo-dot {
+      width: 8px; height: 8px;
+      background: var(--c-accent);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .nav-sidebar__section {
+      padding: 16px 20px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .nav-sidebar__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      border-radius: 0;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+
+    .nav-sidebar__item:hover {
+      background: rgba(255,255,255,0.07);
+      color: #fff;
+    }
+
+    .nav-sidebar__item--active {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .nav-sidebar__item--active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 4px; bottom: 4px;
+      width: 3px;
+      background: var(--c-accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .nav-sidebar__badge {
+      margin-left: auto;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.8);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+
+    .nav-sidebar__icon { font-size: 15px; width: 18px; text-align: center; }
+
+    .nav-sidebar__user {
+      margin-top: auto;
+      padding: 14px 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+    }
+
+    .nav-sidebar__avatar {
+      width: 30px; height: 30px;
+      background: var(--c-accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* =============================================
+       MAIN CONTENT AREA
+    ============================================= */
+    .main-wrap {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top bar */
+    .topbar {
+      height: var(--header-h);
+      background: var(--c-surface);
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar__breadcrumb {
+      font-size: 13px;
+      color: var(--c-text-2);
+      flex: 1;
+    }
+
+    .topbar__breadcrumb a { color: var(--c-primary); }
+    .topbar__breadcrumb strong { color: var(--c-text); font-weight: 600; }
+
+    .topbar__search {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      font-size: 12.5px;
+      color: var(--c-text-3);
+      cursor: text;
+      width: 200px;
+    }
+
+    .topbar__avatar {
+      width: 32px; height: 32px;
+      background: var(--c-primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Page content */
+    .page {
+      padding: 28px;
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .page--active { display: flex; }
+
+    /* =============================================
+       PAGE HEADER
+    ============================================= */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .page-header__title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--c-text);
+      letter-spacing: -0.3px;
+    }
+
+    .page-header__subtitle {
+      font-size: 13px;
+      color: var(--c-text-2);
+      margin-top: 2px;
+    }
+
+    /* =============================================
+       BUTTONS
+    ============================================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-main);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn--primary {
+      background: var(--c-primary);
+      color: #fff;
+      border-color: var(--c-primary);
+    }
+
+    .btn--primary:hover { background: #153d52; }
+
+    .btn--ghost {
+      background: transparent;
+      color: var(--c-text);
+      border-color: var(--c-border-md);
+    }
+
+    .btn--ghost:hover { background: var(--c-grey-l); }
+
+    .btn--danger {
+      background: var(--c-red);
+      color: #fff;
+    }
+
+    /* =============================================
+       KPI CARDS
+    ============================================= */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .kpi-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-card__label {
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--c-text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+    }
+
+    .kpi-card__value {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .kpi-card__detail {
+      font-size: 11.5px;
+      color: var(--c-text-3);
+    }
+
+    /* =============================================
+       FILTRES / TOOLBAR
+    ============================================= */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-select {
+      appearance: none;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 5px 28px 5px 10px;
+      font-family: var(--font-main);
+      font-size: 12.5px;
+      color: var(--c-text);
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+
+    .filter-search {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      font-size: 12.5px;
+    }
+
+    .filter-search input {
+      border: none;
+      background: transparent;
+      font-family: var(--font-main);
+      font-size: 12.5px;
+      color: var(--c-text);
+      outline: none;
+      width: 160px;
+    }
+
+    .filter-search input::placeholder { color: var(--c-text-3); }
+
+    .toolbar__spacer { flex: 1; }
+
+    .view-toggle {
+      display: flex;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .view-toggle__btn {
+      padding: 5px 11px;
+      font-size: 12px;
+      cursor: pointer;
+      background: var(--c-bg);
+      color: var(--c-text-2);
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      font-family: var(--font-main);
+    }
+
+    .view-toggle__btn--active {
+      background: var(--c-primary);
+      color: #fff;
+    }
+
+    .view-toggle__btn:not(:last-child) { border-right: 1px solid var(--c-border); }
+
+    /* =============================================
+       TABLE
+    ============================================= */
+    .table-wrap {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .data-table thead th {
+      background: var(--c-grey-l);
+      border-bottom: 1px solid var(--c-border);
+      padding: 9px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--c-text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .data-table thead th:hover { color: var(--c-text); }
+
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--c-border);
+      transition: background 0.1s;
+      cursor: pointer;
+    }
+
+    .data-table tbody tr:last-child { border-bottom: none; }
+
+    .data-table tbody tr:hover { background: var(--c-blue-l); }
+
+    .data-table tbody tr.row--brouillon { background: rgba(0,0,0,0.012); }
+    .data-table tbody tr.row--brouillon:hover { background: var(--c-blue-l); }
+
+    .data-table tbody tr.row--annule { opacity: 0.45; }
+
+    .data-table td {
+      padding: 11px 14px;
+      vertical-align: middle;
+    }
+
+    .cell-projet strong { font-weight: 600; display: block; }
+    .cell-projet span { font-size: 11.5px; color: var(--c-text-3); }
+
+    /* =============================================
+       BADGES & DOTS
+    ============================================= */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge--green  { background: var(--c-green-l);  color: var(--c-green); }
+    .badge--orange { background: var(--c-orange-l); color: var(--c-orange); }
+    .badge--blue   { background: var(--c-blue-l);   color: var(--c-primary); }
+    .badge--grey   { background: var(--c-grey-l);   color: var(--c-text-2); }
+    .badge--red    { background: var(--c-red-l);    color: var(--c-red); }
+
+    .health-dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .health-dot::before {
+      content: '';
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .health-dot--ok::before    { background: var(--c-green); }
+    .health-dot--warn::before  { background: var(--c-orange); }
+    .health-dot--alert::before { background: var(--c-red); }
+    .health-dot--none::before  { background: var(--c-border-md); }
+
+    /* =============================================
+       VUE CARTES
+    ============================================= */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .project-card {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.1s;
+    }
+
+    .project-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .project-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .project-card__title {
+      font-size: 13.5px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .project-card__meta {
+      font-size: 11.5px;
+      color: var(--c-text-2);
+      margin-bottom: 10px;
+    }
+
+    .project-card__progress {
+      background: var(--c-border);
+      border-radius: 2px;
+      height: 4px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .project-card__progress-bar {
+      height: 100%;
+      background: var(--c-primary);
+      border-radius: 2px;
+    }
+
+    .project-card__footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .project-card__amount {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* =============================================
+       FICHE PROJET — WORKFLOW STATUT
+    ============================================= */
+    .workflow-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .wf-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      color: var(--c-text-3);
+      padding: 3px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .wf-step--done { color: var(--c-green); }
+    .wf-step--active {
+      color: var(--c-primary);
+      font-weight: 700;
+      background: var(--c-blue-l);
+    }
+
+    .wf-step__icon { font-size: 13px; }
+
+    .wf-arrow {
+      color: var(--c-border-md);
+      margin: 0 4px;
+      font-size: 16px;
+    }
+
+    /* =============================================
+       FICHE PROJET — KPI LIGNE
+    ============================================= */
+    .kpi-inline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--c-border);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-inline__cell {
+      background: var(--c-surface);
+      padding: 14px 18px;
+    }
+
+    .kpi-inline__label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--c-text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .kpi-inline__value {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      font-family: var(--font-mono);
+    }
+
+    .kpi-inline__sub { font-size: 11.5px; color: var(--c-text-3); margin-top: 2px; }
+
+    /* =============================================
+       TABS
+    ============================================= */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--c-border);
+      gap: 0;
+    }
+
+    .tab {
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-text-2);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab:hover { color: var(--c-text); }
+
+    .tab--active {
+      color: var(--c-primary);
+      border-bottom-color: var(--c-primary);
+      font-weight: 600;
+    }
+
+    /* =============================================
+       FICHE PROJET — CONTENU ONGLET SYNTHÈSE
+    ============================================= */
+    .synthese-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .info-block {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .info-block__title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--c-text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .info-block__title a {
+      font-size: 11px;
+      color: var(--c-primary);
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .info-field__label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--c-text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .info-field__value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--c-text);
+    }
+
+    /* Phases bar */
+    .phases-bar {
+      display: flex;
+      gap: 3px;
+      margin-top: 4px;
+    }
+
+    .phase-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .phase-pill:hover { transform: translateY(-1px); }
+
+    .phase-pill--done { background: var(--c-green-l); color: var(--c-green); }
+    .phase-pill--active { background: var(--c-primary); color: #fff; }
+    .phase-pill--upcoming { background: var(--c-grey-l); color: var(--c-text-3); }
+
+    /* Équipe */
+    .team-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .team-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 5px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .team-chip__avatar {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .team-chip--intern {
+      background: var(--c-blue-l);
+      color: var(--c-primary);
+    }
+
+    .team-chip--intern .team-chip__avatar {
+      background: var(--c-primary);
+      color: #fff;
+    }
+
+    .team-chip--extern {
+      background: var(--c-green-l);
+      color: var(--c-green);
+    }
+
+    .team-chip--extern .team-chip__avatar {
+      background: var(--c-green);
+      color: #fff;
+    }
+
+    /* Santé */
+    .health-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .health-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--c-bg);
+    }
+
+    .health-row__label { font-size: 12.5px; color: var(--c-text); }
+
+    .health-row__status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Jalons */
+    .jalons-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .jalon-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .jalon-item:last-child { border-bottom: none; }
+
+    .jalon-item__icon { font-size: 14px; width: 20px; text-align: center; }
+    .jalon-item__label { flex: 1; color: var(--c-text); font-weight: 500; }
+    .jalon-item__date { font-family: var(--font-mono); font-size: 12px; color: var(--c-text-2); }
+    .jalon-item--upcoming .jalon-item__date { color: var(--c-primary); }
+    .jalon-item--future .jalon-item__date { color: var(--c-text-3); }
+
+    /* Activité */
+    .activity-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12.5px;
+    }
+
+    .activity-item__icon {
+      font-size: 14px;
+      width: 24px; height: 24px;
+      background: var(--c-grey-l);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .activity-item__text { flex: 1; color: var(--c-text); line-height: 1.4; }
+    .activity-item__time { font-size: 11px; color: var(--c-text-3); white-space: nowrap; }
+
+    /* Note projet */
+    .note-box {
+      background: var(--c-orange-l);
+      border: 1px solid #e8d57a;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: 12.5px;
+      color: #7a6000;
+      line-height: 1.5;
+    }
+
+    /* Progress bar mini */
+    .progress-mini {
+      height: 6px;
+      background: var(--c-border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-mini__fill {
+      height: 100%;
+      border-radius: 3px;
+    }
+
+    .progress-mini__fill--primary { background: var(--c-primary); }
+    .progress-mini__fill--green { background: var(--c-green); }
+    .progress-mini__fill--orange { background: var(--c-orange); }
+
+    /* Actions boutons fiche */
+    .actions-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* =============================================
+       MODALE CRÉATION PROJET
+    ============================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+
+    .modal-overlay--open { display: flex; }
+
+    .modal {
+      background: var(--c-surface);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      animation: modal-in 0.2s ease;
+    }
+
+    @keyframes modal-in {
+      from { transform: translateY(-20px); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+
+    .modal__header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal__title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .modal__close {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--c-grey-l);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--c-text-2);
+      transition: background 0.15s;
+    }
+
+    .modal__close:hover { background: var(--c-border); }
+
+    .modal__body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal__footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--c-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* Form elements */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+
+    .form-label span.req { color: var(--c-red); margin-left: 2px; }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      padding: 8px 11px;
+      border: 1px solid var(--c-border-md);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-main);
+      font-size: 13px;
+      color: var(--c-text);
+      background: var(--c-surface);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--c-primary);
+      box-shadow: 0 0 0 3px rgba(27,73,101,0.12);
+    }
+
+    .form-textarea { resize: vertical; min-height: 70px; }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* Bandeau champs activés */
+    .fields-summary {
+      background: var(--c-blue-l);
+      border: 1px solid #c2d9ea;
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--c-primary);
+    }
+
+    .fields-summary strong { font-weight: 600; }
+
+    /* Sections dynamiques formulaire */
+    .form-section {
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .form-section__header {
+      background: var(--c-grey-l);
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--c-text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-section__body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Phases selector */
+    .phases-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .phase-toggle {
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--c-border);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--c-bg);
+      color: var(--c-text-2);
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .phase-toggle--selected {
+      background: var(--c-primary);
+      border-color: var(--c-primary);
+      color: #fff;
+    }
+
+    /* Alert cohérence */
+    .coherence-alert {
+      background: var(--c-orange-l);
+      border: 1px solid var(--c-orange);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--c-orange);
+      display: none;
+    }
+
+    .coherence-alert--visible { display: block; }
+
+    /* =============================================
+       EMPTY STATE
+    ============================================= */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--c-text-3);
+    }
+
+    .empty-state__icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state__title { font-size: 16px; font-weight: 600; color: var(--c-text-2); margin-bottom: 6px; }
+    .empty-state__desc { font-size: 13px; }
+
+    /* =============================================
+       TOOLTIP HTMX (simulé)
+    ============================================= */
+    .htmx-indicator {
+      display: none;
+      font-size: 11px;
+      color: var(--c-text-3);
+    }
+
+    /* Misc */
+    .text-mono { font-family: var(--font-mono); }
+    .text-green { color: var(--c-green); }
+    .text-orange { color: var(--c-orange); }
+    .text-red { color: var(--c-red); }
+    .text-muted { color: var(--c-text-3); }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .synthese-grid { grid-template-columns: 1fr; }
+      .kpi-inline { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .nav-sidebar { display: none; }
+      .main-wrap { margin-left: 0; }
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     MODALE — CRÉATION DE PROJET
+     Simule : hx-get="/projets/nouveau/" hx-target="#modal-container" hx-trigger="click"
+============================================================ -->
+<div class="modal-overlay" id="modal-creation" role="dialog" aria-modal="true" aria-labelledby="modal-titre">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title" id="modal-titre">Nouveau projet</h2>
+      <button class="modal__close" onclick="closeModal()" aria-label="Fermer">×</button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Tronc commun -->
+      <div class="form-section">
+        <div class="form-section__header">Informations de base</div>
+        <div class="form-section__body">
+          <div class="form-group">
+            <label class="form-label" for="proj-nom">Nom du projet <span class="req">*</span></label>
+            <input class="form-input" id="proj-nom" type="text" placeholder="Ex. : Groupe scolaire Victor Hugo — Réhabilitation">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <!-- hx-get="/projets/type-mission/champs/?type={val}" hx-target="#champs-dynamiques" hx-trigger="change" -->
+              <label class="form-label" for="proj-type">Type de mission <span class="req">*</span></label>
+              <select class="form-select" id="proj-type" onchange="updateFormFields(this.value)">
+                <option value="">— Sélectionner —</option>
+                <option value="moe">MOE (maîtrise d'œuvre)</option>
+                <option value="opc">OPC</option>
+                <option value="diag">Diagnostic</option>
+                <option value="amo">AMO</option>
+                <option value="prog">Programmation</option>
+                <option value="ssi">SSI</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <!-- hx-get="/crm/contacts/?q={val}&role=moa" hx-target="#moa-results" -->
+              <label class="form-label" for="proj-moa">Maître d'ouvrage (MOA) <span class="req">*</span></label>
+              <input class="form-input" id="proj-moa" type="text" placeholder="Rechercher dans le CRM…">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bandeau récap champs activés — affiché après sélection du type -->
+      <div class="fields-summary" id="fields-summary" style="display:none">
+        <strong>Champs activés pour ce type de mission :</strong>
+        <span id="fields-list"></span>
+      </div>
+
+      <!-- Champs dynamiques — injectés via htmx selon le type de mission -->
+      <div id="champs-dynamiques" style="display:none">
+
+        <div class="form-section">
+          <div class="form-section__header">Caractéristiques du projet</div>
+          <div class="form-section__body">
+            <div class="form-grid-2">
+              <div class="form-group" id="field-marche">
+                <label class="form-label" for="proj-marche">Type de marché</label>
+                <select class="form-select" id="proj-marche">
+                  <option>Public</option>
+                  <option>Privé</option>
+                </select>
+              </div>
+              <div class="form-group" id="field-programme">
+                <label class="form-label" for="proj-prog">Programme</label>
+                <select class="form-select" id="proj-prog">
+                  <option>Éq. scolaire</option>
+                  <option>Logement</option>
+                  <option>Culturel</option>
+                  <option>Tertiaire</option>
+                  <option>Santé</option>
+                  <option>Sportif</option>
+                  <option>Éq. public</option>
+                  <option>Industriel</option>
+                </select>
+              </div>
+              <div class="form-group" id="field-surface">
+                <label class="form-label" for="proj-surface">Surface (m²)</label>
+                <input class="form-input" id="proj-surface" type="number" placeholder="3 200">
+              </div>
+              <div class="form-group" id="field-travaux">
+                <label class="form-label" for="proj-travaux">Montant travaux estimé (€ HT)</label>
+                <input class="form-input" id="proj-travaux" type="number" placeholder="2 800 000" oninput="updateHonoraires()">
+              </div>
+              <div class="form-group" id="field-remuneration">
+                <label class="form-label" for="proj-rem">Mode de rémunération</label>
+                <select class="form-select" id="proj-rem">
+                  <option>Forfait</option>
+                  <option>Régie</option>
+                  <option>% du montant travaux</option>
+                </select>
+              </div>
+              <div class="form-group" id="field-honoraires">
+                <label class="form-label" for="proj-hon">Honoraires totaux (€ HT)</label>
+                <input class="form-input" id="proj-hon" type="number" placeholder="255 000" oninput="checkCoherence()">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="section-phases">
+          <div class="form-section__header">Phases de mission</div>
+          <div class="form-section__body">
+            <div class="phases-selector" id="phases-selector">
+              <!-- pré-cochées selon type de mission -->
+            </div>
+            <div class="coherence-alert" id="coherence-alert">
+              ⚠️ Le total des honoraires par phase (<strong id="total-phases-val">0 €</strong>) ne correspond pas au montant total (<strong id="total-hon-val">0 €</strong>). Veuillez vérifier la ventilation.
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section__header">Équipe interne</div>
+          <div class="form-section__body">
+            <div style="display:flex;gap:8px;align-items:center;font-size:13px;color:var(--c-text-2)">
+              <span>+ Ajouter un collaborateur</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;" id="equipe-preview">
+                <span style="background:var(--c-blue-l);color:var(--c-primary);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500">M. Lefort — Chef de projet</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="proj-note">Commentaire / notes</label>
+          <textarea class="form-textarea" id="proj-note" placeholder="Particularités du projet, notes stratégiques…"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal()">Annuler</button>
+      <div style="display:flex;gap:8px">
+        <!-- hx-post="/projets/creer/" hx-vals='{"statut":"brouillon"}' -->
+        <button class="btn btn--ghost" onclick="closeModal()">Enregistrer en brouillon</button>
+        <!-- hx-post="/projets/creer/" hx-vals='{"statut":"en_attente"}' -->
+        <button class="btn btn--primary" onclick="closeModal()">Créer le projet →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SHELL
+============================================================ -->
+<div class="shell">
+
+  <!-- ====================================================
+       SIDEBAR
+  ==================================================== -->
+  <nav class="nav-sidebar" aria-label="Navigation principale">
+    <div class="nav-sidebar__logo">
+      <span class="nav-sidebar__logo-dot"></span>GAA
+    </div>
+
+    <div class="nav-sidebar__section">Pilotage</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">⬜</span> Tableau de bord
+    </a>
+    <a class="nav-sidebar__item nav-sidebar__item--active" href="#" onclick="showPage('portefeuille'); return false">
+      <span class="nav-sidebar__icon">📁</span> Projets
+      <span class="nav-sidebar__badge">12</span>
+    </a>
+
+    <div class="nav-sidebar__section">Commercial</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">📄</span> Devis
+      <span class="nav-sidebar__badge">4</span>
+    </a>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">👥</span> CRM
+    </a>
+
+    <div class="nav-sidebar__section">Opérationnel</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">⏱</span> Temps
+    </a>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">📂</span> Documents
+    </a>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">✓</span> Tâches
+    </a>
+
+    <div class="nav-sidebar__section">Finance</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">💰</span> Facturation
+    </a>
+    <a class="nav-sidebar__item" href="#" onclick="return false">
+      <span class="nav-sidebar__icon">📊</span> Reporting
+    </a>
+
+    <div class="nav-sidebar__user">
+      <div class="nav-sidebar__avatar">ML</div>
+      <div>
+        <div style="font-weight:600;font-size:12px">M. Lefort</div>
+        <div style="color:rgba(255,255,255,0.5);font-size:11px">Chef de projet</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====================================================
+       MAIN
+  ==================================================== -->
+  <div class="main-wrap">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar__breadcrumb" id="breadcrumb">
+        Accueil / <strong>Portefeuille projets</strong>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="topbar__search">
+          <span>🔍</span>
+          <span>Rechercher dans GAA…</span>
+        </div>
+        <div class="topbar__avatar" title="M. Lefort">ML</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         PAGE 1 — PORTEFEUILLE PROJETS
+    ================================================ -->
+    <main class="page page--active" id="page-portefeuille">
+
+      <!-- En-tête page -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-header__title">Portefeuille projets</h1>
+          <p class="page-header__subtitle">12 projets — 3,2 M€ d'honoraires en cours</p>
+        </div>
+        <!-- hx-get="/projets/nouveau/" hx-target="#modal-creation" hx-swap="outerHTML" -->
+        <button class="btn btn--primary" onclick="openModal()">+ Nouveau projet</button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Projets en cours</div>
+          <div class="kpi-card__value">7</div>
+          <div class="kpi-card__detail">dont <span style="color:var(--c-red);font-weight:600">2 en alerte</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">En attente signature</div>
+          <div class="kpi-card__value text-orange">3</div>
+          <div class="kpi-card__detail">285 000 € prévisionnel</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">CA confirmé 2026</div>
+          <div class="kpi-card__value text-green">420 k€</div>
+          <div class="kpi-card__detail">+117 k€ pondéré pipeline</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Taux de conversion</div>
+          <div class="kpi-card__value">68%</div>
+          <div class="kpi-card__detail">12 derniers mois</div>
+        </div>
+      </div>
+
+      <!-- Toolbar filtres -->
+      <div class="toolbar">
+        <!-- hx-get="/projets/" hx-target="#liste-projets" hx-trigger="change" hx-include="[name='filtre']" -->
+        <select class="filter-select" name="filtre" id="filtre-statut" onchange="filterTable()">
+          <option value="">Tous les statuts</option>
+          <option value="en-cours">En cours</option>
+          <option value="en-attente">En attente</option>
+          <option value="acte">Acté</option>
+          <option value="brouillon">Brouillon</option>
+          <option value="termine">Terminé</option>
+          <option value="archive">Archivé</option>
+          <option value="annule">Annulé / Perdu</option>
+        </select>
+
+        <select class="filter-select" name="filtre" onchange="filterTable()">
+          <option value="">Public / Privé</option>
+          <option value="public">Public</option>
+          <option value="prive">Privé</option>
+        </select>
+
+        <select class="filter-select" name="filtre" onchange="filterTable()">
+          <option value="">Programme</option>
+          <option>Éq. scolaire</option>
+          <option>Logement</option>
+          <option>Culturel</option>
+          <option>Tertiaire</option>
+          <option>Santé</option>
+        </select>
+
+        <select class="filter-select" name="filtre" onchange="filterTable()">
+          <option value="">Chef de projet</option>
+          <option>M. Lefort</option>
+          <option>T. Durand</option>
+          <option>S. Moreau</option>
+        </select>
+
+        <div class="filter-search">
+          <span>🔍</span>
+          <input type="text" placeholder="Rechercher un projet…" oninput="filterTable()">
+        </div>
+
+        <div class="toolbar__spacer"></div>
+
+        <!-- Bascule vue -->
+        <div class="view-toggle">
+          <button class="view-toggle__btn view-toggle__btn--active" id="btn-tableau" onclick="switchView('tableau')">☰ Tableau</button>
+          <button class="view-toggle__btn" id="btn-cartes" onclick="switchView('cartes')">⊞ Cartes</button>
+        </div>
+      </div>
+
+      <!-- VUE TABLEAU -->
+      <div id="vue-tableau">
+        <div class="table-wrap">
+          <!-- hx-boost="true" / hx-push-url="true" sur les <tr> -->
+          <table class="data-table" aria-label="Liste des projets">
+            <thead>
+              <tr>
+                <th onclick="sortTable(0)">Projet ↕</th>
+                <th onclick="sortTable(1)">MOA ↕</th>
+                <th onclick="sortTable(2)">Statut ↕</th>
+                <th>Type</th>
+                <th>Programme</th>
+                <th>Phase</th>
+                <th onclick="sortTable(6)">Santé ↕</th>
+                <th onclick="sortTable(7)" style="text-align:right">Honoraires ↕</th>
+                <th>Chef de projet</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-projets">
+
+              <tr onclick="showPage('fiche')">
+                <td class="cell-projet"><strong>Groupe scolaire V. Hugo</strong><span>Réhab. — Nantes (44)</span></td>
+                <td>Ville de Nantes</td>
+                <td><span class="badge badge--green">En cours</span></td>
+                <td>Public</td>
+                <td>Éq. scolaire</td>
+                <td><span class="badge badge--blue">APD</span></td>
+                <td><span class="health-dot health-dot--ok">OK</span></td>
+                <td class="text-mono" style="text-align:right">255 000 €</td>
+                <td>M. Lefort</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')">
+                <td class="cell-projet"><strong>Médiathèque de Brest</strong><span>Neuf — Brest (29)</span></td>
+                <td>Brest Métropole</td>
+                <td><span class="badge badge--green">En cours</span></td>
+                <td>Public</td>
+                <td>Culturel</td>
+                <td><span class="badge badge--blue">DET</span></td>
+                <td><span class="health-dot health-dot--warn">Retard +8j</span></td>
+                <td class="text-mono" style="text-align:right">380 000 €</td>
+                <td>T. Durand</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')">
+                <td class="cell-projet"><strong>Résidence Les Tilleuls</strong><span>45 logements — Rennes (35)</span></td>
+                <td>SCI Tilleuls</td>
+                <td><span class="badge badge--green">En cours</span></td>
+                <td>Privé</td>
+                <td>Logement</td>
+                <td><span class="badge badge--blue">PRO</span></td>
+                <td><span class="health-dot health-dot--alert">Budget !</span></td>
+                <td class="text-mono" style="text-align:right">180 000 €</td>
+                <td>M. Lefort</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')">
+                <td class="cell-projet"><strong>Hôtel de ville — Extension</strong><span>Extension — Lorient (56)</span></td>
+                <td>Ville de Lorient</td>
+                <td><span class="badge badge--green">En cours</span></td>
+                <td>Public</td>
+                <td>Éq. public</td>
+                <td><span class="badge badge--blue">DCE</span></td>
+                <td><span class="health-dot health-dot--ok">OK</span></td>
+                <td class="text-mono" style="text-align:right">320 000 €</td>
+                <td>T. Durand</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')" style="background:rgba(184,134,11,0.03)">
+                <td class="cell-projet"><strong>École Montreuil</strong><span>Neuf — Montreuil (93)</span></td>
+                <td>Ville de Montreuil</td>
+                <td><span class="badge badge--orange">⏳ En attente</span></td>
+                <td>Public</td>
+                <td>Éq. scolaire</td>
+                <td><span class="text-muted">—</span></td>
+                <td><span class="text-muted">—</span></td>
+                <td class="text-mono text-orange" style="text-align:right">127 500 €</td>
+                <td>S. Moreau</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')" style="background:rgba(184,134,11,0.03)">
+                <td class="cell-projet"><strong>EHPAD Les Sources</strong><span>Réhab. — Angers (49)</span></td>
+                <td>ADMR Anjou</td>
+                <td><span class="badge badge--orange">⏳ En attente</span></td>
+                <td>Privé</td>
+                <td>Santé</td>
+                <td><span class="text-muted">—</span></td>
+                <td><span class="text-muted">—</span></td>
+                <td class="text-mono text-orange" style="text-align:right">95 000 €</td>
+                <td>M. Lefort</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')" class="row--brouillon">
+                <td class="cell-projet"><strong>📝 Diagnostic Mairie Vannes</strong><span>Diagnostic — Vannes (56)</span></td>
+                <td>Ville de Vannes</td>
+                <td><span class="badge badge--grey">Brouillon</span></td>
+                <td>Public</td>
+                <td>Éq. public</td>
+                <td><span class="text-muted" style="font-size:11.5px">Diagnostic</span></td>
+                <td><span class="health-dot health-dot--ok"></span></td>
+                <td class="text-mono text-muted" style="text-align:right">—</td>
+                <td>S. Moreau</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')">
+                <td class="cell-projet"><strong>Gymnase Intercommunal</strong><span>Neuf — Saint-Brieuc (22)</span></td>
+                <td>CC Armor Argoat</td>
+                <td><span class="badge badge--green">En cours</span></td>
+                <td>Public</td>
+                <td>Sportif</td>
+                <td><span class="badge badge--blue">APS</span></td>
+                <td><span class="health-dot health-dot--ok">OK</span></td>
+                <td class="text-mono" style="text-align:right">198 000 €</td>
+                <td>S. Moreau</td>
+              </tr>
+
+              <tr onclick="showPage('fiche')" class="row--annule">
+                <td class="cell-projet"><strong>Centre culturel Quimper</strong><span>Concours — Quimper (29)</span></td>
+                <td>Ville de Quimper</td>
+                <td><span class="badge badge--red">Annulé</span></td>
+                <td>Public</td>
+                <td>Culturel</td>
+                <td><span class="text-muted">—</span></td>
+                <td><span class="text-muted">—</span></td>
+                <td class="text-mono text-muted" style="text-align:right">210 000 €</td>
+                <td>T. Durand</td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VUE CARTES (masquée par défaut) -->
+      <div id="vue-cartes" style="display:none">
+        <div class="cards-grid">
+
+          <div class="project-card" onclick="showPage('fiche')">
+            <div class="project-card__header">
+              <div>
+                <div class="project-card__title">Groupe scolaire V. Hugo</div>
+                <div class="project-card__meta">Nantes · Éq. scolaire · Public</div>
+              </div>
+              <span class="badge badge--green">En cours</span>
+            </div>
+            <div class="project-card__progress"><div class="project-card__progress-bar" style="width:38%"></div></div>
+            <div class="project-card__footer">
+              <span class="badge badge--blue">APD</span>
+              <span class="project-card__amount">255 000 €</span>
+              <span class="health-dot health-dot--ok"></span>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="showPage('fiche')">
+            <div class="project-card__header">
+              <div>
+                <div class="project-card__title">Médiathèque de Brest</div>
+                <div class="project-card__meta">Brest · Culturel · Public</div>
+              </div>
+              <span class="badge badge--green">En cours</span>
+            </div>
+            <div class="project-card__progress"><div class="project-card__progress-bar" style="width:72%"></div></div>
+            <div class="project-card__footer">
+              <span class="badge badge--blue">DET</span>
+              <span class="project-card__amount">380 000 €</span>
+              <span class="health-dot health-dot--warn"></span>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="showPage('fiche')">
+            <div class="project-card__header">
+              <div>
+                <div class="project-card__title">Résidence Les Tilleuls</div>
+                <div class="project-card__meta">Rennes · Logement · Privé</div>
+              </div>
+              <span class="badge badge--green">En cours</span>
+            </div>
+            <div class="project-card__progress"><div class="project-card__progress-bar" style="width:52%;background:var(--c-orange)"></div></div>
+            <div class="project-card__footer">
+              <span class="badge badge--blue">PRO</span>
+              <span class="project-card__amount">180 000 €</span>
+              <span class="health-dot health-dot--alert"></span>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="showPage('fiche')" style="border-color:var(--c-orange);background:var(--c-orange-l)">
+            <div class="project-card__header">
+              <div>
+                <div class="project-card__title">École Montreuil</div>
+                <div class="project-card__meta">Montreuil · Éq. scolaire · Public</div>
+              </div>
+              <span class="badge badge--orange">En attente</span>
+            </div>
+            <div class="project-card__progress"><div class="project-card__progress-bar" style="width:0%"></div></div>
+            <div class="project-card__footer">
+              <span class="text-muted" style="font-size:12px">Devis envoyé</span>
+              <span class="project-card__amount text-orange">127 500 €</span>
+              <span>—</span>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="showPage('fiche')" style="border-style:dashed;background:var(--c-grey-l)">
+            <div class="project-card__header">
+              <div>
+                <div class="project-card__title">📝 Diagnostic Mairie Vannes</div>
+                <div class="project-card__meta">Vannes · Éq. public · Public</div>
+              </div>
+              <span class="badge badge--grey">Brouillon</span>
+            </div>
+            <div class="project-card__progress"><div class="project-card__progress-bar" style="width:0%"></div></div>
+            <div class="project-card__footer">
+              <span class="text-muted" style="font-size:12px">Sans engagement</span>
+              <span class="project-card__amount text-muted">—</span>
+              <span>—</span>
+            </div>
+          </div>
+
+          <div class="project-card" onclick="showPage('fiche')">
+            <div class="project-card__header">
+              <div>
+                <div class="project-card__title">Gymnase Intercommunal</div>
+                <div class="project-card__meta">Saint-Brieuc · Sportif · Public</div>
+              </div>
+              <span class="badge badge--green">En cours</span>
+            </div>
+            <div class="project-card__progress"><div class="project-card__progress-bar" style="width:18%"></div></div>
+            <div class="project-card__footer">
+              <span class="badge badge--blue">APS</span>
+              <span class="project-card__amount">198 000 €</span>
+              <span class="health-dot health-dot--ok"></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ================================================
+         PAGE 2 — FICHE PROJET
+         Simule : fiche-projet.html?id=gs-victor-hugo
+    ================================================ -->
+    <main class="page" id="page-fiche">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+            <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Groupe scolaire Victor Hugo</h1>
+            <span class="badge badge--green" style="font-size:12.5px">En cours</span>
+            <span class="health-dot health-dot--ok" style="font-size:12px">Santé OK</span>
+          </div>
+          <p style="font-size:13px;color:var(--c-text-2)">Réhabilitation · Éq. scolaire · Public · Nantes (44) · MOE complète</p>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn--ghost">Dupliquer</button>
+          <button class="btn btn--ghost">Exporter</button>
+          <button class="btn btn--primary">Modifier</button>
+        </div>
+      </div>
+
+      <!-- Workflow statut cycle de vie -->
+      <div class="workflow-bar" role="progressbar" aria-label="Cycle de vie du projet">
+        <span class="wf-step wf-step--done"><span class="wf-step__icon">✓</span> Brouillon</span>
+        <span class="wf-arrow">›</span>
+        <span class="wf-step wf-step--done"><span class="wf-step__icon">✓</span> En attente</span>
+        <span class="wf-arrow">›</span>
+        <span class="wf-step wf-step--done"><span class="wf-step__icon">✓</span> Acté <span style="font-size:11px;opacity:.7">(15/03/25)</span></span>
+        <span class="wf-arrow">›</span>
+        <span class="wf-step wf-step--active"><span class="wf-step__icon">●</span> En cours</span>
+        <span class="wf-arrow">›</span>
+        <span class="wf-step">Terminé</span>
+        <span class="wf-arrow">›</span>
+        <span class="wf-step">Archivé</span>
+      </div>
+
+      <!-- KPIs inline -->
+      <div class="kpi-inline">
+        <div class="kpi-inline__cell">
+          <div class="kpi-inline__label">Honoraires</div>
+          <div class="kpi-inline__value">255 000 €</div>
+          <div class="kpi-inline__sub">Forfait · 9,1% Mt travaux</div>
+        </div>
+        <div class="kpi-inline__cell">
+          <div class="kpi-inline__label">Facturé</div>
+          <div class="kpi-inline__value text-green">63 750 €</div>
+          <div class="kpi-inline__sub">25% · ESQ + APS</div>
+        </div>
+        <div class="kpi-inline__cell">
+          <div class="kpi-inline__label">Temps passé</div>
+          <div class="kpi-inline__value">342 h</div>
+          <div class="kpi-inline__sub">Budget 480 h · 71%</div>
+        </div>
+        <div class="kpi-inline__cell">
+          <div class="kpi-inline__label">Avancement</div>
+          <div class="kpi-inline__value">38%</div>
+          <div class="kpi-inline__sub">
+            <div class="progress-mini"><div class="progress-mini__fill progress-mini__fill--primary" style="width:38%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div>
+        <div class="tabs" role="tablist">
+          <div class="tab tab--active" role="tab" aria-selected="true" onclick="switchTab(this, 'tab-synthese')">Synthèse</div>
+          <!-- hx-get="/projets/1/phases/" hx-target="#tab-content" hx-trigger="click" -->
+          <div class="tab" role="tab" onclick="switchTab(this, 'tab-phases')">Phases</div>
+          <div class="tab" role="tab" onclick="switchTab(this, 'tab-equipe')">Équipe</div>
+          <div class="tab" role="tab" onclick="switchTab(this, 'tab-devis')">Devis & Contrat</div>
+          <div class="tab" role="tab" onclick="switchTab(this, 'tab-finances')">Suivi financier</div>
+        </div>
+      </div>
+
+      <!-- Tab content -->
+      <div id="tab-content">
+
+        <!-- SYNTHÈSE -->
+        <div id="tab-synthese">
+          <div class="synthese-grid">
+
+            <!-- Colonne gauche -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+              <!-- Note projet -->
+              <div class="note-box">
+                📌 <strong>Note :</strong> Bâtiment classé — contraintes ABF. Coordonner avec l'architecte des Bâtiments de France pour tout dépôt de pièces.
+              </div>
+
+              <!-- Informations projet -->
+              <div class="info-block">
+                <div class="info-block__title">
+                  Informations projet
+                  <a href="#">Modifier</a>
+                </div>
+                <div class="info-grid">
+                  <div>
+                    <div class="info-field__label">MOA</div>
+                    <div class="info-field__value">Ville de Nantes</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Type de marché</div>
+                    <div class="info-field__value">Public</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Programme</div>
+                    <div class="info-field__value">Éq. scolaire</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Mission</div>
+                    <div class="info-field__value">MOE complète</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Surface</div>
+                    <div class="info-field__value">3 200 m²</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Mt travaux</div>
+                    <div class="info-field__value">2 800 000 €</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Rémunération</div>
+                    <div class="info-field__value">Forfait</div>
+                  </div>
+                  <div>
+                    <div class="info-field__label">Signature</div>
+                    <div class="info-field__value">15/03/2025</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phases -->
+              <div class="info-block">
+                <div class="info-block__title">
+                  Avancement des phases
+                  <!-- hx-get="/projets/1/phases/" hx-target="#tab-content" -->
+                  <a href="#" onclick="switchTab(document.querySelectorAll('.tab')[1], 'tab-phases'); return false">Voir détail →</a>
+                </div>
+                <div class="phases-bar">
+                  <div class="phase-pill phase-pill--done" title="ESQ — Validé">✓ ESQ</div>
+                  <div class="phase-pill phase-pill--done" title="APS — Validé">✓ APS</div>
+                  <div class="phase-pill phase-pill--active" title="APD — En cours">● APD</div>
+                  <div class="phase-pill phase-pill--upcoming" title="PRO — À venir">PRO</div>
+                  <div class="phase-pill phase-pill--upcoming" title="DCE — À venir">DCE</div>
+                  <div class="phase-pill phase-pill--upcoming" title="DET — À venir">DET</div>
+                  <div class="phase-pill phase-pill--upcoming" title="AOR — À venir">AOR</div>
+                </div>
+              </div>
+
+              <!-- Équipe -->
+              <div class="info-block">
+                <div class="info-block__title">
+                  Équipe projet
+                  <a href="#">Gérer</a>
+                </div>
+                <div class="team-chips">
+                  <div class="team-chip team-chip--intern" title="Interne">
+                    <div class="team-chip__avatar">ML</div>
+                    M. Lefort — Chef de projet
+                  </div>
+                  <div class="team-chip team-chip--intern">
+                    <div class="team-chip__avatar">TM</div>
+                    T. Morel — Dessinateur
+                  </div>
+                  <div class="team-chip team-chip--intern">
+                    <div class="team-chip__avatar">CP</div>
+                    C. Petit — Projeteur
+                  </div>
+                  <div class="team-chip team-chip--extern" title="Externe / CRM">
+                    <div class="team-chip__avatar">BT</div>
+                    BET Thermex — Fluides
+                  </div>
+                  <div class="team-chip team-chip--extern">
+                    <div class="team-chip__avatar">EB</div>
+                    Écobat — Structure
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Colonne droite -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+              <!-- Santé du projet -->
+              <div class="info-block">
+                <div class="info-block__title">Santé du projet</div>
+                <div class="health-grid">
+                  <div class="health-row">
+                    <span class="health-row__label">Budget honoraires</span>
+                    <span class="health-row__status">
+                      <span style="width:8px;height:8px;border-radius:50%;background:var(--c-green);display:inline-block"></span>
+                      OK — 63,75 k€ / 255 k€
+                    </span>
+                  </div>
+                  <div class="health-row">
+                    <span class="health-row__label">Délais</span>
+                    <span class="health-row__status text-orange">
+                      <span style="width:8px;height:8px;border-radius:50%;background:var(--c-orange);display:inline-block"></span>
+                      +8 j phase APD
+                    </span>
+                  </div>
+                  <div class="health-row">
+                    <span class="health-row__label">Charge (temps)</span>
+                    <span class="health-row__status">
+                      <span style="width:8px;height:8px;border-radius:50%;background:var(--c-green);display:inline-block"></span>
+                      342 h / 480 h · 92%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Jalons clés -->
+              <div class="info-block">
+                <div class="info-block__title">Jalons clés</div>
+                <div class="jalons-list">
+                  <div class="jalon-item">
+                    <span class="jalon-item__icon">✅</span>
+                    <span class="jalon-item__label">Notification marché</span>
+                    <span class="jalon-item__date">15/03/2025</span>
+                  </div>
+                  <div class="jalon-item">
+                    <span class="jalon-item__icon">✅</span>
+                    <span class="jalon-item__label">Dépôt PC</span>
+                    <span class="jalon-item__date">10/06/2025</span>
+                  </div>
+                  <div class="jalon-item jalon-item--upcoming">
+                    <span class="jalon-item__icon">🔵</span>
+                    <span class="jalon-item__label">Démarrage chantier</span>
+                    <span class="jalon-item__date">01/09/2026</span>
+                  </div>
+                  <div class="jalon-item jalon-item--future">
+                    <span class="jalon-item__icon">⚪</span>
+                    <span class="jalon-item__label">Réception</span>
+                    <span class="jalon-item__date">01/03/2028</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dernière activité -->
+              <div class="info-block">
+                <div class="info-block__title">
+                  Activité récente
+                  <!-- hx-get="/projets/1/activite/" hx-target="#activite-list" hx-trigger="load" -->
+                </div>
+                <div class="activity-list" id="activite-list">
+                  <div class="activity-item">
+                    <div class="activity-item__icon">📄</div>
+                    <div class="activity-item__text">Plans APD ind. B déposés par T. Morel</div>
+                    <div class="activity-item__time">Il y a 2h</div>
+                  </div>
+                  <div class="activity-item">
+                    <div class="activity-item__icon">⏱</div>
+                    <div class="activity-item__text">7h imputées — T. Morel (APD · Plans niveaux)</div>
+                    <div class="activity-item__time">Hier</div>
+                  </div>
+                  <div class="activity-item">
+                    <div class="activity-item__icon">💬</div>
+                    <div class="activity-item__text">CR réunion MOA — validation programme</div>
+                    <div class="activity-item__time">28/02</div>
+                  </div>
+                  <div class="activity-item">
+                    <div class="activity-item__icon">💰</div>
+                    <div class="activity-item__text">Facture APS 25 500 € émise et envoyée</div>
+                    <div class="activity-item__time">25/02</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions contextuelles -->
+              <div class="info-block">
+                <div class="info-block__title">Actions</div>
+                <div class="actions-row">
+                  <!-- hx-post="/projets/1/valider-phase/" hx-confirm="Valider la phase APD ?" -->
+                  <button class="btn btn--primary">Valider phase APD</button>
+                  <button class="btn btn--ghost">Générer avenant</button>
+                  <button class="btn btn--ghost" style="border-style:dashed;color:var(--c-text-3)">Archiver</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- PHASES (stub) -->
+        <div id="tab-phases" style="display:none">
+          <div class="info-block" style="text-align:center;padding:40px">
+            <div style="font-size:32px;margin-bottom:8px">🗂</div>
+            <div style="font-size:15px;font-weight:600;color:var(--c-text-2);margin-bottom:4px">Module 1.2 — Gestion des phases</div>
+            <div style="font-size:13px;color:var(--c-text-3)">Ce contenu est chargé dynamiquement depuis le module 1.2<br>
+              <code style="font-size:11px;background:var(--c-grey-l);padding:2px 6px;border-radius:3px">hx-get="/projets/1/phases/" hx-target="#tab-content"</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- ÉQUIPE (stub) -->
+        <div id="tab-equipe" style="display:none">
+          <div class="info-block" style="text-align:center;padding:40px">
+            <div style="font-size:32px;margin-bottom:8px">👥</div>
+            <div style="font-size:15px;font-weight:600;color:var(--c-text-2);margin-bottom:4px">Gestion de l'équipe projet</div>
+            <div style="font-size:13px;color:var(--c-text-3)">Interne (collaborateurs) · Externe (CRM) · Entreprises (lots)</div>
+          </div>
+        </div>
+
+        <!-- DEVIS & CONTRAT (stub) -->
+        <div id="tab-devis" style="display:none">
+          <div class="info-block" style="text-align:center;padding:40px">
+            <div style="font-size:32px;margin-bottom:8px">📋</div>
+            <div style="font-size:15px;font-weight:600;color:var(--c-text-2);margin-bottom:4px">Module 1.5 — Devis & Contrat</div>
+            <div style="font-size:13px;color:var(--c-text-3)">Décomposition par phase · Conditions de règlement · Avenants</div>
+          </div>
+        </div>
+
+        <!-- SUIVI FINANCIER (stub) -->
+        <div id="tab-finances" style="display:none">
+          <div class="info-block" style="text-align:center;padding:40px">
+            <div style="font-size:32px;margin-bottom:8px">💰</div>
+            <div style="font-size:15px;font-weight:600;color:var(--c-text-2);margin-bottom:4px">Module 1.5 — Suivi financier</div>
+            <div style="font-size:13px;color:var(--c-text-3)">Plan de facturation · Factures émises · Rentabilité</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Retour -->
+      <div>
+        <button class="btn btn--ghost" onclick="showPage('portefeuille')">← Retour au portefeuille</button>
+      </div>
+
+    </main>
+
+  </div><!-- /main-wrap -->
+</div><!-- /shell -->
+
+<!-- ============================================================
+     JAVASCRIPT — Interactions (simule htmx/Django côté client)
+============================================================ -->
+<script>
+  /* ---- Navigation entre pages ---- */
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+    document.getElementById('page-' + name).classList.add('page--active');
+
+    // Breadcrumb
+    const bc = document.getElementById('breadcrumb');
+    if (name === 'portefeuille') {
+      bc.innerHTML = 'Accueil / <strong>Portefeuille projets</strong>';
+    } else if (name === 'fiche') {
+      bc.innerHTML = '<a href="#" onclick="showPage(\'portefeuille\'); return false">Projets</a> / <strong>Groupe scolaire Victor Hugo</strong>';
+    }
+
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- Tabs fiche projet ---- */
+  function switchTab(el, targetId) {
+    // Désactiver tous les tabs
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab--active'));
+    // Masquer tous les contenus
+    ['tab-synthese','tab-phases','tab-equipe','tab-devis','tab-finances'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    // Activer le tab cliqué
+    el.classList.add('tab--active');
+    const target = document.getElementById(targetId);
+    if (target) target.style.display = 'block';
+  }
+
+  /* ---- Bascule vue tableau/cartes ---- */
+  function switchView(view) {
+    const btnT = document.getElementById('btn-tableau');
+    const btnC = document.getElementById('btn-cartes');
+    const vueT = document.getElementById('vue-tableau');
+    const vueC = document.getElementById('vue-cartes');
+
+    if (view === 'tableau') {
+      btnT.classList.add('view-toggle__btn--active');
+      btnC.classList.remove('view-toggle__btn--active');
+      vueT.style.display = 'block';
+      vueC.style.display = 'none';
+    } else {
+      btnC.classList.add('view-toggle__btn--active');
+      btnT.classList.remove('view-toggle__btn--active');
+      vueT.style.display = 'none';
+      vueC.style.display = 'block';
+    }
+  }
+
+  /* ---- Modale création projet ---- */
+  function openModal() {
+    document.getElementById('modal-creation').classList.add('modal-overlay--open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-creation').classList.remove('modal-overlay--open');
+    document.body.style.overflow = '';
+  }
+
+  // Fermeture en cliquant sur l'overlay
+  document.getElementById('modal-creation').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // Échap
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  /* ---- Formulaire dynamique selon type de mission ---- */
+  const PHASES_PAR_TYPE = {
+    moe:  { phases: ['ESQ','APS','APD','PRO','DCE','ACT','VISA','DET','AOR'], fields: 'Type marché, Programme, Adresse, Surface, Mt travaux, Rémunération, Phases, Équipe interne, Équipe extérieure, Commentaire' },
+    opc:  { phases: ['OPC','SYN'], fields: 'Type marché, Programme, Adresse, Phases, Équipe interne, Commentaire' },
+    diag: { phases: ['Diagnostic'], fields: 'Adresse, Surface, Équipe interne, Commentaire' },
+    amo:  { phases: ['AMO'], fields: 'Programme, Phases, Équipe interne, Commentaire' },
+    prog: { phases: ['Programmation'], fields: 'Programme, Surface, Équipe interne, Commentaire' },
+    ssi:  { phases: ['SSI'], fields: 'Adresse, Phases, Équipe interne, Commentaire' },
+  };
+
+  function updateFormFields(type) {
+    const champs = document.getElementById('champs-dynamiques');
+    const summary = document.getElementById('fields-summary');
+    const phasesSelector = document.getElementById('phases-selector');
+
+    if (!type) {
+      champs.style.display = 'none';
+      summary.style.display = 'none';
+      return;
+    }
+
+    const config = PHASES_PAR_TYPE[type];
+    champs.style.display = 'flex';
+    champs.style.flexDirection = 'column';
+    champs.style.gap = '16px';
+
+    // Bandeau récap
+    summary.style.display = 'block';
+    document.getElementById('fields-list').textContent = ' ' + config.fields;
+
+    // Masquer champs non pertinents pour diagnostic/prog
+    const isSimple = (type === 'diag' || type === 'prog');
+    document.getElementById('field-marche').style.display = isSimple ? 'none' : '';
+    document.getElementById('field-travaux').style.display = isSimple ? 'none' : '';
+    document.getElementById('field-remuneration').style.display = isSimple ? 'none' : '';
+    document.getElementById('field-honoraires').style.display = isSimple ? 'none' : '';
+    document.getElementById('section-phases').style.display = (type === 'diag') ? 'none' : '';
+
+    // Phases selector
+    phasesSelector.innerHTML = '';
+    config.phases.forEach(ph => {
+      const btn = document.createElement('div');
+      btn.className = 'phase-toggle phase-toggle--selected';
+      btn.textContent = ph;
+      btn.setAttribute('role', 'checkbox');
+      btn.setAttribute('aria-checked', 'true');
+      btn.setAttribute('tabindex', '0');
+      btn.onclick = () => {
+        btn.classList.toggle('phase-toggle--selected');
+        btn.setAttribute('aria-checked', btn.classList.contains('phase-toggle--selected') ? 'true' : 'false');
+        checkCoherence();
+      };
+      phasesSelector.appendChild(btn);
+    });
+  }
+
+  /* ---- Contrôle de cohérence honoraires/phases ---- */
+  function updateHonoraires() {
+    // Pré-remplit les honoraires à 9.1% du montant travaux (ratio MOE par défaut)
+    const travaux = parseFloat(document.getElementById('proj-travaux').value) || 0;
+    const hon = document.getElementById('proj-hon');
+    if (travaux > 0) hon.value = Math.round(travaux * 0.091);
+    checkCoherence();
+  }
+
+  function checkCoherence() {
+    const alert = document.getElementById('coherence-alert');
+    const totalHon = parseFloat(document.getElementById('proj-hon').value) || 0;
+    const nbPhases = document.querySelectorAll('.phase-toggle--selected').length;
+    // Simulation : on alerte si les phases sélectionnées ≠ montant défini
+    if (totalHon > 0 && nbPhases === 0) {
+      alert.classList.add('coherence-alert--visible');
+      document.getElementById('total-phases-val').textContent = '0 €';
+      document.getElementById('total-hon-val').textContent = totalHon.toLocaleString('fr-FR') + ' €';
+    } else {
+      alert.classList.remove('coherence-alert--visible');
+    }
+  }
+
+  /* ---- Filtre tableau (simulé côté client) ---- */
+  function filterTable() {
+    // Simulation : dans la vraie implémentation, hx-get avec paramètres
+    // Ici on laisse toutes les lignes visibles (données trop faibles pour filtrer proprement)
+    // Le comportement htmx enverrait : GET /projets/?statut=en-cours&type=public
+  }
+
+  /* ---- Tri tableau (simulé) ---- */
+  function sortTable(col) {
+    // Simulation visuelle : dans Django, le tri se ferait via ?sort=col&order=asc
+  }
+</script>
+
+<script>
+
+const GAAStore=(()=>{
+  const P='gaa_',K={AGENCE:'agence',BRANDING:'branding',TAUX:'taux',NUMEROTATION:'numerotation',PHASES:'phases',UTILISATEURS:'utilisateurs',PREFERENCES:'preferences',PROJETS:'projets',CONTACTS:'contacts',ALERTES:'alertes_devis',AUDIT:'audit_log'};
+  const ts=()=>{const n=new Date(),p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;};
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));}catch(e){console.error(e);}};
+  const sub={};const emit=(k,v)=>{(sub[k]||[]).forEach(f=>f(v));};
+  const D={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'u2',phases:[{code:'ESQ',statut:'valide',avancement:100},{code:'APS',statut:'valide',avancement:100},{code:'APD',statut:'valide',avancement:100},{code:'PRO',statut:'en_cours',avancement:72},{code:'DCE',statut:'a_venir',avancement:0},{code:'DET',statut:'a_venir',avancement:0},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'u2',phases:[{code:'ESQ',statut:'valide',avancement:100},{code:'APS',statut:'valide',avancement:100},{code:'APD',statut:'en_cours',avancement:45},{code:'PRO',statut:'a_venir',avancement:0},{code:'DCE',statut:'a_venir',avancement:0},{code:'DET',statut:'a_venir',avancement:0},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'u3',phases:[{code:'ESQ',statut:'en_cours',avancement:12},{code:'APS',statut:'a_venir',avancement:0},{code:'APD',statut:'a_venir',avancement:0},{code:'PRO',statut:'a_venir',avancement:0},{code:'DCE',statut:'a_venir',avancement:0},{code:'DET',statut:'a_venir',avancement:0},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2023-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'u3',phases:[{code:'ESQ',statut:'valide',avancement:100},{code:'APS',statut:'valide',avancement:100},{code:'APD',statut:'valide',avancement:100},{code:'PRO',statut:'valide',avancement:100},{code:'DCE',statut:'valide',avancement:100},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir',avancement:0}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return{
+    K,
+    init(){Object.entries(D).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??D[k]??null;},
+    set(k,v){w(k,v);emit(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){const n={...c,...p};w(k,n);emit(k,n);}return this;},
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);i>=0?ps[i]=p:ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,String(cfg.prochain).padStart(3,'0'));cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,String(cfg.prochain).padStart(3,'0'));},
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    addAudit(user,action,mod){const l=this.get(K.AUDIT)||[];l.unshift({time:ts(),user,action,module:mod});this.set(K.AUDIT,l.slice(0,200));},
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+function gaaToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);color:#fff';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(el._t);el._t=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+function gaaApplyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale)document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_principale)document.documentElement.style.setProperty('--c-primary',b.couleur_principale);
+  if(b?.couleur_accent){document.documentElement.style.setProperty('--accent',b.couleur_accent);document.documentElement.style.setProperty('--c-accent',b.couleur_accent);}
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar,.topbar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';if(me?.couleur)el.style.background=me.couleur;});
+  document.querySelectorAll('.nav__user > div > div:first-child').forEach(el=>el.textContent=me?.nom||'M. Lefort');
+}
+
+
+const STATUT_LABELS={en_cours:'En cours',en_attente:'En attente',brouillon:'Brouillon',acte:'Acté',termine:'Terminé',archive:'Archivé',annule:'Annulé'};
+const STATUT_CSS={en_cours:'badge-status--green',en_attente:'badge-status--orange',brouillon:'badge-status--grey',acte:'badge-status--blue',termine:'badge-status--grey',archive:'badge-status--grey',annule:'badge-status--red'};
+
+function fmt(n){return n?Number(n).toLocaleString('fr-FR'):'—';}
+function fmtK(n){return n?Math.round(n/1000)+'k€':'—';}
+
+function getPhaseLabel(p){
+  const phase=p.phases?.find(ph=>ph.code===p.phase_courante)||p.phases?.[0];
+  return phase?p.phase_courante:'—';
+}
+function getAvancement(p){
+  const phase=p.phases?.find(ph=>ph.code===p.phase_courante);
+  return phase?.avancement??0;
+}
+
+// ── Tableau ──────────────────────────────────────────────
+function renderTableau(projets){
+  const tbody=document.getElementById('tbody-projets');
+  if(!tbody)return;
+  if(!projets.length){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--c-text-3)">Aucun projet trouvé</td></tr>';
+    return;
+  }
+  const users=GAAStore.getUtilisateurs();
+  tbody.innerHTML=projets.map(p=>{
+    const cdp=users.find(u=>u.id===p.chef_projet);
+    const avancement=getAvancement(p);
+    const phase=getPhaseLabel(p);
+    const statLabel=STATUT_LABELS[p.statut]||p.statut;
+    const statCss=STATUT_CSS[p.statut]||'badge-status--grey';
+    return`<tr onclick="ouvrirFiche('${p.id}')" style="cursor:pointer">
+      <td><span style="font-weight:700">${p.nom}</span><div style="font-size:11.5px;color:var(--c-text-3)">${p.id}</div></td>
+      <td>${p.moa?.nom||'—'}</td>
+      <td><span class="badge-status ${statCss}">${statLabel}</span></td>
+      <td><span style="font-family:var(--c-mono,monospace);font-size:12px;font-weight:600">${phase}</span></td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:6px;background:var(--c-border,#E2E0D8);border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:${avancement>=80?'var(--c-green,#2D6A4F)':avancement>=40?'var(--c-primary,#1B4965)':'var(--c-orange,#B8860B)'};width:${avancement}%"></div>
+        </div>
+        <span style="font-size:12px;font-family:monospace">${avancement}%</span>
+      </div></td>
+      <td style="font-family:monospace;font-size:12px">${fmtK(p.honoraires_ht)}</td>
+      <td style="font-size:12px;color:var(--c-text-2)">${cdp?.nom||'—'}</td>
+      <td><button class="btn btn--ghost" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();supprimerProjet('${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Cartes ───────────────────────────────────────────────
+function renderCartes(projets){
+  const container=document.getElementById('vue-cartes');
+  if(!container)return;
+  const inner=container.querySelector('.project-grid')||container;
+  const users=GAAStore.getUtilisateurs();
+  inner.innerHTML=projets.map(p=>{
+    const cdp=users.find(u=>u.id===p.chef_projet);
+    const avancement=getAvancement(p);
+    const phase=getPhaseLabel(p);
+    const statLabel=STATUT_LABELS[p.statut]||p.statut;
+    const statCss=STATUT_CSS[p.statut]||'badge-status--grey';
+    return`<div class="project-card" onclick="ouvrirFiche('${p.id}')" style="cursor:pointer">
+      <div class="project-card__header">
+        <div>
+          <div class="project-card__title">${p.nom}</div>
+          <div class="project-card__subtitle">${p.moa?.nom||'—'} · ${p.id}</div>
+        </div>
+        <span class="badge-status ${statCss}">${statLabel}</span>
+      </div>
+      <div class="project-card__body">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--c-text-2);margin-bottom:6px">
+          <span>Phase <strong>${phase}</strong></span><span>${fmtK(p.honoraires_ht)}</span>
+        </div>
+        <div style="height:6px;background:var(--c-border,#E2E0D8);border-radius:3px;overflow:hidden;margin-bottom:4px">
+          <div style="height:100%;background:var(--c-primary,#1B4965);width:${avancement}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--c-text-3)">
+          <span>${cdp?.nom||'—'}</span><span>${avancement}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── KPIs ─────────────────────────────────────────────────
+function renderKPIs(projets){
+  const en_cours=projets.filter(p=>p.statut==='en_cours');
+  const en_attente=projets.filter(p=>p.statut==='en_attente');
+  const ca=en_cours.reduce((s,p)=>s+(p.honoraires_ht||0),0);
+  const kpis=document.querySelectorAll('.kpi-card');
+  if(kpis[0]) kpis[0].querySelector('.kpi-card__value').textContent=en_cours.length;
+  if(kpis[1]) kpis[1].querySelector('.kpi-card__value').textContent=en_attente.length;
+  if(kpis[2]) kpis[2].querySelector('.kpi-card__value').textContent=fmtK(ca);
+  // Badge nav
+  const navBadge=document.querySelector('.nav-sidebar__badge');
+  if(navBadge) navBadge.textContent=projets.length;
+  // Sous-titre
+  const subtitle=document.querySelector('.page-header__subtitle');
+  if(subtitle) subtitle.textContent=`${projets.length} projets — ${fmtK(ca)} d'honoraires en cours`;
+}
+
+// ── Filtre ───────────────────────────────────────────────
+function filterTable(){
+  const statut=document.getElementById('filtre-statut')?.value||'';
+  const type=document.getElementById('filtre-type')?.value||'';
+  const cdp=document.getElementById('filtre-cdp')?.value||'';
+  let projets=GAAStore.getProjets();
+  const mapStatut={'':[],
+    'en-cours':['en_cours'],'en-attente':['en_attente'],'acte':['acte'],
+    'brouillon':['brouillon'],'termine':['termine'],'archive':['archive'],'annule':['annule'],
+  };
+  if(statut&&mapStatut[statut]) projets=projets.filter(p=>mapStatut[statut].includes(p.statut));
+  if(type==='public') projets=projets.filter(p=>p.type_marche==='Public');
+  if(type==='prive') projets=projets.filter(p=>p.type_marche==='Privé');
+  if(cdp) projets=projets.filter(p=>p.chef_projet===cdp);
+  renderTableau(projets);
+  renderCartes(projets);
+}
+
+// ── Peuple select chef de projet ─────────────────────────
+function peupleFiltresCDP(){
+  const sel=document.getElementById('filtre-cdp');
+  if(!sel)return;
+  const cdps=GAAStore.getUtilisateurs().filter(u=>u.actif&&(u.role==='Chef de projet'||u.role==='Dirigeant'));
+  cdps.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.nom;sel.appendChild(o);});
+}
+
+// ── Fiche projet (vue fiche) ─────────────────────────────
+let _ficheId=null;
+function ouvrirFiche(id){
+  _ficheId=id;
+  const p=GAAStore.getProjet(id);
+  if(!p)return;
+  showPage('fiche');
+  // Breadcrumb
+  const bc=document.getElementById('breadcrumb');
+  if(bc) bc.innerHTML=`<a href="#" onclick="showPage('portefeuille');return false">Projets</a> / <strong>${p.nom}</strong>`;
+  // Titre fiche
+  const ficheTitle=document.getElementById('fiche-titre');
+  if(ficheTitle) ficheTitle.textContent=p.nom;
+  // Statut badge
+  const ficheStat=document.getElementById('fiche-statut');
+  if(ficheStat){ficheStat.textContent=STATUT_LABELS[p.statut]||p.statut;ficheStat.className='badge-status '+(STATUT_CSS[p.statut]||'badge-status--grey');}
+  // KPIs synthèse
+  const els={
+    'fiche-moa':p.moa?.nom,'fiche-phase':p.phase_courante,'fiche-hon':fmt(p.honoraires_ht)+' €',
+    'fiche-chef':GAAStore.getUtilisateurs().find(u=>u.id===p.chef_projet)?.nom||p.chef_projet,
+    'fiche-debut':p.date_debut,'fiche-adresse':p.adresse||'—',
+  };
+  Object.entries(els).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val||'—';});
+  // Phases
+  renderFichePhases(p);
+}
+
+function renderFichePhases(p){
+  const container=document.getElementById('fiche-phases-list');
+  if(!container)return;
+  container.innerHTML=(p.phases||[]).map(ph=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--c-border,#E2E0D8)">
+      <span style="font-family:monospace;font-size:12px;font-weight:700;min-width:40px;color:var(--c-primary,#1B4965)">${ph.code}</span>
+      <div style="flex:1">
+        <div style="height:6px;background:var(--c-border,#E2E0D8);border-radius:3px;overflow:hidden">
+          <div style="height:100%;background:${ph.statut==='valide'?'var(--c-green,#2D6A4F)':ph.statut==='en_cours'?'var(--c-primary,#1B4965)':'#DDD'};width:${ph.avancement||0}%"></div>
+        </div>
+      </div>
+      <span style="font-size:11px;min-width:48px;text-align:right;color:var(--c-text-2)">${ph.avancement||0}%</span>
+      <span class="badge-status ${ph.statut==='valide'?'badge-status--green':ph.statut==='en_cours'?'badge-status--blue':'badge-status--grey'}" style="font-size:10px">${ph.statut==='valide'?'Validé':ph.statut==='en_cours'?'En cours':'À venir'}</span>
+    </div>`).join('');
+}
+
+// ── Création depuis modal portefeuille ───────────────────
+function creerProjetPortefeuille(statut){
+  const nom=document.getElementById('proj-nom')?.value?.trim();
+  const type=document.getElementById('proj-type')?.value||'moe';
+  const moa=document.getElementById('proj-moa')?.value?.trim()||'';
+  const hon=parseFloat(document.getElementById('proj-hon')?.value)||0;
+  const travaux=parseFloat(document.getElementById('proj-travaux')?.value)||0;
+  const surface=parseFloat(document.getElementById('proj-surface')?.value)||0;
+  const marche=document.getElementById('proj-marche')?.value||'Public';
+  const note=document.getElementById('proj-note')?.value?.trim()||'';
+  if(!nom){gaaToast('Le nom du projet est requis','error');return;}
+  if(!type){gaaToast('Le type de mission est requis','error');return;}
+
+  const selected=[...document.querySelectorAll('.phase-toggle--selected')];
+  const phases=selected.map((el,i)=>{
+    const code=el.textContent.trim();
+    const ph=GAAStore.get(GAAStore.K.PHASES).find(p=>p.code===code)||{};
+    return{code,statut:i===0?'en_cours':'a_venir',ratio:ph.ratio||0,duree:ph.duree||0,avancement:i===0?0:undefined};
+  });
+  if(!phases.length){
+    // Phases par défaut si rien sélectionné
+    GAAStore.get(GAAStore.K.PHASES).filter(p=>p.actif).forEach((p,i)=>phases.push({code:p.code,statut:i===0?'en_cours':'a_venir',ratio:p.ratio,duree:p.duree,avancement:i===0?0:undefined}));
+  }
+
+  const id=GAAStore.nextNumero('projet');
+  const me=GAAStore.getMe();
+  const projet={id,nom,statut,type_mission:type.toUpperCase(),type_marche:marche,phase_courante:phases[0]?.code||'ESQ',moa:{nom:moa},honoraires_ht:hon,montant_travaux:travaux,surface_shon:surface,note,date_debut:new Date().toISOString().split('T')[0],chef_projet:me?.id||'u2',phases,created_at:new Date().toISOString()};
+  GAAStore.saveProjet(projet);
+  GAAStore.addAudit(me?.nom||'Utilisateur',`Projet "${nom}" créé (${statut})`,'1.1 Projets');
+  closeModal();
+  gaaToast(`Projet "${nom}" créé — ${id}`,'success');
+  refreshPortefeuille();
+}
+
+function supprimerProjet(id){
+  const p=GAAStore.getProjet(id);
+  if(!p||!confirm(`Supprimer "${p.nom}" ?`))return;
+  GAAStore.deleteProjet(id);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,'Projet supprimé : '+p.nom,'1.1 Projets');
+  gaaToast(`"${p.nom}" supprimé`,'');
+  refreshPortefeuille();
+}
+
+function refreshPortefeuille(){
+  const projets=GAAStore.getProjets();
+  renderTableau(projets);
+  renderCartes(projets);
+  renderKPIs(projets);
+}
+
+// ── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  gaaApplyBranding();
+  peupleFiltresCDP();
+  refreshPortefeuille();
+
+  // Patcher les boutons du modal
+  const btnDraft=document.querySelector('#modal-creation .modal__footer .btn--ghost:not(.modal__close)');
+  if(btnDraft) btnDraft.onclick=()=>creerProjetPortefeuille('brouillon');
+  const btnCreate=document.querySelector('#modal-creation .modal__footer .btn--primary');
+  if(btnCreate) btnCreate.onclick=()=>creerProjetPortefeuille('en_attente');
+
+  // Autocomplete MOA depuis CRM
+  const moaInput=document.getElementById('proj-moa');
+  if(moaInput){
+    const dl=document.createElement('datalist');dl.id='moa-list';
+    GAAStore.getContacts().forEach(c=>{const o=document.createElement('option');o.value=c.societe||c.nom;dl.appendChild(o);});
+    document.body.appendChild(dl);
+    moaInput.setAttribute('list','moa-list');
+  }
+});
+
+</script>
+</body>
+</html>

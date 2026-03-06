@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 2.1 — Authentification</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;
+      --font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--shadow-md:0 4px 16px rgba(0,0,0,.1);
+      --r:8px;--r-sm:4px;--r-lg:12px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+    /* Navigation entre écrans */
+    .screen-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:100}
+    .screen-nav__label{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-right:4px}
+    .snav-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-2);transition:all .15s}
+    .snav-btn:hover{border-color:var(--primary);color:var(--primary)}
+    .snav-btn--on{background:var(--primary);color:#fff;border-color:var(--primary)}
+    /* Conteneur centré */
+    .auth-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;min-height:calc(100vh - 44px)}
+    .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);width:100%;max-width:420px;box-shadow:var(--shadow-md)}
+    .auth-card--wide{max-width:680px}
+    /* Logo */
+    .auth-logo{display:flex;align-items:center;justify-content:center;gap:10px;padding:28px 32px 0;margin-bottom:24px}
+    .auth-logo__mark{width:36px;height:36px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;letter-spacing:-.5px}
+    .auth-logo__name{font-size:20px;font-weight:800;color:var(--primary);letter-spacing:-.5px}
+    .auth-body{padding:0 32px 28px}
+    .auth-title{font-size:20px;font-weight:700;margin-bottom:6px;letter-spacing:-.3px}
+    .auth-sub{font-size:13.5px;color:var(--text-2);margin-bottom:24px;line-height:1.5}
+    /* Formulaire */
+    .form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+    .form-label{font-size:12.5px;font-weight:600;color:var(--text)}
+    .form-input{padding:10px 13px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border-color .15s;background:var(--bg)}
+    .form-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.1);background:var(--surface)}
+    .form-input--error{border-color:var(--red)}
+    .form-hint{font-size:11.5px;color:var(--text-3);margin-top:3px}
+    .form-error{font-size:12px;color:var(--red);font-weight:600;margin-top:3px}
+    .input-row{position:relative}
+    .input-row .form-input{padding-right:40px;width:100%}
+    .input-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;color:var(--text-3)}
+    /* Boutons */
+    .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:var(--r-sm);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s;width:100%}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--accent{background:var(--accent);color:#fff}.btn--accent:hover{filter:brightness(.92)}
+    .btn--sm{padding:8px 14px;font-size:13px}
+    .btn--inline{width:auto;display:inline-flex}
+    /* Séparateur */
+    .divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--text-3);font-size:12px}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+    /* Liens */
+    .auth-link{font-size:13px;color:var(--primary);cursor:pointer;font-weight:500;text-decoration:underline}
+    .auth-footer{text-align:center;margin-top:16px;font-size:13px;color:var(--text-3)}
+    /* Alertes */
+    .alert{border-radius:var(--r-sm);padding:10px 14px;font-size:13px;margin-bottom:14px;display:flex;align-items:flex-start;gap:8px}
+    .alert--error{background:var(--red-l);border:1px solid rgba(192,57,43,.3);color:var(--red)}
+    .alert--warning{background:var(--orange-l);border:1px solid rgba(184,134,11,.3);color:#7a5c00}
+    .alert--success{background:var(--green-l);border:1px solid rgba(45,106,79,.3);color:var(--green)}
+    .alert--info{background:var(--primary-l);border:1px solid rgba(27,73,101,.2);color:var(--primary)}
+    /* 2FA OTP */
+    .otp-row{display:flex;gap:8px;justify-content:center;margin:20px 0}
+    .otp-input{width:48px;height:56px;border:2px solid var(--border-md);border-radius:var(--r-sm);text-align:center;font-size:24px;font-weight:700;font-family:var(--mono);color:var(--primary);outline:none;transition:border-color .15s;background:var(--bg)}
+    .otp-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.1);background:var(--surface)}
+    .otp-input--filled{border-color:var(--primary);background:var(--primary-l)}
+    /* Wizard onboarding */
+    .wizard-steps{display:flex;gap:0;margin-bottom:28px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border)}
+    .wstep{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;color:var(--text-3);background:var(--grey-l);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:all .15s}
+    .wstep:last-child{border-right:none}
+    .wstep--done{background:var(--green-l);color:var(--green)}
+    .wstep--on{background:var(--primary);color:#fff}
+    .wstep__num{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+    .wstep--done .wstep__num{background:var(--green);color:#fff}
+    .wstep:not(.wstep--on):not(.wstep--done) .wstep__num{background:var(--border);color:var(--text-3)}
+    /* Upload zone */
+    .upload-zone{border:2px dashed var(--border-md);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text-3)}
+    .upload-zone:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-l)}
+    .upload-zone__icon{font-size:28px;margin-bottom:6px}
+    /* Password strength */
+    .pwd-strength{margin-top:6px}
+    .pwd-bar{height:4px;border-radius:2px;background:var(--border);overflow:hidden;margin-bottom:4px}
+    .pwd-bar-fill{height:100%;border-radius:2px;transition:width .3s,background .3s}
+    .pwd-rules{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+    .pwd-rule{font-size:11px;display:flex;align-items:center;gap:4px;color:var(--text-3)}
+    .pwd-rule--ok{color:var(--green)}
+    .pwd-rule--ok::before{content:'✓'}
+    .pwd-rule:not(.pwd-rule--ok)::before{content:'○'}
+    /* Session table */
+    .session-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+    .session-table th{background:var(--grey-l);padding:7px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border)}
+    .session-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+    .session-table tr:last-child td{border-bottom:none}
+    .session-current{font-size:11px;background:var(--green-l);color:var(--green);padding:1px 6px;border-radius:3px;font-weight:700}
+    /* Pages display */
+    .auth-page{display:none}
+    .auth-page--on{display:flex;align-items:center;justify-content:center;padding:40px 20px;min-height:calc(100vh - 44px)}
+    /* QR zone */
+    .qr-placeholder{width:140px;height:140px;background:var(--grey-l);border:2px solid var(--border);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-3);margin:0 auto 16px}
+    /* Badge */
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+  </style>
+</head>
+<body>
+
+<!-- Navigation entre écrans -->
+<div class="screen-nav">
+  <span class="screen-nav__label">2.1 Auth —</span>
+  <button class="snav-btn snav-btn--on" onclick="show('login')">Connexion</button>
+  <button class="snav-btn" onclick="show('login-error')">Erreur / blocage</button>
+  <button class="snav-btn" onclick="show('reset')">Reset mot de passe</button>
+  <button class="snav-btn" onclick="show('2fa-setup')">Setup 2FA</button>
+  <button class="snav-btn" onclick="show('2fa-verify')">Vérification 2FA</button>
+  <button class="snav-btn" onclick="show('onboarding')">Onboarding agence</button>
+  <button class="snav-btn" onclick="show('sessions')">Sessions actives</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 1 — CONNEXION
+═══════════════════════════════════════════════════ -->
+<div class="auth-page auth-page--on" id="page-login">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name">GAA</span>
+    </div>
+    <div class="auth-body">
+      <h1 class="auth-title">Connexion</h1>
+      <p class="auth-sub">Bienvenue dans votre espace de gestion d'agence.</p>
+
+      <div class="form-group">
+        <label class="form-label">Adresse email</label>
+        <input class="form-input" type="email" value="m.lefort@agence-archi.fr" placeholder="vous@agence.fr">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <div class="input-row">
+          <input class="form-input" type="password" value="••••••••••••" placeholder="Votre mot de passe">
+          <span class="input-toggle">👁</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:4px">
+          <span class="auth-link" onclick="show('reset')">Mot de passe oublié ?</span>
+        </div>
+      </div>
+
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);margin-bottom:16px;cursor:pointer">
+        <input type="checkbox" checked> Rester connecté pendant 30 jours
+      </label>
+
+      <button class="btn btn--primary" onclick="show('2fa-verify')">Se connecter</button>
+
+      <div class="divider">ou</div>
+
+      <button class="btn btn--ghost">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continuer avec Google (SSO)
+      </button>
+
+      <div class="auth-footer">Pas encore de compte ? <span class="auth-link" onclick="show('onboarding')">Créer votre agence</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 2 — ERREUR / BLOCAGE
+═══════════════════════════════════════════════════ -->
+<div class="auth-page" id="page-login-error">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name">GAA</span>
+    </div>
+    <div class="auth-body">
+      <h1 class="auth-title">Connexion</h1>
+
+      <div class="alert alert--error">
+        <span>🔒</span>
+        <div>
+          <strong>Compte temporairement bloqué</strong><br>
+          5 tentatives échouées consécutives. Votre compte est bloqué pour <strong>15 minutes</strong>. Déblocage à 14h47.
+          <div style="margin-top:6px"><span class="auth-link" style="color:var(--red)">Recevoir un lien de déblocage par email</span></div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Adresse email</label>
+        <input class="form-input form-input--error" type="email" value="m.lefort@agence-archi.fr">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <div class="input-row">
+          <input class="form-input form-input--error" type="password" value="••••••••">
+          <span class="input-toggle">👁</span>
+        </div>
+        <div class="form-error">Mot de passe incorrect — tentative 5/5</div>
+      </div>
+
+      <button class="btn btn--primary" style="opacity:.5;pointer-events:none">Compte bloqué (14 min restantes)</button>
+      <div class="auth-footer" style="margin-top:12px"><span class="auth-link" onclick="show('reset')">Réinitialiser mon mot de passe</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 3 — RESET MOT DE PASSE
+═══════════════════════════════════════════════════ -->
+<div class="auth-page" id="page-reset">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name">GAA</span>
+    </div>
+    <div class="auth-body">
+      <h1 class="auth-title">Réinitialiser le mot de passe</h1>
+      <p class="auth-sub">Saisissez votre email pour recevoir un lien de réinitialisation valable 1 heure.</p>
+
+      <div class="alert alert--success">
+        ✓ Email envoyé à <strong>m.lefort@agence-archi.fr</strong>. Vérifiez votre boîte mail.
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Adresse email</label>
+        <input class="form-input" type="email" value="m.lefort@agence-archi.fr">
+      </div>
+
+      <button class="btn btn--primary" style="margin-bottom:12px">Envoyer le lien de réinitialisation</button>
+      <button class="btn btn--ghost" onclick="show('login')">← Retour à la connexion</button>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text-2);margin-bottom:10px">Définir un nouveau mot de passe</div>
+        <div class="form-group">
+          <label class="form-label">Nouveau mot de passe</label>
+          <div class="input-row">
+            <input class="form-input" type="password" value="Arch!2026##">
+          </div>
+          <div class="pwd-strength">
+            <div class="pwd-bar"><div class="pwd-bar-fill" style="width:85%;background:var(--green)"></div></div>
+            <div class="pwd-rules">
+              <span class="pwd-rule pwd-rule--ok">8 caractères minimum</span>
+              <span class="pwd-rule pwd-rule--ok">Majuscule</span>
+              <span class="pwd-rule pwd-rule--ok">Chiffre</span>
+              <span class="pwd-rule pwd-rule--ok">Caractère spécial</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirmer le mot de passe</label>
+          <input class="form-input" type="password" value="Arch!2026##">
+        </div>
+        <button class="btn btn--accent">Réinitialiser et se connecter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 4 — SETUP 2FA
+═══════════════════════════════════════════════════ -->
+<div class="auth-page" id="page-2fa-setup">
+  <div class="auth-card auth-card--wide">
+    <div class="auth-logo">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name">GAA</span>
+    </div>
+    <div class="auth-body">
+      <h1 class="auth-title">Activer l'authentification à deux facteurs</h1>
+      <div class="alert alert--warning">
+        ⚠ Votre administrateur a rendu le 2FA obligatoire. Délai de grâce : <strong>6 jours restants</strong>. Configurez-le maintenant pour sécuriser votre compte.
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px">
+        <!-- Option TOTP -->
+        <div style="border:2px solid var(--primary);border-radius:var(--r);padding:18px;background:var(--primary-l)">
+          <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:12px">📱 Application TOTP (recommandé)</div>
+          <p style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">Google Authenticator, Authy, 1Password… Codes valides 30 secondes, fonctionne hors ligne.</p>
+          <div style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:8px">1. Scannez le QR code avec votre app</div>
+          <div class="qr-placeholder">
+            <div style="text-align:center"><div style="font-size:32px">▦</div><div>QR Code</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);text-align:center;margin-bottom:12px">Ou saisissez le code manuellement :<br><strong class="mono" style="color:var(--primary);font-size:13px;letter-spacing:2px">JBSWY3DPEHPK3PXP</strong></div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:6px">2. Entrez le code généré pour valider</div>
+          <div class="otp-row" style="margin:10px 0">
+            <input class="otp-input otp-input--filled" maxlength="1" value="4">
+            <input class="otp-input otp-input--filled" maxlength="1" value="8">
+            <input class="otp-input otp-input--filled" maxlength="1" value="2">
+            <input class="otp-input" maxlength="1" placeholder="·">
+            <input class="otp-input" maxlength="1" placeholder="·">
+            <input class="otp-input" maxlength="1" placeholder="·">
+          </div>
+          <button class="btn btn--primary btn--sm" onclick="show('2fa-verify')">Valider et activer le 2FA</button>
+        </div>
+        <!-- Option SMS -->
+        <div style="border:1.5px solid var(--border);border-radius:var(--r);padding:18px">
+          <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:12px">💬 SMS</div>
+          <p style="font-size:12.5px;color:var(--text-2);margin-bottom:14px">Code envoyé par SMS à votre numéro de téléphone. Moins sécurisé, mais pratique.</p>
+          <div class="form-group">
+            <label class="form-label">Numéro de téléphone</label>
+            <input class="form-input" type="tel" value="+33 6 12 34 56 78">
+          </div>
+          <button class="btn btn--ghost btn--sm" style="margin-bottom:12px">Envoyer un code de test</button>
+          <div style="background:var(--orange-l);border:1px solid var(--orange);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;color:var(--orange)">
+            ⚠ Déconseillé : les SMS peuvent être interceptés (SIM swapping). Préférez une app TOTP.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;padding:14px;background:var(--grey-l);border-radius:var(--r-sm)">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:6px">Codes de secours</div>
+        <p style="font-size:12px;color:var(--text-2);margin-bottom:8px">Conservez ces codes dans un endroit sûr. Chacun est à usage unique et permet de récupérer votre accès si vous perdez votre téléphone.</p>
+        <div style="font-family:var(--mono);font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px;color:var(--primary)">
+          <span>8KA2-J9LP-3XMQ</span><span>4WT7-R2HN-8PQK</span>
+          <span>9ZX3-M1CV-5NRT</span><span>6BF4-K8JD-2YWS</span>
+          <span>3LN5-A7QP-1XMH</span><span>7GT2-C4WR-9KJB</span>
+        </div>
+        <button class="btn btn--ghost btn--sm btn--inline" style="margin-top:8px">⬇ Télécharger les codes</button>
+      </div>
+
+      <div style="text-align:right;margin-top:12px">
+        <button class="btn btn--ghost btn--sm btn--inline" onclick="show('login')">Ignorer pour l'instant (6 jours restants)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 5 — VÉRIFICATION 2FA
+═══════════════════════════════════════════════════ -->
+<div class="auth-page" id="page-2fa-verify">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name">GAA</span>
+    </div>
+    <div class="auth-body">
+      <h1 class="auth-title">Vérification en deux étapes</h1>
+      <p class="auth-sub">Ouvrez votre application d'authentification et entrez le code à 6 chiffres affiché pour <strong>GAA</strong>.</p>
+
+      <div class="otp-row">
+        <input class="otp-input otp-input--filled" maxlength="1" value="4">
+        <input class="otp-input otp-input--filled" maxlength="1" value="8">
+        <input class="otp-input otp-input--filled" maxlength="1" value="2">
+        <input class="otp-input" maxlength="1" autofocus>
+        <input class="otp-input" maxlength="1">
+        <input class="otp-input" maxlength="1">
+      </div>
+
+      <div style="text-align:center;font-size:12px;color:var(--text-3);margin-bottom:16px;font-family:var(--mono)">
+        Code valide encore <strong style="color:var(--primary)">18 secondes</strong>
+        <div style="height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden"><div style="width:52%;height:100%;background:var(--primary);border-radius:2px;transition:width 1s linear"></div></div>
+      </div>
+
+      <button class="btn btn--primary" style="margin-bottom:10px">Vérifier →</button>
+
+      <div class="divider">ou</div>
+
+      <div style="text-align:center">
+        <span class="auth-link" style="font-size:13px">Utiliser un code de secours</span>
+        <div style="margin-top:10px;font-size:12.5px;color:var(--text-3)">Appareil de confiance ? <label style="cursor:pointer"><input type="checkbox"> Ne plus demander sur cet appareil (30 jours)</label></div>
+      </div>
+
+      <div style="text-align:center;margin-top:14px">
+        <span class="auth-link" style="font-size:12px;color:var(--text-3)" onclick="show('login')">← Se connecter avec un autre compte</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 6 — ONBOARDING AGENCE
+═══════════════════════════════════════════════════ -->
+<div class="auth-page" id="page-onboarding">
+  <div class="auth-card auth-card--wide">
+    <div class="auth-logo">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name">GAA — Création de votre agence</span>
+    </div>
+    <div class="auth-body">
+      <div class="wizard-steps">
+        <div class="wstep wstep--done" onclick="setStep(1)"><div class="wstep__num">✓</div>Compte</div>
+        <div class="wstep wstep--done" onclick="setStep(2)"><div class="wstep__num">✓</div>Agence</div>
+        <div class="wstep wstep--on" onclick="setStep(3)"><div class="wstep__num">3</div>Équipe</div>
+        <div class="wstep" onclick="setStep(4)"><div class="wstep__num">4</div>Phases</div>
+        <div class="wstep" onclick="setStep(5)"><div class="wstep__num">5</div>Prêt !</div>
+      </div>
+
+      <!-- Étape 3 : Équipe -->
+      <div id="wizard-step-3">
+        <h2 style="font-size:17px;font-weight:700;margin-bottom:4px">Invitez votre équipe</h2>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:20px">Vous pouvez inviter des collaborateurs maintenant ou le faire plus tard depuis les paramètres.</p>
+
+        <div style="border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px">
+          <div style="background:var(--grey-l);padding:8px 12px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;display:grid;grid-template-columns:1fr 1fr 80px">
+            <span>Email</span><span>Rôle</span><span>Action</span>
+          </div>
+          <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:center;border-bottom:1px solid var(--border)">
+            <input class="form-input" type="email" value="s.moreau@agence-archi.fr" style="padding:6px 10px;font-size:13px">
+            <select class="form-input" style="padding:6px 10px;font-size:13px"><option>Chef de projet</option><option>Architecte</option><option>Administratif</option></select>
+            <span style="font-size:12px;color:var(--green);font-weight:600">✓ Envoyé</span>
+          </div>
+          <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:center;border-bottom:1px solid var(--border)">
+            <input class="form-input" type="email" value="a.dupont@agence-archi.fr" style="padding:6px 10px;font-size:13px">
+            <select class="form-input" style="padding:6px 10px;font-size:13px"><option>Dessinateur</option><option>Architecte</option></select>
+            <button class="btn btn--ghost btn--sm btn--inline" style="font-size:11px">Inviter</button>
+          </div>
+          <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:center">
+            <input class="form-input" type="email" placeholder="email@agence.fr" style="padding:6px 10px;font-size:13px">
+            <select class="form-input" style="padding:6px 10px;font-size:13px"><option>Choisir un rôle…</option><option>Chef de projet</option><option>Architecte</option></select>
+            <button class="btn btn--ghost btn--sm btn--inline" style="font-size:11px">Inviter</button>
+          </div>
+        </div>
+
+        <button class="btn btn--ghost btn--sm btn--inline" style="margin-bottom:20px">+ Ajouter une ligne</button>
+
+        <div style="display:flex;justify-content:space-between;gap:10px">
+          <button class="btn btn--ghost" onclick="setStep(2)" style="max-width:140px">← Retour</button>
+          <button class="btn btn--primary" onclick="setStep(4)" style="max-width:200px">Continuer →</button>
+        </div>
+        <div style="text-align:center;margin-top:10px"><span class="auth-link" style="font-size:12px" onclick="setStep(4)">Passer cette étape</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     ÉCRAN 7 — SESSIONS ACTIVES
+═══════════════════════════════════════════════════ -->
+<div class="auth-page" id="page-sessions">
+  <div class="auth-card auth-card--wide">
+    <div class="auth-logo" style="padding-bottom:0">
+      <div class="auth-logo__mark">G</div>
+      <span class="auth-logo__name" style="font-size:16px">Sessions actives — M. Lefort</span>
+    </div>
+    <div class="auth-body" style="padding-top:16px">
+      <div class="alert alert--info">Vos sessions actives. Déconnectez les appareils que vous ne reconnaissez pas immédiatement.</div>
+
+      <table class="session-table">
+        <thead>
+          <tr><th>Appareil</th><th>Localisation</th><th>Première connexion</th><th>Dernière activité</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr style="background:var(--green-l)">
+            <td>
+              <div style="font-weight:700;font-size:13px">💻 Chrome / macOS</div>
+              <div style="font-size:11px;color:var(--text-3)">MacBook Pro — cet appareil</div>
+            </td>
+            <td style="font-size:12px">Paris, FR · 192.168.1.1</td>
+            <td style="font-size:12px;font-family:var(--mono)">06/03/2026 08:14</td>
+            <td style="font-size:12px;font-family:var(--mono)">Il y a 2 min <span class="session-current">Actif</span></td>
+            <td style="font-size:12px;color:var(--text-3)">Session actuelle</td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:700;font-size:13px">📱 Safari / iOS</div><div style="font-size:11px;color:var(--text-3)">iPhone 15</div></td>
+            <td style="font-size:12px">Paris, FR</td>
+            <td style="font-size:12px;font-family:var(--mono)">04/03/2026 19:32</td>
+            <td style="font-size:12px;font-family:var(--mono)">Il y a 2 j</td>
+            <td><button class="btn btn--ghost btn--sm btn--inline" style="color:var(--red);border-color:var(--red);font-size:11px">Déconnecter</button></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:700;font-size:13px">🌐 Firefox / Windows</div><div style="font-size:11px;color:var(--text-3)">PC agence</div></td>
+            <td style="font-size:12px">Nantes, FR</td>
+            <td style="font-size:12px;font-family:var(--mono)">01/03/2026 09:05</td>
+            <td style="font-size:12px;font-family:var(--mono)">Il y a 5 j</td>
+            <td><button class="btn btn--ghost btn--sm btn--inline" style="color:var(--red);border-color:var(--red);font-size:11px">Déconnecter</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px;display:flex;gap:8px">
+        <button class="btn btn--ghost btn--sm btn--inline" style="color:var(--red);border-color:var(--red)">Déconnecter toutes les autres sessions</button>
+      </div>
+
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:12.5px;font-weight:700;margin-bottom:8px;color:var(--text-2)">Journal des connexions récentes</div>
+        <div style="font-size:12px;color:var(--text-2);display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>✓ Connexion réussie — Chrome / Paris</span><span class="mono" style="color:var(--text-3)">06/03 08:14</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span>✓ Connexion réussie — Safari / Paris</span><span class="mono" style="color:var(--text-3)">04/03 19:32</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)"><span style="color:var(--red)">✗ Échec — mot de passe incorrect — Chrome / Paris</span><span class="mono" style="color:var(--text-3)">03/03 07:58</span></div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0"><span>✓ Connexion réussie — Firefox / Nantes</span><span class="mono" style="color:var(--text-3)">01/03 09:05</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(name) {
+    document.querySelectorAll('.auth-page').forEach(p => p.classList.remove('auth-page--on'));
+    document.getElementById('page-' + name).classList.add('auth-page--on');
+    document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('snav-btn--on'));
+    const map = {
+      'login': 0, 'login-error': 1, 'reset': 2, '2fa-setup': 3, '2fa-verify': 4, 'onboarding': 5, 'sessions': 6
+    };
+    document.querySelectorAll('.snav-btn')[map[name]]?.classList.add('snav-btn--on');
+    window.scrollTo(0, 0);
+  }
+  function setStep(n) {
+    // Pour la démo, on reste sur onboarding mais on indique l'étape
+    const steps = document.querySelectorAll('.wstep');
+    steps.forEach((s, i) => {
+      s.classList.remove('wstep--on', 'wstep--done');
+      if (i + 1 < n) s.classList.add('wstep--done');
+      else if (i + 1 === n) s.classList.add('wstep-
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaT;function showToast(msg,type=''){let el=document.getElementById('gaa-toast');if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';el.style.transform='translateY(0)';el.style.opacity='1';clearTimeout(_gaaT);_gaaT=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING)||{};
+  if(b.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  const me=GAAStore.getMe();
+  if(me){
+    document.querySelectorAll('.auth-logo__name').forEach(el=>{
+      if(el.textContent.includes('GAA')) el.textContent=b.nom_agence?`${b.nom_agence} — Connexion`:'GAA — Connexion';
+    });
+    // Sessions page : mettre le vrai nom
+    document.querySelectorAll('.auth-logo__name').forEach(el=>{
+      if(el.textContent.includes('M. Lefort')) el.textContent=`Sessions actives — ${me.nom}`;
+    });
+  }
+}
+
+// ── Wizard étape 3 : peupler équipe depuis store ──────────
+function initWizardEquipe(){
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif&&u.id!=='u1'); // sans le dirigeant
+  const grid=document.querySelector('#wizard-step-3 > div[style*="grid"]');
+  if(!grid) return;
+  // Supprimer les lignes statiques
+  const rows=[...grid.querySelectorAll('[style*="grid-template-columns"]')].filter((_,i)=>i>0);
+  rows.forEach(r=>r.remove());
+
+  users.slice(0,3).forEach(u=>{
+    const div=document.createElement('div');
+    div.style.cssText='padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;align-items:center;border-bottom:1px solid var(--border)';
+    div.innerHTML=`<input class="form-input" type="email" value="${u.email||u.nom.toLowerCase().replace(' ','.')+'@agence.fr'}" style="padding:6px 10px;font-size:13px">
+      <select class="form-input" style="padding:6px 10px;font-size:13px"><option>${u.role}</option><option>Chef de projet</option><option>Architecte</option><option>Dessinateur</option></select>
+      <span style="font-size:12px;color:var(--green);font-weight:600">✓ Actif</span>`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Wizard étape 4 : phases depuis store ─────────────────
+function initWizardPhases(){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  const step4=document.getElementById('wizard-step-4');
+  if(!step4) return;
+  const list=step4.querySelector('.phases-list, [class*="phase"]');
+  if(!list) return;
+  // Mettre à jour les toggles
+  list.querySelectorAll('input[type="checkbox"]').forEach((cb,i)=>{
+    if(phases[i]) cb.checked=phases[i].actif!==false;
+  });
+}
+
+// ── Sessions — journal d'audit ────────────────────────────
+function renderJournal(){
+  const audit=GAAStore.get(GAAStore.K.AUDIT)||[];
+  const cont=document.querySelector('#page-sessions .auth-body > div:last-child > div:last-child');
+  if(!cont||!audit.length) return;
+  const recent=audit.slice(0,5);
+  const rows=recent.map(a=>{
+    const d=new Date(a.ts||a.created_at||Date.now());
+    const fmt=`${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+      <span>✓ ${a.action||'Action'} — ${a.user||'—'} (${a.module||'—'})</span>
+      <span class="mono" style="color:var(--text-3)">${fmt}</span>
+    </div>`;
+  }).join('');
+  cont.innerHTML=rows;
+}
+
+// ── Déconnexion session ───────────────────────────────────
+document.querySelectorAll('#page-sessions .btn--ghost').forEach(btn=>{
+  if(btn.textContent.trim()==='Déconnecter'||btn.textContent.includes('Déconnecter toutes')){
+    btn.addEventListener('click',function(){
+      GAAStore.addAudit(GAAStore.getMe()?.nom,'Session distante déconnectée','2.1 Auth');
+      this.closest('tr')?.remove();
+      showToast('Session déconnectée ✓','success');
+    });
+  }
+});
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  initWizardEquipe();
+  renderJournal();
+});
+
+// ── Wizard étape 4 : phases depuis store ─────────────────
+function initWizardPhases(){
+  const cont=document.getElementById('wizard-step-4');
+  if(!cont) return;
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  const list=cont.querySelector('.phases-list, ul, [data-phases]');
+  // Patcher les checkboxes existantes avec les phases du store
+  cont.querySelectorAll('input[type="checkbox"]').forEach((cb,i)=>{
+    if(phases[i]) cb.checked=phases[i].actif;
+  });
+}
+
+// ── Wizard étape 5 : finaliser et créer l'agence ─────────
+function finaliserOnboarding(){
+  // Lire les données des étapes
+  const nomAgence=document.querySelector('#wizard-step-2 input[placeholder*="agence"],#wizard-step-2 input:first-of-type')?.value?.trim();
+  if(nomAgence){
+    GAAStore.update(GAAStore.K.AGENCE,{nom:nomAgence,updated_at:new Date().toISOString()});
+  }
+  // Récupérer les invitations équipe de l'étape 3
+  const invites=[];
+  document.querySelectorAll('#wizard-step-3 input[type="email"]').forEach((inp,i)=>{
+    const email=inp.value?.trim();
+    const role=inp.closest('[style*="grid"]')?.querySelector('select')?.value;
+    if(email&&email.includes('@')) invites.push({email,role:role||'Architecte'});
+  });
+  if(invites.length){
+    GAAStore.addAudit(GAAStore.getMe()?.nom,`${invites.length} invitation(s) envoyée(s) lors du setup`,'2.1 Auth');
+  }
+  // Phases cochées étape 4
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  document.querySelectorAll('#wizard-step-4 input[type="checkbox"]').forEach((cb,i)=>{
+    if(phases[i]) phases[i].actif=cb.checked;
+  });
+  GAAStore.set(GAAStore.K.PHASES,phases);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,'Onboarding agence complété','2.1 Auth');
+  showToast('Agence configurée ✓','success');
+}
+
+// ── Patcher bouton "Terminer" de l'étape 5 ───────────────
+document.querySelectorAll('#wizard-step-5 .btn--primary, .wstep:last-child ~ * .btn--primary').forEach(btn=>{
+  if(btn.textContent.includes('Accéder')||btn.textContent.includes('Terminer')||btn.textContent.includes('Commencer')){
+    btn.addEventListener('click',finaliserOnboarding);
+  }
+});
+
+// ── Login simulation : pré-remplir email depuis store ────
+const loginEmail=document.querySelector('#page-login input[type="email"]');
+if(loginEmail){
+  const me=GAAStore.getMe();
+  if(me?.email) loginEmail.value=me.email;
+}
+
+// ── Simuler login : brancher bouton Se connecter ─────────
+document.querySelector('#page-login .btn--primary')?.addEventListener('click',function(){
+  GAAStore.addAudit(GAAStore.getMe()?.nom,'Connexion simulée','2.1 Auth');
+  show('sessions');
+  showToast('Connecté en tant que '+GAAStore.getMe()?.nom+' ✓','success');
+});
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Modules 2.4 & 2.6 — Multi-tenant & Notifications</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --sidebar-w:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    .nav{width:var(--sidebar-w);background:var(--primary);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px 20px 14px;font-size:20px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px;color:#fff}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:14px 20px 3px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+    .wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .page{padding:28px;display:none;flex-direction:column;gap:20px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s}
+    .btn--primary{background:var(--primary);color:#fff}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .info-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+    .info-block__title{font-size:11.5px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+    /* MODULE SELECT */
+    .module-tabs{display:flex;gap:0;background:var(--primary);overflow:hidden}
+    .module-tab{flex:1;padding:14px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:rgba(255,255,255,.6);transition:all .15s;border-bottom:3px solid transparent}
+    .module-tab:hover{color:rgba(255,255,255,.9)}
+    .module-tab--on{color:#fff;border-bottom-color:var(--accent)}
+    /* Entités */
+    .entity-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow);position:relative}
+    .entity-card--hq{border-left:4px solid var(--primary)}
+    .entity-card--branch{border-left:4px solid var(--green)}
+    .entity-banner{height:6px;border-radius:var(--r-sm) var(--r-sm) 0 0;margin:-16px -18px 14px}
+    .entity-name{font-size:16px;font-weight:700;margin-bottom:3px}
+    .entity-sub{font-size:12.5px;color:var(--text-3);margin-bottom:12px}
+    .entity-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .entity-stat__val{font-size:18px;font-weight:700;font-family:var(--mono)}
+    .entity-stat__label{font-size:11px;color:var(--text-3)}
+    /* Tableau consolidé */
+    .data-table{width:100%;border-collapse:collapse;font-size:13px}
+    .data-table th{background:var(--grey-l);border-bottom:1px solid var(--border);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px}
+    .data-table th:not(:first-child){text-align:center}
+    .data-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .data-table td:not(:first-child){text-align:center}
+    .data-table tr:last-child td{border-bottom:none}
+    .data-table tr:hover td{background:rgba(27,73,101,.02)}
+    .data-table .total-row td{background:var(--primary-l);font-weight:700}
+    /* Notifications */
+    .notif-panel{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+    .notif-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+    .notif-list__hd{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--grey-l);display:flex;align-items:center;justify-content:space-between}
+    .notif-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;gap:10px;align-items:flex-start}
+    .notif-item:last-child{border-bottom:none}
+    .notif-item:hover{background:var(--grey-l)}
+    .notif-item--on{background:var(--primary-l)}
+    .notif-item--unread{border-left:3px solid var(--primary)}
+    .notif-item--unread-red{border-left:3px solid var(--red)}
+    .notif-item--unread-orange{border-left:3px solid var(--orange)}
+    .notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+    .notif-content{flex:1}
+    .notif-title{font-size:13px;font-weight:600;margin-bottom:2px}
+    .notif-sub{font-size:12px;color:var(--text-2)}
+    .notif-time{font-size:11px;color:var(--text-3);font-family:var(--mono);white-space:nowrap;flex-shrink:0;margin-top:3px}
+    /* Préférences notif */
+    .pref-section{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+    .pref-section__hd{padding:10px 14px;background:var(--grey-l);font-size:13px;font-weight:700;color:var(--text-2);display:flex;align-items:center;justify-content:space-between}
+    .pref-row{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
+    .pref-row:last-child{border-bottom:none}
+    .pref-label{flex:1;color:var(--text)}
+    .pref-channels{display:flex;gap:10px}
+    .pref-channel{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-3)}
+    /* Toggle switch */
+    .toggle{position:relative;width:36px;height:20px;cursor:pointer}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:var(--border-md);border-radius:10px;transition:.2s}
+    .toggle input:checked + .toggle-slider{background:var(--primary)}
+    .toggle-slider::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle input:checked + .toggle-slider::after{left:19px}
+    /* Seuils */
+    .seuil-row{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
+    .seuil-row:last-child{border-bottom:none}
+    .seuil-input{width:80px;padding:5px 8px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--mono);font-size:13px;text-align:right}
+    /* Branding */
+    .branding-preview{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:10px}
+    .brand-topbar{height:36px;display:flex;align-items:center;padding:0 14px;gap:8px}
+    .brand-logo{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+    /* Form */
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-input,.form-select{padding:8px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none}
+    .form-input:focus,.form-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.12)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .mono{font-family:var(--mono)}
+    .text-green{color:var(--green)}.text-orange{color:var(--orange)}.text-red{color:var(--red)}.text-primary{color:var(--primary)}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <nav class="nav">
+    <div class="nav__logo"><div class="nav__dot"></div>GAA</div>
+    <div class="nav__sec">Administration</div>
+    <div class="nav__item"><span>⬜</span> Dashboard</div>
+    <div class="nav__item"><span>👥</span> Utilisateurs</div>
+    <div class="nav__item"><span>🔑</span> Rôles</div>
+    <div class="nav__item nav__item--on"><span>🏢</span> Agences / Multi-tenant</div>
+    <div class="nav__item"><span>⚙</span> Paramètres</div>
+    <div class="nav__item"><span>🔔</span> Notifications</div>
+    <div class="nav__user">
+      <div class="nav__avatar">AD</div>
+      <div><div style="font-weight:600;font-size:12px;color:#fff">Dirigeant</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Admin global</div></div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <!-- Module tabs -->
+    <div class="module-tabs">
+      <div class="module-tab module-tab--on" onclick="showMod('multi')">🏢 2.4 Multi-tenant</div>
+      <div class="module-tab" onclick="showMod('notif')">🔔 2.6 Notifications</div>
+    </div>
+
+    <!-- ═══════════════ MODULE 2.4 MULTI-TENANT ═══════════════ -->
+    <main class="page page--on" id="page-multi">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Gestion multi-agence</h1>
+          <p style="font-size:13px;color:var(--text-2);margin-top:3px">2 entités · Vue consolidée direction</p>
+        </div>
+        <button class="btn btn--primary btn--sm">+ Nouvelle agence / entité</button>
+      </div>
+
+      <!-- Cartes entités -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="entity-card entity-card--hq">
+          <div class="entity-banner" style="background:var(--primary)"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div class="entity-name">Agence Paris <span class="badge badge--blue" style="font-size:10px">Siège</span></div>
+              <div class="entity-sub">SIRET 123 456 789 00012 · 75011 Paris</div>
+            </div>
+            <button class="btn btn--ghost btn--sm">⚙ Paramètres</button>
+          </div>
+          <div class="entity-stats">
+            <div class="entity-stat"><div class="entity-stat__val text-primary">12</div><div class="entity-stat__label">Projets actifs</div></div>
+            <div class="entity-stat"><div class="entity-stat__val text-green">8</div><div class="entity-stat__label">Collaborateurs</div></div>
+            <div class="entity-stat"><div class="entity-stat__val text-orange">312 k€</div><div class="entity-stat__label">CA confirmé</div></div>
+          </div>
+          <!-- Branding preview -->
+          <div class="branding-preview" style="margin-top:14px">
+            <div class="brand-topbar" style="background:#1B4965">
+              <div class="brand-logo" style="background:var(--accent)">GAA</div>
+              <span style="color:#fff;font-size:12px;font-weight:600">Agence Paris</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="entity-card entity-card--branch">
+          <div class="entity-banner" style="background:var(--green)"></div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div class="entity-name">Agence Lyon <span class="badge badge--green" style="font-size:10px">Antenne</span></div>
+              <div class="entity-sub">SIRET 123 456 789 00020 · 69003 Lyon</div>
+            </div>
+            <button class="btn btn--ghost btn--sm">⚙ Paramètres</button>
+          </div>
+          <div class="entity-stats">
+            <div class="entity-stat"><div class="entity-stat__val" style="color:var(--green)">4</div><div class="entity-stat__label">Projets actifs</div></div>
+            <div class="entity-stat"><div class="entity-stat__val" style="color:var(--green)">3</div><div class="entity-stat__label">Collaborateurs</div></div>
+            <div class="entity-stat"><div class="entity-stat__val text-orange">98 k€</div><div class="entity-stat__label">CA confirmé</div></div>
+          </div>
+          <!-- Branding différent -->
+          <div class="branding-preview" style="margin-top:14px">
+            <div class="brand-topbar" style="background:#2D6A4F">
+              <div class="brand-logo" style="background:#1a3d2b">ARL</div>
+              <span style="color:#fff;font-size:12px;font-weight:600">Agence Lyon</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vue consolidée direction -->
+      <div class="info-block">
+        <div class="info-block__title">📊 Tableau de bord consolidé — Direction (Paris + Lyon)</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Indicateur</th>
+              <th>Paris</th>
+              <th>Lyon</th>
+              <th>Consolidé</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CA confirmé 2026</strong></td>
+              <td class="mono text-primary">312 k€</td>
+              <td class="mono text-primary">98 k€</td>
+              <td class="mono" style="color:var(--primary);font-weight:700">410 k€</td>
+            </tr>
+            <tr>
+              <td><strong>CA prévisionnel pondéré</strong></td>
+              <td class="mono text-orange">87 k€</td>
+              <td class="mono text-orange">32 k€</td>
+              <td class="mono text-orange font-weight:700">119 k€</td>
+            </tr>
+            <tr>
+              <td><strong>Projets actifs</strong></td>
+              <td class="mono">12</td>
+              <td class="mono">4</td>
+              <td class="mono" style="font-weight:700">16</td>
+            </tr>
+            <tr>
+              <td><strong>Collaborateurs</strong></td>
+              <td class="mono">8</td>
+              <td class="mono">3</td>
+              <td class="mono" style="font-weight:700">11</td>
+            </tr>
+            <tr>
+              <td><strong>Charge moyenne</strong></td>
+              <td class="mono text-orange">96%</td>
+              <td class="mono text-green">74%</td>
+              <td class="mono" style="font-weight:700">88%</td>
+            </tr>
+            <tr>
+              <td><strong>Factures en retard</strong></td>
+              <td class="mono text-red">2</td>
+              <td class="mono text-green">0</td>
+              <td class="mono text-red" style="font-weight:700">2</td>
+            </tr>
+            <tr class="total-row">
+              <td><strong>Rentabilité moyenne</strong></td>
+              <td class="mono text-green">68%</td>
+              <td class="mono text-green">72%</td>
+              <td class="mono text-green" style="font-weight:700">69%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Projet inter-agences -->
+      <div class="info-block">
+        <div class="info-block__title">🤝 Projets inter-agences (1)</div>
+        <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:14px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:15px;font-weight:700">Complexe sportif Métropole Lyon-Paris</div>
+              <div style="font-size:12.5px;color:var(--text-2);margin-top:3px">MOE complète · Phase APD · 420 k€ HT honoraires</div>
+              <div style="font-size:12px;color:var(--text-3);margin-top:4px">Entité mandataire : <strong>Agence Paris</strong> · Ventilation : Paris 70% — Lyon 30%</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge badge--blue">Inter-agences</span>
+              <span class="badge badge--orange">APD en cours</span>
+            </div>
+          </div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px">
+            <div style="background:var(--primary-l);border-radius:var(--r-sm);padding:10px">
+              <div style="font-weight:700;color:var(--primary);margin-bottom:5px">Paris (70%) — 294 k€</div>
+              <div>M. Lefort — Chef de projet mandataire</div>
+              <div style="color:var(--text-3)">S. Moreau, A. Dupont (dessin)</div>
+              <div style="color:var(--text-3)">Taux horaires Paris appliqués</div>
+            </div>
+            <div style="background:var(--green-l);border-radius:var(--r-sm);padding:10px">
+              <div style="font-weight:700;color:var(--green);margin-bottom:5px">Lyon (30%) — 126 k€</div>
+              <div>R. Dupuis — Référent Lyon</div>
+              <div style="color:var(--text-3)">N. Fabre (structure locale)</div>
+              <div style="color:var(--text-3)">Taux horaires Lyon appliqués</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paramètres par entité -->
+      <div class="info-block">
+        <div class="info-block__title">⚙ Paramètres locaux — Agence Lyon (exemple)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:4px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:8px">Taux horaires Lyon</div>
+            <div style="font-size:12.5px;display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;justify-content:space-between"><span>Chef de projet</span><span class="mono text-primary">95 €/h</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Architecte</span><span class="mono text-primary">80 €/h</span></div>
+              <div style="display:flex;justify-content:space-between"><span>Dessinateur</span><span class="mono text-primary">58 €/h</span></div>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:5px">Paris : +8% en moyenne</div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:8px">Numérotation Lyon</div>
+            <div style="font-size:12.5px;display:flex;flex-direction:column;gap:5px">
+              <div>Projets : <span class="mono">LYO-2026-XXX</span></div>
+              <div>Devis : <span class="mono">DLY-2026-XXX</span></div>
+              <div>Factures : <span class="mono">FLY-2026-XXX</span></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:8px">Facturation SaaS</div>
+            <div style="font-size:12.5px;color:var(--text-2)">Groupée sur Agence Paris.<br>Plan Team — 11 utilisateurs.<br>Prochain renouvellement : 01/04/2026.</div>
+            <span class="badge badge--green" style="margin-top:6px">Actif</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════ MODULE 2.6 NOTIFICATIONS ═══════════════ -->
+    <main class="page" id="page-notif">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Centre de notifications</h1>
+          <p style="font-size:13px;color:var(--text-2);margin-top:3px">8 non lues · Dernière : il y a 2 minutes</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost btn--sm">✓ Tout marquer comme lu</button>
+          <button class="btn btn--ghost btn--sm" onclick="switchNotifTab('prefs')">⚙ Préférences</button>
+        </div>
+      </div>
+
+      <!-- Sous-onglets -->
+      <div style="display:flex;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:4px;gap:2px;width:fit-content">
+        <div id="ntab-list" style="padding:7px 14px;border-radius:var(--r-sm);background:var(--surface);color:var(--primary);font-weight:700;font-size:13px;cursor:pointer;box-shadow:var(--shadow)" onclick="switchNotifTab('list')">Notifications (8)</div>
+        <div id="ntab-prefs" style="padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer" onclick="switchNotifTab('prefs')">Préférences</div>
+        <div id="ntab-seuils" style="padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer" onclick="switchNotifTab('seuils')">Seuils & digest</div>
+      </div>
+
+      <!-- Liste notifications -->
+      <div id="notif-list-panel">
+        <div class="notif-panel">
+          <div class="notif-list">
+            <div class="notif-list__hd">
+              <span style="font-size:12px;font-weight:700;color:var(--text-2)">Toutes les notifications</span>
+              <div style="display:flex;gap:4px">
+                <span style="font-size:11.5px;color:var(--primary);cursor:pointer">Non lues (8)</span>
+              </div>
+            </div>
+            <div class="notif-item notif-item--on notif-item--unread-red">
+              <div class="notif-dot" style="background:var(--red)"></div>
+              <div class="notif-content">
+                <div class="notif-title">🔴 Rendu APD — V. Hugo dans J–7</div>
+                <div class="notif-sub">Groupe scolaire Victor Hugo · Équipe complète</div>
+              </div>
+              <div class="notif-time">2 min</div>
+            </div>
+            <div class="notif-item notif-item--unread-red">
+              <div class="notif-dot" style="background:var(--red)"></div>
+              <div class="notif-content">
+                <div class="notif-title">🔴 Facture FAC-2026-008 en retard +12j</div>
+                <div class="notif-sub">Groupe scolaire V. Hugo · Ville de Nantes · 18 500 € · Relance à envoyer</div>
+              </div>
+              <div class="notif-time">1h</div>
+            </div>
+            <div class="notif-item notif-item--unread-orange">
+              <div class="notif-dot" style="background:var(--orange)"></div>
+              <div class="notif-content">
+                <div class="notif-title">🟠 Assurance décennale — échéance J–45</div>
+                <div class="notif-sub">RC Pro OK · Décennale à renouveler avant le 20/04</div>
+              </div>
+              <div class="notif-time">2h</div>
+            </div>
+            <div class="notif-item notif-item--unread-orange">
+              <div class="notif-dot" style="background:var(--orange)"></div>
+              <div class="notif-content">
+                <div class="notif-title">🟠 Dépassement budgétaire — Rés. Oliviers</div>
+                <div class="notif-sub">Rentabilité phase PRO < 10% · 54h passées / 48h budgétées</div>
+              </div>
+              <div class="notif-time">3h</div>
+            </div>
+            <div class="notif-item notif-item--unread">
+              <div class="notif-dot" style="background:var(--primary)"></div>
+              <div class="notif-content">
+                <div class="notif-title">🔵 Tâche assignée — Plans PRO R+1–R+4</div>
+                <div class="notif-sub">Assignée à A. Dupont par M. Lefort · Échéance 12/03</div>
+              </div>
+              <div class="notif-time">Hier</div>
+            </div>
+            <div class="notif-item notif-item--unread">
+              <div class="notif-dot" style="background:var(--primary)"></div>
+              <div class="notif-content">
+                <div class="notif-title">✅ Projet acté — École Jules-Ferry</div>
+                <div class="notif-sub">Signature confirmée le 04/03 · Phases générées · Équipe notifiée</div>
+              </div>
+              <div class="notif-time">2 j</div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-dot" style="background:var(--text-3)"></div>
+              <div class="notif-content">
+                <div class="notif-title" style="font-weight:500;color:var(--text-2)">📋 CR-13 diffusé — Rés. Les Cèdres</div>
+                <div class="notif-sub">6 destinataires · M. Lefort · 21/02</div>
+              </div>
+              <div class="notif-time">12 j</div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-dot" style="background:var(--text-3)"></div>
+              <div class="notif-content">
+                <div class="notif-title" style="font-weight:500;color:var(--text-2)">💰 Jalon de facturation — Phase APD Oliviers</div>
+                <div class="notif-sub">Facture proposée automatiquement · 38 250 €</div>
+              </div>
+              <div class="notif-time">14 j</div>
+            </div>
+          </div>
+
+          <!-- Détail notification sélectionnée -->
+          <div class="info-block" style="padding:20px 22px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+              <div>
+                <div style="font-size:16px;font-weight:700;margin-bottom:4px">🔴 Rendu APD — V. Hugo dans J–7</div>
+                <div style="font-size:12.5px;color:var(--text-3);font-family:var(--mono)">Reçue le 06/03/2026 à 08:32</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn--ghost btn--sm">✓ Marquer lu</button>
+                <button class="btn btn--ghost btn--sm">🗑</button>
+              </div>
+            </div>
+            <div style="background:var(--red-l);border:1px solid rgba(192,57,43,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:16px">
+              <div style="font-size:13.5px;font-weight:700;color:var(--red);margin-bottom:6px">Rendu APD — Groupe scolaire Victor Hugo</div>
+              <div style="font-size:13px;color:var(--text-2);line-height:1.6">Le dossier APD doit être remis au MOA (Ville de Nantes) dans <strong>7 jours</strong> (vendredi 13 mars 2026).<br>
+              Avancement actuel : <strong>45%</strong> des tâches terminées · Équipe : M. Lefort, A. Dupont, S. Moreau.</div>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px">
+              <strong>Règle déclenchante :</strong> Alerte automatique J–14 et J–7 avant toute échéance de rendu projet.
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn--primary btn--sm">Aller au projet →</button>
+              <button class="btn btn--ghost btn--sm">Voir les tâches en retard</button>
+              <button class="btn btn--ghost btn--sm">Désactiver cette alerte</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Préférences -->
+      <div id="notif-prefs-panel" style="display:none">
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:4px">Préférences de notification — M. Lefort</div>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:16px">Configurez les canaux et la fréquence de chaque type d'alerte.</p>
+
+        <div class="pref-section">
+          <div class="pref-section__hd">Échéances et rendus projet</div>
+          <div class="pref-row">
+            <div class="pref-label">Rendu / jalon imminent (J–14, J–7, J–2)</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox" checked> Email</label>
+              <label class="pref-channel"><input type="checkbox" checked> Push</label>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-label">Changement de statut de projet (actation, démarrage phase…)</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox"> Email</label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref-section">
+          <div class="pref-section__hd">Tâches</div>
+          <div class="pref-row">
+            <div class="pref-label">Tâche assignée</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox"> Email <span style="font-size:10px;color:var(--text-3)">(désactivé)</span></label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-label">Commentaire sur une tâche</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox"> Email</label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref-section">
+          <div class="pref-section__hd">Finance</div>
+          <div class="pref-row">
+            <div class="pref-label">Dépassement budgétaire (rentabilité &lt; seuil)</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox" checked> Email</label>
+              <label class="pref-channel"><input type="checkbox" checked> Push <span style="font-size:10px;color:var(--green)">(activé)</span></label>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-label">Facture en retard de paiement</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox" checked> Email</label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-label">Jalon de facturation atteint</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox" checked> Email</label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref-section">
+          <div class="pref-section__hd">Assurances & obligations</div>
+          <div class="pref-row">
+            <div class="pref-label">Assurance à renouveler (J–90, J–45, J–15)</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox" checked> Email</label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref-section">
+          <div class="pref-section__hd">Commercial</div>
+          <div class="pref-row">
+            <div class="pref-label">Devis en attente de signature depuis X jours</div>
+            <div class="pref-channels">
+              <label class="pref-channel"><input type="checkbox" checked> In-app</label>
+              <label class="pref-channel"><input type="checkbox" checked> Email</label>
+              <label class="pref-channel"><input type="checkbox"> Push</label>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn btn--primary btn--sm">Enregistrer les préférences</button>
+          <button class="btn btn--ghost btn--sm">Réinitialiser aux valeurs par défaut</button>
+        </div>
+      </div>
+
+      <!-- Seuils & digest -->
+      <div id="notif-seuils-panel" style="display:none">
+        <div class="pref-section">
+          <div class="pref-section__hd">Seuils d'alerte automatique</div>
+          <div class="seuil-row">
+            <span style="flex:1">Alerte dépassement de charge (% de capacité)</span>
+            <input class="seuil-input" type="number" value="120"> <span style="color:var(--text-3)">%</span>
+          </div>
+          <div class="seuil-row">
+            <span style="flex:1">Alerte rentabilité critique (% marge)</span>
+            <input class="seuil-input" type="number" value="10"> <span style="color:var(--text-3)">%</span>
+          </div>
+          <div class="seuil-row">
+            <span style="flex:1">Alerte retard de tâche (jours de dépassement)</span>
+            <input class="seuil-input" type="number" value="5"> <span style="color:var(--text-3)">j</span>
+          </div>
+          <div class="seuil-row">
+            <span style="flex:1">Alerte devis en attente (jours sans réponse)</span>
+            <input class="seuil-input" type="number" value="15"> <span style="color:var(--text-3)">j</span>
+          </div>
+          <div class="seuil-row">
+            <span style="flex:1">Alerte devis autonome non converti (jours)</span>
+            <input class="seuil-input" type="number" value="30"> <span style="color:var(--text-3)">j</span>
+          </div>
+        </div>
+
+        <div class="pref-section">
+          <div class="pref-section__hd">Digest hebdomadaire</div>
+          <div class="pref-row">
+            <span style="flex:1">Activer le résumé hebdomadaire par email</span>
+            <label class="toggle"><input type="checkbox" checked><div class="toggle-slider"></div></label>
+          </div>
+          <div class="pref-row">
+            <span style="flex:1">Jour d'envoi</span>
+            <select class="form-select" style="width:140px;padding:5px 10px;font-size:13px"><option>Lundi matin</option><option>Vendredi soir</option></select>
+          </div>
+          <div class="pref-row">
+            <span style="flex:1">Heure d'envoi</span>
+            <input type="time" class="form-input" style="width:100px;padding:5px 10px;font-size:13px" value="08:00">
+          </div>
+          <div style="padding:10px 14px;font-size:12.5px;color:var(--text-2)">
+            <strong>Contenu du digest :</strong> projets actifs, tâches en retard, alertes financières, échéances des 7 prochains jours, charge de la semaine.
+          </div>
+        </div>
+
+        <div style="margin-top:14px">
+          <button class="btn btn--primary btn--sm">Enregistrer les seuils</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  function showMod(m) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--on'));
+    document.getElementById('page-' + m).classList.add('page--on');
+    document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('module-tab--on'));
+    document.querySelectorAll('.module-tab')[m === 'multi' ? 0 : 1].classList.add('module-tab--on');
+    window.scrollTo(0, 0);
+  }
+  function switchNotifTab(t) {
+    ['list', 'prefs', 'seuils'].forEach(tab => {
+      document.getElementById('notif-' + tab + '-panel').style.display = tab === t ? 'block' : 'none';
+      const el = document.getElementById('ntab-' + tab);
+      if (el) {
+        el.style.background = tab === t ? 'var(--surface)' : '';
+        el.style.color = tab === t ? 'var(--primary)' : 'var(--text-2)';
+        el.style.fontWeight = tab === t ? '700' : '500';
+        el.style.boxShadow = tab === t ? 'var(--shadow)' : '';
+      }
+    });
+  }
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaT;function showToast(msg,type=''){let el=document.getElementById('gaa-toast');if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';el.style.transform='translateY(0)';el.style.opacity='1';clearTimeout(_gaaT);_gaaT=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+}
+
+// ── Tableau consolidé depuis le store ────────────────────
+function renderConsolide(){
+  const projets=GAAStore.getProjets();
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const projEnCours=projets.filter(p=>p.statut==='en_cours');
+  const projEnAttente=projets.filter(p=>p.statut==='en_attente');
+
+  const caConfirme=projEnCours.reduce((s,p)=>s+(p.honoraires_ht||0),0);
+  const caPrevisionnel=projEnAttente.reduce((s,p)=>s+(p.honoraires_ht||0)*0.6,0);
+
+  const fmtK=n=>n>=1000?Math.round(n/1000)+' k€':Math.round(n)+' €';
+
+  // Mettre à jour le tableau consolidé (colonnes Paris)
+  const rows=document.querySelectorAll('#page-multi tbody tr');
+  if(rows[0]) rows[0].querySelectorAll('td')[1].textContent=fmtK(caConfirme);
+  if(rows[1]) rows[1].querySelectorAll('td')[1].textContent=fmtK(caPrevisionnel);
+  if(rows[2]) rows[2].querySelectorAll('td')[1].textContent=projEnCours.length;
+  if(rows[3]) rows[3].querySelectorAll('td')[1].textContent=users.length;
+}
+
+// ── Notifications depuis le journal d'audit ───────────────
+function renderNotifList(){
+  const audit=GAAStore.get(GAAStore.K.AUDIT)||[];
+  const alertes=GAAStore.get(GAAStore.K.ALERTES)||[];
+  const panel=document.getElementById('notif-list-panel');
+  if(!panel) return;
+
+  // Combiner audit récent + alertes
+  const items=[
+    ...audit.slice(0,8).map(a=>({
+      type:'audit',
+      icon:a.module?.includes('Finance')?'💰':a.module?.includes('Projet')?'📁':a.module?.includes('Tâche')?'✓':'📋',
+      titre:a.action||'Action',
+      detail:`${a.user||'—'} · ${a.module||'—'}`,
+      ts:a.ts||a.created_at||new Date().toISOString(),
+      lu:false,
+    })),
+    ...alertes.slice(0,3).map(a=>({
+      type:'alerte',
+      icon:a.type==='retard'?'⚠️':a.type==='facture'?'💰':'🔔',
+      titre:a.message||'Alerte',
+      detail:a.projet||'—',
+      ts:a.created_at||new Date().toISOString(),
+      lu:a.lu||false,
+    })),
+  ].sort((a,b)=>new Date(b.ts)-new Date(a.ts)).slice(0,10);
+
+  if(!items.length) return;
+
+  // Chercher le conteneur de la liste
+  const list=panel.querySelector('[class*="notif-list"],[class*="notif__list"],ul,div[style*="flex-direction:column"]');
+  const target=list||panel;
+
+  const fmtTs=ts=>{
+    const d=new Date(ts);const now=new Date();
+    const diff=Math.floor((now-d)/60000);
+    if(diff<1)return'À l\'instant';if(diff<60)return`Il y a ${diff} min`;
+    if(diff<1440)return`Il y a ${Math.floor(diff/60)} h`;
+    return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+  };
+
+  const html=items.map(item=>`
+    <div style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);${item.lu?'':'background:var(--primary-l,rgba(27,73,101,.04))'}">
+      <span style="font-size:18px;min-width:24px">${item.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:${item.lu?'500':'700'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.titre}</div>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">${item.detail}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-3);white-space:nowrap">${fmtTs(item.ts)}</div>
+    </div>`).join('');
+
+  // Remplacer le contenu existant par les items dynamiques
+  const staticItems=target.querySelectorAll('[style*="border-bottom"]');
+  if(staticItems.length>2){
+    // Insérer avant le premier item statique
+    const tempDiv=document.createElement('div');
+    tempDiv.innerHTML=html;
+    const first=staticItems[0];
+    [...tempDiv.children].forEach(el=>target.insertBefore(el,first));
+    // Mettre à jour le badge notification
+    updateBadge(items.filter(i=>!i.lu).length);
+  }
+}
+
+function updateBadge(nb){
+  document.querySelectorAll('.notif-badge,[class*="badge"][class*="notif"]').forEach(el=>{
+    el.textContent=nb;el.style.display=nb>0?'':'none';
+  });
+}
+
+// ── Préférences notifs — sauvegarder ─────────────────────
+document.querySelector('#notif-prefs-panel .btn--primary,#ntab-prefs')?.addEventListener('click',()=>{
+  const prefs={};
+  document.querySelectorAll('#notif-prefs-panel input[type="checkbox"]').forEach((cb,i)=>{
+    prefs['notif_'+i]=cb.checked;
+  });
+  GAAStore.update(GAAStore.K.PREFERENCES,{notifications:prefs});
+  showToast('Préférences notifications sauvegardées ✓','success');
+});
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderConsolide();
+  renderNotifList();
+  updateNotifBadge();
+  // Restaurer préférences notifs
+  const prefs=GAAStore.get(GAAStore.K.PREFERENCES)?.notifications||{};
+  document.querySelectorAll('#notif-prefs-panel input[type="checkbox"]').forEach((cb,i)=>{
+    if(prefs['notif_'+i]!==undefined) cb.checked=prefs['notif_'+i];
+  });
+});
+
+
+// ── Marquer toutes les notifs comme lues ─────────────────
+document.querySelector('#page-notif .btn--ghost:first-of-type')?.addEventListener('click',function(){
+  document.querySelectorAll('.notif-item--unread,.notif-item--unread-red,.notif-item--unread-orange').forEach(el=>{
+    el.classList.remove('notif-item--unread','notif-item--unread-red','notif-item--unread-orange');
+  });
+  // Mettre à jour le compteur
+  const cnt=document.querySelector('#page-notif p');
+  if(cnt) cnt.textContent='0 non lues · ' + cnt.textContent.split('·')[1];
+  document.querySelectorAll('.ntab-badge,[data-badge="notif"]').forEach(el=>el.remove());
+  GAAStore.addAudit(GAAStore.getMe()?.nom,'Toutes les notifications marquées comme lues','2.6 Notif');
+  showToast('Tout marqué comme lu ✓','success');
+});
+
+// ── Badge nav depuis audit ────────────────────────────────
+function updateNotifBadge(){
+  const nb=GAAStore.getProjets().filter(p=>p.statut==='en_cours'&&(p.phases||[]).some(ph=>ph.avancement>=90)).length;
+  document.querySelectorAll('[data-badge="notif"],.nav-badge--notif').forEach(el=>el.textContent=nb);
+}
+
+// ── Tableau de bord consolidé dynamique ──────────────────
+function renderConsolide(){
+  const projets=GAAStore.getProjets();
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const enCours=projets.filter(p=>p.statut==='en_cours');
+  const ca=enCours.reduce((s,p)=>s+(p.honoraires_ht||0),0);
+  const prev=projets.filter(p=>p.statut==='en_attente').reduce((s,p)=>s+(p.honoraires_ht||0)*0.6,0);
+  // Mettre à jour les cellules du tableau consolidé
+  const rows=document.querySelectorAll('#page-multi tbody tr');
+  if(rows[0]) rows[0].querySelector('td:nth-child(2)').textContent=Math.round(ca/1000)+' k€';
+  if(rows[0]) rows[0].querySelector('td:nth-child(4)').textContent=Math.round(ca/1000)+' k€';
+  if(rows[2]) rows[2].querySelector('td:nth-child(2)').textContent=enCours.length;
+  if(rows[2]) rows[2].querySelector('td:nth-child(4)').textContent=enCours.length;
+  if(rows[3]) rows[3].querySelector('td:nth-child(2)').textContent=users.length;
+  if(rows[3]) rows[3].querySelector('td:nth-child(4)').textContent=users.length;
+}
+
+</script>
+</body>
+</html>

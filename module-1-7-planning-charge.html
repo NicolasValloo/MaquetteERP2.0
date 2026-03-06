@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     GAA — Module 1.7 — Planning de charge et ressources
+     Maquette fonctionnelle HTML (simulant Django/htmx)
+     Écrans : vue-globale-agence / point-hebdomadaire
+     ============================================================ -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.7 — Planning de charge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg:        #F4F3EF;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E0D8;
+      --c-border-md: #C8C5BB;
+      --c-text:      #1C1B18;
+      --c-text-2:    #6B6860;
+      --c-text-3:    #9B998F;
+      --c-primary:   #1B4965;
+      --c-primary-l: #EAF1F6;
+      --c-accent:    #C75B37;
+      --c-green:     #2D6A4F;
+      --c-green-l:   #E8F5EE;
+      --c-orange:    #B8860B;
+      --c-orange-l:  #FDF6DC;
+      --c-red:       #C0392B;
+      --c-red-l:     #FDECEA;
+      --c-grey-l:    #F0EFEB;
+      --sidebar-w:   220px;
+      --font-main:   'Sora', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07);
+      --radius-sm:   4px; --radius: 8px; --radius-lg: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: var(--font-main); background: var(--c-bg); color: var(--c-text); line-height: 1.5; min-height: 100vh; }
+
+    /* Layout */
+    .shell { display: flex; min-height: 100vh; }
+    .nav-sidebar { width: var(--sidebar-w); background: var(--c-primary); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+    .nav-sidebar__logo { padding: 20px 20px 16px; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; }
+    .nav-sidebar__logo-dot { width: 8px; height: 8px; background: var(--c-accent); border-radius: 50%; }
+    .nav-sidebar__section { padding: 16px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .nav-sidebar__item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: background 0.15s; position: relative; }
+    .nav-sidebar__item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-sidebar__item--active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .nav-sidebar__item--active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--c-accent); border-radius: 0 2px 2px 0; }
+    .nav-sidebar__icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-sidebar__user { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .nav-sidebar__avatar { width: 30px; height: 30px; background: var(--c-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+    .topbar { height: 52px; background: var(--c-surface); border-bottom: 1px solid var(--c-border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar__breadcrumb { font-size: 13px; color: var(--c-text-2); flex: 1; }
+    .topbar__breadcrumb a { color: var(--c-primary); cursor: pointer; }
+    .topbar__avatar { width: 32px; height: 32px; background: var(--c-primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .page { padding: 28px; display: none; flex-direction: column; gap: 20px; }
+    .page--active { display: flex; }
+
+    /* Composants */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .btn--primary { background: var(--c-primary); color: #fff; }
+    .btn--primary:hover { background: #153d52; }
+    .btn--ghost { background: transparent; color: var(--c-text); border-color: var(--c-border-md); }
+    .btn--ghost:hover { background: var(--c-grey-l); }
+    .btn--green { background: var(--c-green); color: #fff; border-color: var(--c-green); }
+    .btn--sm { padding: 5px 10px; font-size: 12px; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge--green  { background: var(--c-green-l);  color: var(--c-green); }
+    .badge--blue   { background: var(--c-primary-l); color: var(--c-primary); }
+    .badge--orange { background: var(--c-orange-l); color: var(--c-orange); }
+    .badge--grey   { background: var(--c-grey-l);   color: var(--c-text-2); }
+    .badge--red    { background: var(--c-red-l);    color: var(--c-red); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card__label { font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .kpi-card__value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px; font-family: var(--font-mono); }
+    .kpi-card__detail { font-size: 11.5px; color: var(--c-text-3); }
+
+    .tabs-bar { display: flex; gap: 2px; background: var(--c-grey-l); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 4px; overflow-x: auto; }
+    .tab-item { padding: 7px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--c-text-2); transition: all 0.15s; white-space: nowrap; }
+    .tab-item:hover { background: rgba(255,255,255,0.7); color: var(--c-text); }
+    .tab-item--active { background: var(--c-surface); color: var(--c-primary); font-weight: 700; box-shadow: var(--shadow-sm); }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow-sm); }
+    .filter-select { appearance: none; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 5px 28px 5px 10px; font-family: var(--font-main); font-size: 12.5px; color: var(--c-text); cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+    .filter-toggle { display: flex; border: 1px solid var(--c-border); border-radius: var(--radius-sm); overflow: hidden; }
+    .filter-toggle__item { padding: 5px 12px; font-size: 12px; cursor: pointer; background: var(--c-bg); color: var(--c-text-2); border: none; font-family: var(--font-main); transition: all 0.1s; }
+    .filter-toggle__item--active { background: var(--c-primary); color: #fff; font-weight: 600; }
+    .filter-toggle__item:not(:last-child) { border-right: 1px solid var(--c-border); }
+
+    .info-block { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .info-block__title { font-size: 12px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+
+    /* =============================================
+       GRILLE PLANNING PRINCIPAL
+    ============================================= */
+    .planning-wrap { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); overflow-x: auto; }
+    .planning-table { width: 100%; border-collapse: collapse; min-width: 820px; }
+    .planning-table thead th { background: var(--c-grey-l); border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); padding: 8px 10px; text-align: center; font-size: 11px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+    .planning-table thead th:first-child { text-align: left; min-width: 180px; padding-left: 14px; }
+    .planning-table thead th:nth-child(2) { min-width: 60px; }
+    .planning-table thead th.col-today { background: var(--c-primary-l); color: var(--c-primary); }
+    .planning-table tbody tr { border-bottom: 1px solid var(--c-border); }
+    .planning-table tbody tr:hover { background: rgba(0,0,0,0.01); }
+    .planning-table td { border-right: 1px solid var(--c-border); vertical-align: middle; }
+    .planning-table td:last-child { border-right: none; }
+
+    /* Cellule nom collaborateur */
+    .collab-name { padding: 8px 14px; min-width: 180px; }
+    .collab-name__main { font-size: 13px; font-weight: 700; }
+    .collab-name__role { font-size: 11px; color: var(--c-text-3); }
+    .collab-name__loc { font-size: 11px; color: var(--c-text-2); display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+
+    /* Cellule lieu */
+    .lieu-cell { padding: 6px 8px; text-align: center; font-size: 11px; color: var(--c-text-3); }
+    .absence-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 2px; }
+    .dot--cp    { background: var(--c-red); }
+    .dot--tt    { background: #3498DB; }
+    .dot--chant { background: var(--c-accent); }
+    .dot--form  { background: #9B59B6; }
+
+    /* Cellule semaine */
+    .week-cell { padding: 4px 6px; min-width: 120px; height: 54px; position: relative; }
+    .week-cell--absence { background: rgba(192,57,43,0.05); }
+
+    .bar-wrap { display: flex; flex-direction: column; gap: 2px; height: 36px; justify-content: flex-start; }
+    .bar { height: 14px; border-radius: 2px; font-size: 9px; font-family: var(--font-mono); color: #fff; display: flex; align-items: center; padding: 0 4px; overflow: hidden; white-space: nowrap; transition: opacity 0.15s; }
+    .bar:hover { opacity: 0.8; }
+    .bar--confirmed { background: var(--c-primary); }
+    .bar--pending { background: rgba(27,73,101,0.3); border: 1px dashed var(--c-primary); color: var(--c-primary); }
+    .bar--draft { background: repeating-linear-gradient(45deg, var(--c-orange) 0px, var(--c-orange) 2px, transparent 2px, transparent 5px); border: 1px solid var(--c-orange); color: var(--c-orange); }
+    .bar--empty { background: transparent; }
+
+    .pct { position: absolute; bottom: 3px; right: 5px; font-size: 10.5px; font-family: var(--font-mono); font-weight: 700; }
+    .pct--over { color: var(--c-red); }
+    .pct--ok   { color: var(--c-green); }
+    .pct--low  { color: var(--c-orange); }
+
+    .mean-cell { text-align: center; padding: 8px; font-family: var(--font-mono); font-size: 13px; font-weight: 700; }
+    .absence-label { font-size: 11px; color: var(--c-red); text-align: center; padding: 10px 4px; display: block; }
+
+    /* =============================================
+       GRAPHIQUE CHARGE vs CAPACITÉ
+    ============================================= */
+    .chart-block { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .chart-block__title { font-size: 12.5px; font-weight: 700; color: var(--c-text-2); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; }
+    .chart-legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--c-text-3); margin-bottom: 10px; flex-wrap: wrap; }
+    .legend-dot { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-right: 4px; }
+
+    .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 100px; position: relative; }
+    .bar-chart__capa-line { position: absolute; bottom: 80px; left: 0; right: 0; border-top: 2px dashed var(--c-red); z-index: 5; }
+    .bar-chart__capa-label { position: absolute; right: 0; top: -16px; font-size: 10px; font-family: var(--font-mono); color: var(--c-red); }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    .bar-col__confirmed { border-radius: 2px 2px 0 0; background: var(--c-primary); width: 100%; }
+    .bar-col__pending { width: 100%; background: rgba(27,73,101,0.25); border: 1px dashed var(--c-primary); }
+    .bar-col__label { font-size: 10px; font-family: var(--font-mono); color: var(--c-text-3); margin-top: 4px; }
+
+    /* =============================================
+       ALERTES
+    ============================================= */
+    .alert-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .alert-card { border: 1px solid; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12.5px; }
+    .alert-card--danger  { border-color: rgba(192,57,43,0.4); background: var(--c-red-l); }
+    .alert-card--warning { border-color: rgba(184,134,11,0.4); background: var(--c-orange-l); }
+    .alert-card--info    { border-color: rgba(27,73,101,0.3); background: var(--c-primary-l); }
+    .alert-card__title { font-weight: 700; margin-bottom: 4px; font-size: 13px; }
+    .alert-card--danger  .alert-card__title { color: var(--c-red); }
+    .alert-card--warning .alert-card__title { color: var(--c-orange); }
+    .alert-card--info    .alert-card__title { color: var(--c-primary); }
+    .alert-card__action { margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--c-primary); cursor: pointer; }
+
+    /* Scénario what-if */
+    .scenario-block { border: 2px dashed #9B59B6; border-radius: var(--radius); background: rgba(155,89,182,0.04); padding: 12px 14px; }
+    .scenario-block__title { font-size: 13px; font-weight: 700; color: #6A3D9A; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .scenario-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 12.5px; border-bottom: 1px solid var(--c-border); }
+    .scenario-row:last-child { border-bottom: none; }
+
+    /* =============================================
+       VUE POINT HEBDOMADAIRE — PAGE 2
+    ============================================= */
+    .hebdo-wrap { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); overflow-x: auto; }
+    .hebdo-table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    .hebdo-table thead th { background: var(--c-grey-l); border-bottom: 1px solid var(--c-border); border-right: 1px solid var(--c-border); padding: 7px 8px; text-align: center; font-size: 11px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .hebdo-table thead th:first-child { text-align: left; padding-left: 14px; min-width: 155px; }
+    .hebdo-table thead th:nth-child(2) { min-width: 55px; }
+    .hebdo-table thead th.proj-header { background: var(--c-primary-l); color: var(--c-primary); }
+    .hebdo-table thead th.proj-header--pending { background: var(--c-orange-l); color: var(--c-orange); }
+    .hebdo-table tbody tr { border-bottom: 1px solid var(--c-border); }
+    .hebdo-table td { border-right: 1px solid var(--c-border); padding: 8px; vertical-align: top; font-size: 12.5px; }
+    .hebdo-table td:last-child { border-right: none; }
+
+    .hebdo-name { font-weight: 700; font-size: 13px; }
+    .hebdo-loc { font-size: 11px; color: var(--c-text-3); margin-top: 1px; }
+    .hebdo-dispo { text-align: center; font-weight: 700; font-family: var(--font-mono); font-size: 13px; }
+    .hebdo-dispo--reduced { color: var(--c-orange); }
+    .hebdo-dispo__sub { font-size: 10px; color: var(--c-text-3); font-family: var(--font-main); font-weight: 400; }
+
+    .hours-cell { text-align: center; }
+    .hours-cell--over { background: rgba(192,57,43,0.04); }
+    .hours-cell__val { font-weight: 700; font-family: var(--font-mono); font-size: 13px; }
+    .hours-cell__val--over { color: var(--c-red); }
+    .hours-cell__val--ok   { color: var(--c-green); }
+    .hours-cell__task { font-size: 11px; color: var(--c-text-2); margin-top: 2px; }
+    .hours-cell__deadline { font-size: 11px; color: var(--c-red); font-weight: 600; margin-top: 2px; }
+    .hours-cell--pending { opacity: 0.55; }
+    .hours-cell__pending-label { font-size: 10.5px; color: var(--c-orange); font-style: italic; }
+    .total-cell { text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 13px; }
+
+    /* Échéances + conflits */
+    .deadline-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--c-border); font-size: 12.5px; }
+    .deadline-item:last-child { border-bottom: none; }
+    .deadline-item__date { font-weight: 700; }
+    .deadline-item--red    { background: rgba(192,57,43,0.04); border-left: 3px solid var(--c-red); padding-left: 8px; margin-left: -8px; border-radius: 0 2px 2px 0; }
+    .deadline-item--orange { background: rgba(184,134,11,0.04); border-left: 3px solid var(--c-orange); padding-left: 8px; margin-left: -8px; border-radius: 0 2px 2px 0; }
+    .deadline-item--grey   { border-left: 3px solid var(--c-border-md); padding-left: 8px; margin-left: -8px; }
+
+    .conflict-item { padding: 8px 0 8px 10px; border-bottom: 1px solid var(--c-border); font-size: 12.5px; }
+    .conflict-item:last-child { border-bottom: none; }
+    .conflict-item--red    { border-left: 3px solid var(--c-red); background: rgba(192,57,43,0.03); }
+    .conflict-item--orange { border-left: 3px solid var(--c-orange); background: rgba(184,134,11,0.03); }
+    .conflict-item--blue   { border-left: 3px solid var(--c-primary); background: rgba(27,73,101,0.03); }
+    .conflict-item__title  { font-weight: 700; }
+    .conflict-item__action { font-size: 12px; font-weight: 600; color: var(--c-primary); margin-top: 4px; }
+
+    /* Mini-charts prévu vs réel */
+    .mini-chart-grid { display: flex; gap: 0; }
+    .mini-chart { flex: 1; text-align: center; padding: 10px 12px; border-right: 1px solid var(--c-border); }
+    .mini-chart:last-child { border-right: none; }
+    .mini-chart__title { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+    .mini-chart__phase { font-size: 11px; color: var(--c-text-3); margin-bottom: 8px; }
+    .mini-chart__bars { display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 56px; }
+    .mini-bar { width: 28px; border-radius: 2px 2px 0 0; transition: height 0.3s; }
+    .mini-bar--prevu  { background: var(--c-primary); }
+    .mini-bar--passe  { background: #E67E22; }
+    .mini-bar--previsionnel { background: rgba(27,73,101,0.15); border: 1.5px dashed var(--c-primary); }
+    .mini-chart__labels { display: flex; justify-content: center; gap: 12px; font-size: 10px; color: var(--c-text-3); margin-top: 4px; font-family: var(--font-mono); }
+    .mini-chart__status { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    .mini-chart--pending { opacity: 0.5; }
+
+    .mono { font-family: var(--font-mono); }
+    .text-red { color: var(--c-red); }
+    .text-orange { color: var(--c-orange); }
+    .text-green { color: var(--c-green); }
+    .text-primary { color: var(--c-primary); }
+    .text-muted { color: var(--c-text-3); }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="nav-sidebar">
+    <div class="nav-sidebar__logo"><span class="nav-sidebar__logo-dot"></span>GAA</div>
+    <div class="nav-sidebar__section">Pilotage</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">⬜</span> Tableau de bord</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">📁</span> Projets</a>
+    <div class="nav-sidebar__section">Planification</div>
+    <a class="nav-sidebar__item nav-sidebar__item--active" onclick="return false"><span class="nav-sidebar__icon">📊</span> Charge</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">✓</span> Tâches</a>
+    <div class="nav-sidebar__section">Opérationnel</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">⏱</span> Temps</a>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">📂</span> Documents</a>
+    <div class="nav-sidebar__section">Commercial</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">👥</span> CRM</a>
+    <div class="nav-sidebar__section">Finance</div>
+    <a class="nav-sidebar__item" onclick="return false"><span class="nav-sidebar__icon">💰</span> Facturation</a>
+    <div class="nav-sidebar__user">
+      <div class="nav-sidebar__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,0.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar__breadcrumb" id="breadcrumb"><strong>Planning de charge — Vue globale agence</strong></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn--ghost btn--sm" id="btn-hebdo" onclick="showPage('hebdo')">📅 Point hebdomadaire →</button>
+        <div class="topbar__avatar">ML</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         PAGE 1 — VUE GLOBALE AGENCE
+    ================================================ -->
+    <main class="page page--active" id="page-globale">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Planning de charge — Vue globale agence</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">Semaines 10 à 15 · 6 collaborateurs · Mars – Avril 2026</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost" onclick="return false">⬇ Exporter</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Capacité totale</div>
+          <div class="kpi-card__value">1 120 h</div>
+          <div class="kpi-card__detail">14 collab. × 6 semaines</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Charge confirmée</div>
+          <div class="kpi-card__value text-primary">864 h</div>
+          <div class="kpi-card__detail">77% de capacité</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Charge prévisionnelle</div>
+          <div class="kpi-card__value text-orange">+218 h</div>
+          <div class="kpi-card__detail">+19% si projets signés</div>
+        </div>
+        <div class="kpi-card" style="border-color:rgba(192,57,43,0.3)">
+          <div class="kpi-card__label">Taux global</div>
+          <div class="kpi-card__value text-red">96%</div>
+          <div class="kpi-card__detail text-red">3 collaborateurs en surcharge</div>
+        </div>
+      </div>
+
+      <!-- Onglets vues + filtres -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="tabs-bar">
+          <div class="tab-item" onclick="return false">Par collaborateur</div>
+          <div class="tab-item tab-item--active">Vue globale</div>
+          <div class="tab-item" onclick="return false">Par projet</div>
+        </div>
+        <div style="flex:1"></div>
+        <div class="filter-toggle">
+          <button class="filter-toggle__item filter-toggle__item--active">6 sem.</button>
+          <button class="filter-toggle__item">3 mois</button>
+          <button class="filter-toggle__item">6 mois</button>
+        </div>
+        <select class="filter-select"><option>Équipe : Tous</option><option>Pôle conception</option><option>Pôle chantier</option></select>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" checked> <span style="background:var(--c-primary);display:inline-block;width:12px;height:7px;border-radius:1px"></span> Confirmé</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" checked> <span style="background:rgba(27,73,101,0.3);border:1px dashed var(--c-primary);display:inline-block;width:12px;height:7px;border-radius:1px"></span> Prévisionnel</label>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox"> <span style="background:repeating-linear-gradient(45deg,var(--c-orange),var(--c-orange) 2px,transparent 2px,transparent 4px);display:inline-block;width:12px;height:7px;border-radius:1px"></span> Brouillon</label>
+        </div>
+      </div>
+
+      <!-- Grille planning -->
+      <div class="planning-wrap">
+        <table class="planning-table">
+          <thead>
+            <tr>
+              <th>Collaborateur</th>
+              <th>Lieu</th>
+              <th class="col-today">S10<br><small style="font-weight:400;color:inherit">2-6 mars</small></th>
+              <th>S11<br><small style="font-weight:400;color:var(--c-text-3)">9-13 mars</small></th>
+              <th>S12<br><small style="font-weight:400;color:var(--c-text-3)">16-20 mars</small></th>
+              <th>S13<br><small style="font-weight:400;color:var(--c-text-3)">23-27 mars</small></th>
+              <th>S14<br><small style="font-weight:400;color:var(--c-text-3)">30-3 avr</small></th>
+              <th>S15<br><small style="font-weight:400;color:var(--c-text-3)">6-10 avr</small></th>
+              <th>Moy.</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- M. Lefort — Surcharge -->
+            <tr>
+              <td class="collab-name">
+                <div class="collab-name__main">M. Lefort</div>
+                <div class="collab-name__role">Chef de projet</div>
+                <div class="collab-name__loc"><span class="absence-dot dot--tt"></span>TT lundi</div>
+              </td>
+              <td class="lieu-cell">📍 Agence</td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:85%">Oliviers — APD</div>
+                  <div class="bar bar--pending" style="width:40%">Parc Est — ESQ</div>
+                </div>
+                <span class="pct pct--over">125%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:90%">Oliviers — APD</div>
+                  <div class="bar bar--pending" style="width:30%">Parc Est</div>
+                </div>
+                <span class="pct pct--over">120%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:70%">Oliviers — PRO</div>
+                </div>
+                <span class="pct pct--ok">70%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:75%">Oliviers — PRO</div>
+                </div>
+                <span class="pct pct--ok">75%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:80%">École J. — Coord.</div>
+                </div>
+                <span class="pct pct--ok">80%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:75%">École J. — Coord.</div>
+                </div>
+                <span class="pct pct--ok">75%</span>
+              </td>
+              <td class="mean-cell text-red">91%</td>
+            </tr>
+
+            <!-- S. Moreau — OK -->
+            <tr>
+              <td class="collab-name">
+                <div class="collab-name__main">S. Moreau</div>
+                <div class="collab-name__role">Architecte</div>
+              </td>
+              <td class="lieu-cell">📍 Agence</td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:80%">Oliviers — Plans</div>
+                </div>
+                <span class="pct pct--ok">80%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:85%">Oliviers — Plans</div>
+                </div>
+                <span class="pct pct--ok">85%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:70%">École J. — ESQ</div>
+                </div>
+                <span class="pct pct--ok">70%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:90%">École J. — ESQ</div>
+                </div>
+                <span class="pct pct--ok">90%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:75%">École J. — Plans</div>
+                </div>
+                <span class="pct pct--ok">75%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:80%">École J. — Plans</div>
+                </div>
+                <span class="pct pct--ok">80%</span>
+              </td>
+              <td class="mean-cell text-green">80%</td>
+            </tr>
+
+            <!-- A. Dupont — Sous-charge -->
+            <tr>
+              <td class="collab-name">
+                <div class="collab-name__main">A. Dupont</div>
+                <div class="collab-name__role">Dessinateur</div>
+              </td>
+              <td class="lieu-cell">📍 Agence</td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:50%">Oliviers détails</div>
+                </div>
+                <span class="pct pct--low">50%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:55%">Oliviers détails</div>
+                </div>
+                <span class="pct pct--low">55%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap"></div>
+                <span class="pct pct--low">20%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:40%">École J. — Plans</div>
+                </div>
+                <span class="pct pct--low">40%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:45%">École J. — Plans</div>
+                </div>
+                <span class="pct pct--low">45%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:40%">École J. — Plans</div>
+                </div>
+                <span class="pct pct--low">40%</span>
+              </td>
+              <td class="mean-cell text-orange">42%</td>
+            </tr>
+
+            <!-- P. Bernard — Absences -->
+            <tr>
+              <td class="collab-name">
+                <div class="collab-name__main">P. Bernard</div>
+                <div class="collab-name__role">Architecte</div>
+                <div class="collab-name__loc"><span class="absence-dot dot--chant"></span>Chantier lun-mar</div>
+              </td>
+              <td class="lieu-cell">🏗 Chantier</td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:60%">Cèdres — DET</div>
+                </div>
+                <span class="pct pct--ok">60%</span>
+              </td>
+              <td class="week-cell week-cell--absence">
+                <span class="absence-label">🏖 CP — Congés</span>
+              </td>
+              <td class="week-cell week-cell--absence">
+                <span class="absence-label">🏖 CP — Congés</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:90%">Cèdres — DCE</div>
+                </div>
+                <span class="pct pct--ok">90%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:95%">Cèdres — DCE</div>
+                </div>
+                <span class="pct pct--ok">95%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:80%">Cèdres — ACT</div>
+                </div>
+                <span class="pct pct--ok">80%</span>
+              </td>
+              <td class="mean-cell text-primary">54%</td>
+            </tr>
+
+            <!-- L. Chen — Formation -->
+            <tr>
+              <td class="collab-name">
+                <div class="collab-name__main">L. Chen</div>
+                <div class="collab-name__role">BIM Manager</div>
+                <div class="collab-name__loc"><span class="absence-dot dot--form"></span>Formation ven</div>
+              </td>
+              <td class="lieu-cell">📍 Agence</td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:70%">BIM Transversal</div>
+                  <div class="bar bar--pending" style="width:25%">BIM Parc Est</div>
+                </div>
+                <span class="pct pct--ok">95%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:75%">BIM Transversal</div>
+                </div>
+                <span class="pct pct--ok">75%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:80%">BIM École J.</div>
+                </div>
+                <span class="pct pct--ok">80%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:65%">BIM École J.</div>
+                  <div class="bar bar--draft" style="width:20%">Concours Méd.</div>
+                </div>
+                <span class="pct pct--ok">85%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:70%">BIM Maison R.</div>
+                </div>
+                <span class="pct pct--ok">70%</span>
+              </td>
+              <td class="week-cell">
+                <div class="bar-wrap">
+                  <div class="bar bar--confirmed" style="width:70%">BIM Oliviers</div>
+                </div>
+                <span class="pct pct--ok">70%</span>
+              </td>
+              <td class="mean-cell text-green">79%</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Légende barres -->
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--c-text-2);padding:2px 4px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:8px;background:var(--c-primary);border-radius:1px;display:inline-block"></span>Confirmé (projet Acté)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:8px;background:rgba(27,73,101,0.25);border:1px dashed var(--c-primary);border-radius:1px;display:inline-block"></span>Prévisionnel (En attente)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:8px;background:repeating-linear-gradient(45deg,var(--c-orange),var(--c-orange) 2px,transparent 2px,transparent 4px);border-radius:1px;display:inline-block"></span>Brouillon</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:8px;background:rgba(192,57,43,0.12);border-radius:1px;display:inline-block"></span>Absence (CP, formation…)</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="color:var(--c-red);font-family:var(--font-mono);font-weight:700">125%</span> Surcharge</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="color:var(--c-orange);font-family:var(--font-mono);font-weight:700">42%</span> Sous-charge</span>
+      </div>
+
+      <!-- Graphique charge vs capacité -->
+      <div class="chart-block">
+        <div class="chart-block__title">
+          <span>Charge vs Capacité — Vue agence</span>
+          <span style="font-size:11.5px;color:var(--c-text-3)">Barres empilées par semaine</span>
+        </div>
+        <div class="chart-legend">
+          <span><span class="legend-dot" style="background:var(--c-primary)"></span>Confirmé</span>
+          <span><span class="legend-dot" style="background:rgba(27,73,101,0.25);border:1px dashed var(--c-primary)"></span>Prévisionnel</span>
+          <span><span class="legend-dot" style="background:repeating-linear-gradient(45deg,var(--c-orange),var(--c-orange) 2px,transparent 2px,transparent 4px)"></span>Brouillon</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:20px;border-top:2px dashed var(--c-red);display:inline-block"></span>100% capacité</span>
+        </div>
+        <div style="position:relative">
+          <div class="bar-chart">
+            <div class="bar-chart__capa-line"><span class="bar-chart__capa-label">100% capacité</span></div>
+            <!-- S10 -->
+            <div class="bar-col">
+              <div class="bar-col__confirmed" style="height:62px"></div>
+              <div class="bar-col__pending" style="height:15px"></div>
+              <div class="bar-col__label">S10</div>
+            </div>
+            <!-- S11 -->
+            <div class="bar-col">
+              <div class="bar-col__confirmed" style="height:66px"></div>
+              <div class="bar-col__pending" style="height:12px"></div>
+              <div class="bar-col__label">S11</div>
+            </div>
+            <!-- S12 -->
+            <div class="bar-col">
+              <div class="bar-col__confirmed" style="height:54px"></div>
+              <div class="bar-col__pending" style="height:8px"></div>
+              <div class="bar-col__label">S12</div>
+            </div>
+            <!-- S13 -->
+            <div class="bar-col">
+              <div class="bar-col__confirmed" style="height:58px"></div>
+              <div class="bar-col__pending" style="height:10px"></div>
+              <div class="bar-col__label">S13</div>
+            </div>
+            <!-- S14 -->
+            <div class="bar-col">
+              <div class="bar-col__confirmed" style="height:68px"></div>
+              <div class="bar-col__pending" style="height:16px"></div>
+              <div class="bar-col__label">S14</div>
+            </div>
+            <!-- S15 -->
+            <div class="bar-col">
+              <div class="bar-col__confirmed" style="height:52px"></div>
+              <div class="bar-col__pending" style="height:6px"></div>
+              <div class="bar-col__label">S15</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertes -->
+      <div class="alert-grid">
+        <div class="alert-card alert-card--danger">
+          <div class="alert-card__title">⚠ Surcharge détectée</div>
+          <div>M. Lefort à 125% en S10-S11. Oliviers APD + Parc Est ESQ en parallèle.</div>
+          <div class="alert-card__action">→ Décaler Parc Est — ESQ à S13 (glisser-déposer)</div>
+        </div>
+        <div class="alert-card alert-card--warning">
+          <div class="alert-card__title">📉 Sous-charge</div>
+          <div>A. Dupont à 42% moy. Capacité disponible : ~20h/sem. en S12-S13.</div>
+          <div class="alert-card__action">→ Suggestion : affecter sur École Jules-Ferry ESQ</div>
+        </div>
+        <div class="scenario-block">
+          <div class="scenario-block__title">🎯 Scénario actif — "Parc Est signé"</div>
+          <div class="scenario-row">
+            <span>Charge actuelle agence</span>
+            <span class="mono text-primary">96%</span>
+          </div>
+          <div class="scenario-row">
+            <span>Si Parc Est signé → charge</span>
+            <span class="mono text-red">108%</span>
+          </div>
+          <div class="scenario-row">
+            <span>Besoin estimé</span>
+            <span class="mono text-orange">+1 ETP temporaire</span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ================================================
+         PAGE 2 — POINT HEBDOMADAIRE
+    ================================================ -->
+    <main class="page" id="page-hebdo">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Point hebdomadaire</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">Semaine 10 — 2 au 6 mars 2026</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn--ghost btn--sm" onclick="return false">◀ S09</button>
+          <span style="font-size:13px;font-weight:600;font-family:var(--font-mono);color:var(--c-primary)">S10</span>
+          <button class="btn btn--ghost btn--sm" onclick="return false">S11 ▶</button>
+          <button class="btn btn--green btn--sm" onclick="return false">📤 Partager le récap</button>
+          <button class="btn btn--ghost btn--sm" onclick="showPage('globale')">← Vue globale</button>
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div class="toolbar">
+        <select class="filter-select"><option>Chef de projet : M. Lefort</option><option>Tous</option></select>
+        <select class="filter-select"><option>Projets : Tous mes projets</option><option>Résidence Oliviers</option><option>École Jules-Ferry</option></select>
+        <div style="font-size:12.5px;color:var(--c-text-3)">Affichage : S10 + 2 semaines suivantes</div>
+      </div>
+
+      <!-- Grille hebdo -->
+      <div class="hebdo-wrap">
+        <table class="hebdo-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Collaborateur</th>
+              <th rowspan="2">Dispo.</th>
+              <!-- Résidence Oliviers -->
+              <th colspan="3" class="proj-header">🏢 Résidence Les Oliviers</th>
+              <!-- École Jules-Ferry -->
+              <th colspan="2" class="proj-header" style="background:rgba(45,106,79,0.08);color:var(--c-green)">🏫 École Jules-Ferry</th>
+              <!-- Parc Est — En attente -->
+              <th colspan="2" class="proj-header--pending">🌿 Parc Est <span style="font-size:10px;font-style:italic">(En attente)</span></th>
+              <th rowspan="2">Total</th>
+            </tr>
+            <tr>
+              <th class="proj-header">S10</th><th class="proj-header">S11</th><th class="proj-header">S12</th>
+              <th style="background:rgba(45,106,79,0.08);color:var(--c-green)">S10</th><th style="background:rgba(45,106,79,0.08);color:var(--c-green)">S11</th>
+              <th class="proj-header--pending">S10</th><th class="proj-header--pending">S11</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- M. Lefort -->
+            <tr>
+              <td>
+                <div class="hebdo-name">M. Lefort</div>
+                <div class="hebdo-loc">📍 Agence (TT lundi)</div>
+              </td>
+              <td class="hebdo-dispo">35h</td>
+              <td class="hours-cell hours-cell--over">
+                <div class="hours-cell__val hours-cell__val--over">28h</div>
+                <div class="hours-cell__task">APD — Coordination</div>
+                <div class="hours-cell__deadline">⚠ Rendu APD 13/03</div>
+              </td>
+              <td class="hours-cell hours-cell--over">
+                <div class="hours-cell__val hours-cell__val--over">30h</div>
+                <div class="hours-cell__task">APD — Rendu final</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">18h</div>
+                <div class="hours-cell__task">PRO — Démarrage</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val">—</div>
+              </td>
+              <td class="hours-cell hours-cell--pending">
+                <div class="hours-cell__val" style="color:var(--c-orange)">8h</div>
+                <div class="hours-cell__pending-label">ESQ (si signé)</div>
+              </td>
+              <td class="hours-cell hours-cell--pending">
+                <div class="hours-cell__val" style="color:var(--c-orange)">6h</div>
+                <div class="hours-cell__pending-label">(si signé)</div>
+              </td>
+              <td class="total-cell text-red">125%</td>
+            </tr>
+
+            <!-- S. Moreau -->
+            <tr>
+              <td>
+                <div class="hebdo-name">S. Moreau</div>
+                <div class="hebdo-loc">📍 Agence</div>
+              </td>
+              <td class="hebdo-dispo">35h</td>
+              <td class="hours-cell">
+                <div class="hours-cell__val">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">18h</div>
+                <div class="hours-cell__task">PRO — Plans</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">14h</div>
+                <div class="hours-cell__task">ESQ — Études</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">21h</div>
+                <div class="hours-cell__task">ESQ — Maquette</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="total-cell text-green">94%</td>
+            </tr>
+
+            <!-- A. Dupont — CP partiel -->
+            <tr>
+              <td>
+                <div class="hebdo-name">A. Dupont</div>
+                <div class="hebdo-loc">📍 Agence (CP jeu-ven S10)</div>
+              </td>
+              <td>
+                <div class="hebdo-dispo hebdo-dispo--reduced">21h</div>
+                <div class="hebdo-dispo__sub">−14h CP</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">12h</div>
+                <div class="hours-cell__task">Plans détaillés</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">20h</div>
+                <div class="hours-cell__task">Plans détaillés</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">6h</div>
+                <div class="hours-cell__task">Plans ESQ</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">10h</div>
+                <div class="hours-cell__task">Plans ESQ</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="total-cell text-orange">46%</td>
+            </tr>
+
+            <!-- L. Chen — Formation -->
+            <tr>
+              <td>
+                <div class="hebdo-name">L. Chen</div>
+                <div class="hebdo-loc">📍 Agence (form. ven S10)</div>
+              </td>
+              <td>
+                <div class="hebdo-dispo hebdo-dispo--reduced">28h</div>
+                <div class="hebdo-dispo__sub">−7h form.</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">10h</div>
+                <div class="hours-cell__task">BIM Coordination</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">14h</div>
+                <div class="hours-cell__task">BIM modèle APD</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">12h</div>
+                <div class="hours-cell__task">BIM setup</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val hours-cell__val--ok">12h</div>
+                <div class="hours-cell__task">BIM ESQ</div>
+              </td>
+              <td class="hours-cell hours-cell--pending">
+                <div class="hours-cell__val" style="color:var(--c-orange)">6h</div>
+                <div class="hours-cell__pending-label">BIM (si signé)</div>
+              </td>
+              <td class="hours-cell">
+                <div class="hours-cell__val text-muted">—</div>
+              </td>
+              <td class="total-cell text-green">92%</td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Échéances + Conflits -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+        <div class="info-block">
+          <div class="info-block__title">📅 Prochaines échéances</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="deadline-item deadline-item--red">
+              <div>
+                <div class="deadline-item__date text-red">13 mars 2026</div>
+                <div style="font-size:12px;color:var(--c-text-2)">Rendu APD — Résidence Les Oliviers</div>
+              </div>
+              <span class="badge badge--red">J−9</span>
+            </div>
+            <div class="deadline-item deadline-item--orange">
+              <div>
+                <div class="deadline-item__date text-orange">27 mars 2026</div>
+                <div style="font-size:12px;color:var(--c-text-2)">Remise ESQ — École Jules-Ferry</div>
+              </div>
+              <span class="badge badge--orange">J−23</span>
+            </div>
+            <div class="deadline-item deadline-item--grey">
+              <div>
+                <div class="deadline-item__date">10 avril 2026</div>
+                <div style="font-size:12px;color:var(--c-text-2)">DCE — Résidence Les Cèdres</div>
+              </div>
+              <span class="badge badge--grey">J−37</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <div class="info-block__title">⚡ Conflits détectés et actions</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div class="conflict-item conflict-item--red">
+              <div class="conflict-item__title text-red">Surcharge S10-S11 : M. Lefort à 125%</div>
+              <div style="font-size:12px;color:var(--c-text-2)">Oliviers APD + Parc Est ESQ en parallèle</div>
+              <div class="conflict-item__action">→ Décaler Parc Est à S13 (glisser-déposer)</div>
+            </div>
+            <div class="conflict-item conflict-item--orange">
+              <div class="conflict-item__title text-orange">Sous-charge : A. Dupont dispo ~14h en S12-S13</div>
+              <div class="conflict-item__action">→ Affecter sur École Jules-Ferry — Plans ESQ</div>
+            </div>
+            <div class="conflict-item conflict-item--blue">
+              <div class="conflict-item__title text-primary">Temps réel vs prévu — Oliviers APD</div>
+              <div style="font-size:12px;color:var(--c-text-2)">42h passées / 56h prévues (75%) à J−9 du rendu</div>
+              <div class="conflict-item__action">→ Risque retard · Voir détail module Temps →</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Charge prévisionnelle vs temps passé -->
+      <div class="info-block">
+        <div class="info-block__title">📊 Charge prévisionnelle vs temps passé (mes projets)</div>
+        <div class="mini-chart-grid">
+          <div class="mini-chart">
+            <div class="mini-chart__title">Résidence Les Oliviers</div>
+            <div class="mini-chart__phase">Phase APD</div>
+            <div class="mini-chart__bars">
+              <div class="mini-bar mini-bar--prevu" style="height:42px" title="Prévu : 56h"></div>
+              <div class="mini-bar mini-bar--passe" style="height:30px" title="Passé : 42h"></div>
+            </div>
+            <div class="mini-chart__labels">
+              <span style="color:var(--c-primary)">Prévu 56h</span>
+              <span style="color:#E67E22">Passé 42h</span>
+            </div>
+            <div class="mini-chart__status text-orange">75% à J−9 du rendu ⚠</div>
+          </div>
+
+          <div class="mini-chart">
+            <div class="mini-chart__title">École Jules-Ferry</div>
+            <div class="mini-chart__phase">Phase ESQ</div>
+            <div class="mini-chart__bars">
+              <div class="mini-bar mini-bar--prevu" style="height:48px" title="Prévu : 80h"></div>
+              <div class="mini-bar mini-bar--passe" style="height:16px" title="Passé : 18h"></div>
+            </div>
+            <div class="mini-chart__labels">
+              <span style="color:var(--c-primary)">Prévu 80h</span>
+              <span style="color:#E67E22">Passé 18h</span>
+            </div>
+            <div class="mini-chart__status text-green">23% — Démarrage OK ✓</div>
+          </div>
+
+          <div class="mini-chart mini-chart--pending">
+            <div class="mini-chart__title">Parc Est</div>
+            <div class="mini-chart__phase" style="color:var(--c-orange);font-style:italic">En attente de signature</div>
+            <div class="mini-chart__bars">
+              <div class="mini-bar mini-bar--previsionnel" style="height:32px" title="Prévu : 45h"></div>
+              <div style="width:28px;height:0;border-radius:2px;background:#ccc"></div>
+            </div>
+            <div class="mini-chart__labels">
+              <span style="color:var(--c-primary)">Prévu 45h</span>
+              <span style="color:var(--c-text-3)">Passé 0h</span>
+            </div>
+            <div class="mini-chart__status text-orange">Signature en attente</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+    document.getElementById('page-' + name).classList.add('page--active');
+    const bc = document.getElementById('breadcrumb');
+    const btn = document.getElementById('btn-hebdo');
+    if (name === 'globale') {
+      bc.innerHTML = '<strong>Planning de charge — Vue globale agence</strong>';
+      btn.textContent = '📅 Point hebdomadaire →';
+      btn.onclick = () => showPage('hebdo');
+    } else {
+      bc.innerHTML = '<a onclick="showPage(\'globale\')">Planning de charge</a> / <strong>Point hebdomadaire — S10</strong>';
+      btn.textContent = '← Vue globale';
+      btn.onclick = () => showPage('globale');
+    }
+    window.scrollTo(0, 0);
+  }
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+}
+
+// ── KPIs depuis le store ──────────────────────────────────
+function renderKPIs(){
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  const nbSemaines=6;
+  const heuresParSemaine=35;
+  const capacite=users.length*nbSemaines*heuresParSemaine;
+
+  const kpis=document.querySelectorAll('.kpi-card__value');
+  if(kpis[0]) kpis[0].textContent=capacite.toLocaleString('fr-FR')+' h';
+  const details=document.querySelectorAll('.kpi-card__detail');
+  if(details[0]) details[0].textContent=`${users.length} collab. × ${nbSemaines} semaines`;
+
+  // Sous-titre
+  const sub=document.querySelector('#page-globale > div > p');
+  if(sub){
+    const d=new Date();
+    const wk=getWeekNum(d);
+    sub.textContent=`Semaines ${wk} à ${wk+nbSemaines-1} · ${users.length} collaborateurs`;
+  }
+}
+
+function getWeekNum(d){
+  const jan1=new Date(d.getFullYear(),0,1);
+  return Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+}
+
+// ── Injecter les lignes collaborateurs depuis le store ────
+function renderCollaborateurs(){
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  const tbody=document.querySelector('#page-globale tbody');
+  if(!tbody) return;
+
+  // On enrichit les lignes existantes avec les vrais noms
+  const rows=tbody.querySelectorAll('tr');
+  rows.forEach((row,i)=>{
+    const nameEl=row.querySelector('.collab-name__main');
+    const roleEl=row.querySelector('.collab-name__role');
+    if(nameEl&&users[i]){
+      nameEl.textContent=users[i].nom;
+      if(roleEl) roleEl.textContent=users[i].role;
+    }
+  });
+
+  // Ajouter les collaborateurs du store qui n'ont pas de ligne
+  if(users.length>rows.length){
+    const extra=users.slice(rows.length);
+    extra.forEach(u=>{
+      const tr=document.createElement('tr');
+      // Générer charge aléatoire crédible
+      const pcts=[65,70,75,60,80,70].map(p=>p+Math.floor(Math.random()*20));
+      const cells=pcts.map((p,i)=>{
+        const cls=p>100?'pct--over':p>85?'pct--warn':'pct--ok';
+        const projNom=projets[i%projets.length]?.nom?.substring(0,12)||'Projet';
+        return `<td class="week-cell">
+          <div class="bar-wrap"><div class="bar bar--confirmed" style="width:${Math.min(p,100)}%">${projNom}</div></div>
+          <span class="pct ${cls}">${p}%</span>
+        </td>`;
+      }).join('');
+      const avg=Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
+      tr.innerHTML=`
+        <td class="collab-name">
+          <div class="collab-name__main">${u.nom}</div>
+          <div class="collab-name__role">${u.role}</div>
+        </td>
+        <td class="lieu-cell">📍 Agence</td>
+        ${cells}
+        <td class="week-cell"><span class="pct ${avg>100?'pct--over':avg>85?'pct--warn':'pct--ok'}">${avg}%</span></td>`;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+// ── Vue hebdomadaire — peupler depuis store ───────────────
+function renderHebdo(){
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  const tbody=document.querySelector('#page-hebdo tbody');
+  if(!tbody||!projets.length) return;
+
+  // Mettre à jour les noms de projets dans les lignes existantes
+  const rows=tbody.querySelectorAll('tr');
+  rows.forEach((row,i)=>{
+    const nameEl=row.querySelector('td:first-child strong, td:first-child .proj-name');
+    if(nameEl&&projets[i]) nameEl.textContent=projets[i].nom;
+  });
+}
+
+let _tt8;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_tt8);_tt8=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderKPIs();
+  renderCollaborateurs();
+  renderHebdo();
+});
+
+</script>
+</body>
+</html>

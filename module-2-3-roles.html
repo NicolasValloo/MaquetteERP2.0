@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 2.3 — Rôles et permissions</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --sidebar-w:220px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    .nav{width:var(--sidebar-w);background:var(--primary);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;overflow-y:auto;z-index:100}
+    .nav__logo{padding:20px 20px 14px;font-size:20px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px;color:#fff}
+    .nav__dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+    .nav__sec{padding:14px 20px 3px;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4)}
+    .nav__item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;position:relative}
+    .nav__item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav__item--on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+    .nav__item--on::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+    .nav__user{margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+    .nav__avatar{width:30px;height:30px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+    .wrap{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+    .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar__bc{font-size:13px;color:var(--text-2);flex:1}
+    .topbar__bc a{color:var(--primary);cursor:pointer}
+    .page{padding:28px;display:none;flex-direction:column;gap:20px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--danger{background:var(--red-l);color:var(--red);border-color:rgba(192,57,43,.3)}.btn--danger:hover{background:var(--red);color:#fff}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--purple{background:var(--purple-l);color:var(--purple)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    /* Layout 2 col */
+    .layout-2{display:grid;grid-template-columns:280px 1fr;gap:20px;align-items:start}
+    /* Liste rôles */
+    .roles-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+    .roles-list__hd{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--grey-l);display:flex;align-items:center;justify-content:space-between}
+    .roles-list__title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px}
+    .role-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s}
+    .role-item:last-child{border-bottom:none}
+    .role-item:hover{background:var(--grey-l)}
+    .role-item--on{background:var(--primary-l);border-left:3px solid var(--primary)}
+    .role-item__color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .role-item__name{font-size:13px;font-weight:700;flex:1}
+    .role-item__count{font-size:11.5px;color:var(--text-3);font-family:var(--mono)}
+    .role-item__lock{font-size:12px;color:var(--text-3)}
+    /* Matrice permissions */
+    .perm-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.07)}
+    .perm-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:700px}
+    .perm-table th{background:var(--grey-l);border-bottom:1px solid var(--border);padding:9px 12px;text-align:center;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+    .perm-table th:first-child{text-align:left;min-width:200px}
+    .perm-table td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle}
+    .perm-table tr:last-child td{border-bottom:none}
+    .perm-table tr:hover td{background:rgba(27,73,101,.015)}
+    .perm-table .module-row td{background:var(--grey-l);font-weight:700;font-size:12px;color:var(--text-2);text-align:left;padding:6px 12px;text-transform:uppercase;letter-spacing:.4px}
+    /* Checkbox style */
+    .perm-check{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border-md);appearance:none;cursor:pointer;transition:all .12s;background:var(--bg);display:inline-flex;align-items:center;justify-content:center}
+    .perm-check:checked{background:var(--green);border-color:var(--green)}
+    .perm-check:checked::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+    .perm-check--partial{background:var(--orange);border-color:var(--orange)}
+    .perm-check--partial::after{content:'—';color:#fff;font-size:11px;font-weight:700}
+    .perm-check:disabled{opacity:.3;cursor:not-allowed}
+    /* Héritage badge */
+    .inherit-badge{font-size:10px;background:var(--purple-l);color:var(--purple);padding:1px 6px;border-radius:3px;font-weight:600}
+    /* Role header */
+    .role-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;box-shadow:0 1px 3px rgba(0,0,0,.07);display:flex;align-items:center;gap:16px}
+    .role-color-swatch{width:40px;height:40px;border-radius:var(--r-sm)}
+    .role-info__name{font-size:18px;font-weight:700;margin-bottom:3px}
+    .role-info__desc{font-size:13px;color:var(--text-2)}
+    /* Tabs */
+    .tabs{display:flex;background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:4px;gap:2px}
+    .tab{padding:7px 14px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all .15s;white-space:nowrap}
+    .tab--on{background:var(--surface);color:var(--primary);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+    /* Utilisateurs du rôle */
+    .user-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .user-row:last-child{border-bottom:none}
+    .user-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+    .user-name{font-weight:600;flex:1}
+    .user-email{font-size:11.5px;color:var(--text-3)}
+    /* Délégation */
+    .deleg-card{background:var(--purple-l);border:1px solid rgba(106,61,154,.3);border-radius:var(--r);padding:14px;margin-top:14px}
+    .deleg-card__title{font-size:13px;font-weight:700;color:var(--purple);margin-bottom:8px}
+    .deleg-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(106,61,154,.15);font-size:12.5px}
+    .deleg-item:last-child{border-bottom:none}
+    /* Modale */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+    .modal-overlay--on{display:flex}
+    .modal{background:var(--surface);border-radius:12px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:mi .2s ease}
+    @keyframes mi{from{transform:translateY(-14px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal__hd{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:5}
+    .modal__title{font-size:16px;font-weight:700}
+    .modal__x{width:28px;height:28px;border-radius:50%;border:none;background:var(--grey-l);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text-2)}
+    .modal__body{padding:18px 22px;display:flex;flex-direction:column;gap:12px}
+    .modal__ft{padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--surface)}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-input,.form-select{padding:8px 11px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none}
+    .form-input:focus,.form-select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.12)}
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* Couleurs swatches */
+    .color-swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+    .swatch{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .12s}
+    .swatch:hover,.swatch--on{transform:scale(1.2);border-color:var(--text)}
+  </style>
+</head>
+<body>
+
+<!-- Modale nouveau rôle -->
+<div class="modal-overlay" id="modal-role">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Créer un rôle personnalisé</h2>
+      <button class="modal__x" onclick="closeModal('modal-role')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label">Nom du rôle <span style="color:var(--red)">*</span></label>
+        <input class="form-input" type="text" placeholder="Ex. : Stagiaire, Responsable Technique…" value="Stagiaire">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input class="form-input" type="text" placeholder="Rôle limité à la saisie des heures…" value="Saisie des heures et consultation des documents du projet assigné uniquement.">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Couleur d'identification</label>
+        <div class="color-swatches">
+          <div class="swatch swatch--on" style="background:#1B4965"></div>
+          <div class="swatch" style="background:#2D6A4F"></div>
+          <div class="swatch" style="background:#B8860B"></div>
+          <div class="swatch" style="background:#C0392B"></div>
+          <div class="swatch" style="background:#6A3D9A"></div>
+          <div class="swatch" style="background:#C75B37"></div>
+          <div class="swatch" style="background:#555"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hérite de</label>
+        <select class="form-select">
+          <option value="">Aucun héritage</option>
+          <option>Collaborateur (base)</option>
+          <option>Dessinateur</option>
+        </select>
+        <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">Le nouveau rôle héritera de toutes les permissions du rôle sélectionné et pourra les restreindre.</div>
+      </div>
+      <div style="background:var(--primary-l);border:1px solid rgba(27,73,101,.2);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--primary)">
+        ℹ️ Après création, configurez les permissions détaillées dans la matrice RBAC.
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-role')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-role')">Créer le rôle →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale délégation -->
+<div class="modal-overlay" id="modal-deleg">
+  <div class="modal">
+    <div class="modal__hd">
+      <h2 class="modal__title">Délégation temporaire de droits</h2>
+      <button class="modal__x" onclick="closeModal('modal-deleg')">×</button>
+    </div>
+    <div class="modal__body">
+      <div style="background:var(--purple-l);border:1px solid rgba(106,61,154,.3);border-radius:var(--r-sm);padding:10px 12px;font-size:12.5px;color:var(--purple)">
+        📌 <strong>Délégation de M. Lefort vers S. Moreau</strong> — Congés du 10 au 31 mars 2026. Les droits reviendront automatiquement à la date de fin.
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Délégant</label>
+          <select class="form-select"><option>M. Lefort — Chef de projet</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Délégataire</label>
+          <select class="form-select"><option>S. Moreau — Architecte</option></select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Début</label>
+          <input class="form-input" type="date" value="2026-03-10">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fin (retour automatique)</label>
+          <input class="form-input" type="date" value="2026-03-31">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Droits délégués</label>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm)">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" checked> Validation des feuilles de temps (projets de M. Lefort)</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" checked> Validation des documents (projets de M. Lefort)</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" checked> Validation des factures (projets de M. Lefort)</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox"> Actation de projets</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox"> Accès aux données financières globales</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal__ft">
+      <button class="btn btn--ghost" onclick="closeModal('modal-deleg')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-deleg')">Activer la délégation</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="nav">
+    <div class="nav__logo"><div class="nav__dot"></div>GAA</div>
+    <div class="nav__sec">Administration</div>
+    <div class="nav__item"><span>⬜</span> Dashboard</div>
+    <div class="nav__item"><span>👥</span> Utilisateurs</div>
+    <div class="nav__item nav__item--on"><span>🔑</span> Rôles & Permissions</div>
+    <div class="nav__item"><span>🏢</span> Agences</div>
+    <div class="nav__item"><span>⚙</span> Paramètres</div>
+    <div class="nav__item"><span>📋</span> Journal d'audit</div>
+    <div class="nav__user">
+      <div class="nav__avatar">AD</div>
+      <div><div style="font-weight:600;font-size:12px;color:#fff">Admin</div><div style="font-size:11px;color:rgba(255,255,255,.5)">Dirigeant</div></div>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="topbar__bc"><a href="#">Paramètres</a> / <strong>Rôles & Permissions</strong></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost btn--sm" onclick="openModal('modal-deleg')">👥 Délégation temporaire</button>
+        <button class="btn btn--primary btn--sm" onclick="openModal('modal-role')">+ Nouveau rôle</button>
+      </div>
+    </header>
+
+    <!-- PAGE MATRICE -->
+    <main class="page page--on" id="page-matrix">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Rôles & Permissions</h1>
+        <p style="font-size:13px;color:var(--text-2);margin-top:3px">Matrice RBAC — Définissez les droits d'accès par rôle et par module.</p>
+      </div>
+
+      <div class="layout-2">
+
+        <!-- Liste rôles -->
+        <div>
+          <div class="roles-list">
+            <div class="roles-list__hd"><span class="roles-list__title">Rôles (7)</span></div>
+            <div class="role-item role-item--on" onclick="selectRole('dirigeant')">
+              <div class="role-item__color" style="background:#C0392B"></div>
+              <div style="flex:1"><div class="role-item__name">Dirigeant</div><div style="font-size:11px;color:var(--text-3)">Accès complet</div></div>
+              <span class="role-item__count">2</span>
+              <span class="role-item__lock">🔒</span>
+            </div>
+            <div class="role-item" onclick="selectRole('cdp')">
+              <div class="role-item__color" style="background:#1B4965"></div>
+              <div style="flex:1"><div class="role-item__name">Chef de projet</div><div style="font-size:11px;color:var(--text-3)">Gestion projets + actation</div></div>
+              <span class="role-item__count">3</span>
+              <span class="role-item__lock">🔒</span>
+            </div>
+            <div class="role-item" onclick="selectRole('archi')">
+              <div class="role-item__color" style="background:#2D6A4F"></div>
+              <div style="flex:1"><div class="role-item__name">Architecte / Collaborateur</div><div style="font-size:11px;color:var(--text-3)">Opérations, pas de finances</div></div>
+              <span class="role-item__count">4</span>
+              <span class="role-item__lock">🔒</span>
+            </div>
+            <div class="role-item" onclick="selectRole('dessin')">
+              <div class="role-item__color" style="background:#B8860B"></div>
+              <div style="flex:1"><div class="role-item__name">Dessinateur / Projeteur</div><div style="font-size:11px;color:var(--text-3)">Temps + documents</div></div>
+              <span class="role-item__count">2</span>
+              <span class="role-item__lock">🔒</span>
+            </div>
+            <div class="role-item" onclick="selectRole('admin')">
+              <div class="role-item__color" style="background:#6A3D9A"></div>
+              <div style="flex:1"><div class="role-item__name">Administratif</div><div style="font-size:11px;color:var(--text-3)">Finance, facturation</div></div>
+              <span class="role-item__count">1</span>
+              <span class="role-item__lock">🔒</span>
+            </div>
+            <div class="role-item" onclick="selectRole('externe')">
+              <div class="role-item__color" style="background:#9B998F"></div>
+              <div style="flex:1"><div class="role-item__name">Externe (portail MOA/BET)</div><div style="font-size:11px;color:var(--text-3)">Accès limité portail</div></div>
+              <span class="role-item__count">8</span>
+              <span class="role-item__lock">🔒</span>
+            </div>
+            <div class="role-item" onclick="selectRole('stagiaire')" style="background:rgba(27,73,101,.03)">
+              <div class="role-item__color" style="background:#555"></div>
+              <div style="flex:1"><div class="role-item__name">Stagiaire <span class="badge badge--purple" style="font-size:10px">Personnalisé</span></div><div style="font-size:11px;color:var(--text-3)">Hérite de : Dessinateur</div></div>
+              <span class="role-item__count">1</span>
+              <span style="font-size:12px;color:var(--primary);cursor:pointer">✏</span>
+            </div>
+          </div>
+
+          <!-- Délégations actives -->
+          <div class="deleg-card">
+            <div class="deleg-card__title">🔄 Délégations actives (1)</div>
+            <div class="deleg-item">
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:13px">M. Lefort → S. Moreau</div>
+                <div style="font-size:11.5px;color:var(--text-3)">Validation temps, docs, factures</div>
+              </div>
+              <div style="font-size:11.5px;font-family:var(--mono);color:var(--purple)">10–31 mars</div>
+            </div>
+            <button class="btn btn--ghost btn--sm" style="margin-top:8px;border-color:var(--purple);color:var(--purple)" onclick="openModal('modal-deleg')">+ Nouvelle délégation</button>
+          </div>
+        </div>
+
+        <!-- Matrice permissions -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- En-tête rôle sélectionné -->
+          <div class="role-header">
+            <div class="role-color-swatch" style="background:#C0392B"></div>
+            <div class="role-info" style="flex:1">
+              <div class="role-info__name">Dirigeant</div>
+              <div class="role-info__desc">Accès complet à tous les modules. Rôle système non modifiable. 2 utilisateurs.</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <span class="badge badge-grey">🔒 Système</span>
+              <button class="btn btn--ghost btn--sm">Dupliquer ce rôle</button>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab tab--on">Permissions par module</div>
+            <div class="tab" onclick="return false">Utilisateurs (2)</div>
+            <div class="tab" onclick="return false">Historique des modifications</div>
+          </div>
+
+          <div class="perm-wrap">
+            <table class="perm-table">
+              <thead>
+                <tr>
+                  <th style="text-align:left">Module</th>
+                  <th>Lecture</th>
+                  <th>Écriture</th>
+                  <th>Suppression</th>
+                  <th>Export</th>
+                  <th>Validation</th>
+                  <th>Admin</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="module-row"><td colspan="7">1. Cœur métier</td></tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">1.1 Projets <span class="badge badge-grey" style="font-size:10px;margin-left:4px">+ Permission "Acter"</span></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">1.3 Temps & pointage</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">1.4 GED documents</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">1.5 Finances & facturation</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">1.6 CRM</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr class="module-row"><td colspan="7">2. Plateforme SaaS</td></tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">2.3 Rôles & permissions</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">2.5 Administration</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+                <tr class="module-row"><td colspan="7">4. Reporting & avancé</td></tr>
+                <tr>
+                  <td style="text-align:left;font-weight:600">4.1 Reporting BI</td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                  <td><input type="checkbox" class="perm-check" checked disabled></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Exemple rôle Stagiaire (éditable) -->
+          <div style="background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">
+            <div style="font-size:12.5px;font-weight:700;color:var(--text-2);margin-bottom:6px">Aperçu : rôle Stagiaire <span class="inherit-badge">Hérite de Dessinateur</span></div>
+            <p style="font-size:12px;color:var(--text-2)">Les cases cochées sont héritées du rôle Dessinateur. Vous pouvez les décocher pour les restreindre, mais pas en activer au-delà du rôle parent.</p>
+            <div class="perm-wrap" style="margin-top:10px">
+              <table class="perm-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Module</th>
+                    <th>Lecture</th>
+                    <th>Écriture</th>
+                    <th>Suppression</th>
+                    <th>Export</th>
+                    <th>Validation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="text-align:left;font-weight:600">1.3 Temps <span class="inherit-badge">hérité</span></td>
+                    <td><input type="checkbox" class="perm-check" checked></td>
+                    <td><input type="checkbox" class="perm-check" checked></td>
+                    <td><input type="checkbox" class="perm-check"></td>
+                    <td><input type="checkbox" class="perm-check"></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                  </tr>
+                  <tr>
+                    <td style="text-align:left;font-weight:600">1.4 Documents <span class="inherit-badge">hérité</span></td>
+                    <td><input type="checkbox" class="perm-check" checked></td>
+                    <td><input type="checkbox" class="perm-check"></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                  </tr>
+                  <tr>
+                    <td style="text-align:left;font-weight:600">1.5 Finances</td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                    <td><input type="checkbox" class="perm-check" disabled></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn btn--primary btn--sm">Enregistrer les permissions</button>
+              <button class="btn btn--danger btn--sm">Supprimer ce rôle</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  function openModal(id){document.getElementById(id).classList.add('modal-overlay--on');document.body.style.overflow='hidden'}
+  function closeModal(id){document.getElementById(id).classList.remove('modal-overlay--on');document.body.style.overflow=''}
+  document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay--on').forEach(m=>closeModal(m.id))});
+  function selectRole(r){
+    document.querySelectorAll('.role-item').forEach(i=>i.classList.remove('role-item--on'));
+    event.currentTarget.classList.add('role-item--on');
+  }
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaT;function showToast(msg,type=''){let el=document.getElementById('gaa-toast');if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';el.style.transform='translateY(0)';el.style.opacity='1';clearTimeout(_gaaT);_gaaT=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);}
+
+const ROLES_KEY='roles_custom';
+function getRoles(){ return GAAStore.get(ROLES_KEY)||[]; }
+function saveRole(r){ const list=getRoles(); const i=list.findIndex(x=>x.id===r.id); if(i>=0)list[i]=r; else list.push(r); GAAStore.set(ROLES_KEY,list); }
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+}
+
+// ── Compteurs depuis le store ─────────────────────────────
+function renderCounts(){
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif);
+  // Mettre à jour le total
+  const title=document.querySelector('.roles-list__title');
+  const customs=getRoles();
+  if(title) title.textContent=`Rôles (${7+customs.length})`;
+  // Mettre à jour les compteurs par rôle
+  const roleCounts={
+    'Dirigeant':users.filter(u=>u.role==='Dirigeant'||u.role==='Architecte dirigeant').length||2,
+    'Chef de projet':users.filter(u=>u.role==='Chef de projet').length||2,
+    'Architecte':users.filter(u=>u.role==='Architecte'||u.role==='Architecte collaborateur').length||2,
+    'Dessinateur':users.filter(u=>u.role==='Dessinateur'||u.role==='Projeteur').length||1,
+    'Administratif':users.filter(u=>u.role==='Administratif'||u.role==='Assistante').length||1,
+    'Stagiaire':users.filter(u=>u.role==='Stagiaire').length||1,
+  };
+  document.querySelectorAll('.role-item').forEach(item=>{
+    const name=item.querySelector('.role-item__name')?.textContent?.split(' ')[0];
+    const cnt=item.querySelector('.role-item__count');
+    if(cnt&&name&&roleCounts[name]!==undefined) cnt.textContent=roleCounts[name];
+  });
+}
+
+// ── Nouveau rôle ──────────────────────────────────────────
+function creerRole(){
+  const modal=document.getElementById('modal-role');
+  if(!modal) return;
+  const inputs=modal.querySelectorAll('input[type="text"],select,textarea');
+  const nom=inputs[0]?.value?.trim();
+  const herite=inputs[1]?.value||'Dessinateur';
+  const desc=inputs[2]?.value?.trim()||'';
+  if(!nom){showToast('Nom du rôle requis','error');return;}
+  const role={
+    id:'role-'+Date.now(),nom,herite,desc,
+    permissions:{},
+    created_at:new Date().toISOString(),
+    created_by:GAAStore.getMe()?.nom,
+  };
+  saveRole(role);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Rôle "${nom}" créé (hérite de ${herite})`,'2.3 Rôles');
+  closeModal('modal-role');
+  renderRolesDynamiques();
+  renderCounts();
+  showToast(`Rôle "${nom}" créé ✓`,'success');
+}
+
+// ── Rôles dynamiques dans la liste ───────────────────────
+function renderRolesDynamiques(){
+  const roles=getRoles();
+  const list=document.querySelector('.roles-list');
+  if(!list||!roles.length) return;
+  // Supprimer les rôles dynamiques précédemment injectés
+  list.querySelectorAll('[data-role-id]').forEach(el=>el.remove());
+  roles.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='role-item';div.dataset.roleId=r.id;
+    div.onclick=()=>selectRole(r.id);
+    div.innerHTML=`<div class="role-item__color" style="background:var(--primary)"></div>
+      <div style="flex:1">
+        <div class="role-item__name">${r.nom} <span class="badge badge--purple" style="font-size:10px">Personnalisé</span></div>
+        <div style="font-size:11px;color:var(--text-3)">Hérite de : ${r.herite}</div>
+      </div>
+      <span class="role-item__count">0</span>
+      <span style="font-size:12px;color:var(--red);cursor:pointer" onclick="event.stopPropagation();supprimerRole('${r.id}')">✕</span>`;
+    list.appendChild(div);
+  });
+}
+
+function supprimerRole(id){
+  const r=getRoles().find(x=>x.id===id);
+  if(!r||!confirm(`Supprimer le rôle "${r.nom}" ?`))return;
+  GAAStore.set(ROLES_KEY,getRoles().filter(x=>x.id!==id));
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Rôle "${r.nom}" supprimé`,'2.3 Rôles');
+  document.querySelector(`[data-role-id="${id}"]`)?.remove();
+  renderCounts();showToast(`Rôle "${r.nom}" supprimé`,'');
+}
+
+// ── Sauvegarder permissions Stagiaire ────────────────────
+document.querySelector('.btn--primary.btn--sm')?.addEventListener('click',function(){
+  if(!this.textContent.includes('Enregistrer'))return;
+  const perms={};
+  document.querySelectorAll('.perm-table:last-of-type .perm-check').forEach((cb,i)=>{
+    if(!cb.disabled) perms['perm_'+i]=cb.checked;
+  });
+  const roles=getRoles();
+  const stagiaire=roles.find(r=>r.nom==='Stagiaire')||{id:'role-stagiaire',nom:'Stagiaire',herite:'Dessinateur'};
+  stagiaire.permissions=perms;
+  saveRole(stagiaire);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,'Permissions Stagiaire mises à jour','2.3 Rôles');
+  showToast('Permissions sauvegardées ✓','success');
+});
+
+// ── Patcher bouton Nouveau rôle ───────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderCounts();
+  renderRolesDynamiques();
+  // Patcher modal-role
+  const modal=document.getElementById('modal-role');
+  if(modal){
+    const btn=modal.querySelector('.modal__ft .btn--primary');
+    if(btn) btn.onclick=creerRole;
+  }
+});
+
+</script>
+</body>
+</html>

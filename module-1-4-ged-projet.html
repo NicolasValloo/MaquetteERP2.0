@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     GAA — Module 1.4 — Gestion documentaire (GED projet)
+     Maquette fonctionnelle HTML (simulant Django/htmx)
+     Écrans : arborescence + liste documents / détail document
+     ============================================================ -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.4 — GED Projet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg:        #F4F3EF;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E0D8;
+      --c-border-md: #C8C5BB;
+      --c-text:      #1C1B18;
+      --c-text-2:    #6B6860;
+      --c-text-3:    #9B998F;
+      --c-primary:   #1B4965;
+      --c-primary-l: #EAF1F6;
+      --c-accent:    #C75B37;
+      --c-green:     #2D6A4F;
+      --c-green-l:   #E8F5EE;
+      --c-orange:    #B8860B;
+      --c-orange-l:  #FDF6DC;
+      --c-red:       #C0392B;
+      --c-red-l:     #FDECEA;
+      --c-grey-l:    #F0EFEB;
+      --sidebar-w:   220px;
+      --header-h:    52px;
+      --font-main:   'Sora', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07);
+      --shadow-md:   0 4px 12px rgba(0,0,0,0.08);
+      --radius-sm:   4px; --radius: 8px; --radius-lg: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: var(--font-main); background: var(--c-bg); color: var(--c-text); line-height: 1.5; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ---- Layout ---- */
+    .shell { display: flex; min-height: 100vh; }
+    .nav-sidebar { width: var(--sidebar-w); background: var(--c-primary); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+    .nav-sidebar__logo { padding: 20px 20px 16px; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; }
+    .nav-sidebar__logo-dot { width: 8px; height: 8px; background: var(--c-accent); border-radius: 50%; }
+    .nav-sidebar__section { padding: 16px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .nav-sidebar__item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: background 0.15s; position: relative; }
+    .nav-sidebar__item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-sidebar__item--active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .nav-sidebar__item--active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--c-accent); border-radius: 0 2px 2px 0; }
+    .nav-sidebar__icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-sidebar__user { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .nav-sidebar__avatar { width: 30px; height: 30px; background: var(--c-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+    .topbar { height: var(--header-h); background: var(--c-surface); border-bottom: 1px solid var(--c-border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar__breadcrumb { font-size: 13px; color: var(--c-text-2); flex: 1; }
+    .topbar__breadcrumb a { color: var(--c-primary); }
+    .topbar__search { display: flex; align-items: center; gap: 6px; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 5px 10px; font-size: 12.5px; color: var(--c-text-3); width: 220px; cursor: pointer; }
+    .topbar__avatar { width: 32px; height: 32px; background: var(--c-primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .page { padding: 28px; display: none; flex-direction: column; gap: 20px; }
+    .page--active { display: flex; }
+
+    /* ---- Composants ---- */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .btn--primary { background: var(--c-primary); color: #fff; }
+    .btn--primary:hover { background: #153d52; }
+    .btn--ghost { background: transparent; color: var(--c-text); border-color: var(--c-border-md); }
+    .btn--ghost:hover { background: var(--c-grey-l); }
+    .btn--danger { background: transparent; color: var(--c-red); border-color: var(--c-red); }
+    .btn--sm { padding: 5px 10px; font-size: 12px; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge--green  { background: var(--c-green-l);  color: var(--c-green); }
+    .badge--blue   { background: var(--c-primary-l); color: var(--c-primary); }
+    .badge--orange { background: var(--c-orange-l); color: var(--c-orange); }
+    .badge--grey   { background: var(--c-grey-l);   color: var(--c-text-2); }
+    .badge--red    { background: var(--c-red-l);    color: var(--c-red); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card__label { font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .kpi-card__value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px; font-family: var(--font-mono); }
+    .kpi-card__detail { font-size: 11.5px; color: var(--c-text-3); }
+
+    .info-block { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .info-block__title { font-size: 12px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+
+    .alert-banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+    .alert-banner--info { background: var(--c-primary-l); border: 1px solid #a8c4d8; color: var(--c-primary); }
+
+    .text-mono { font-family: var(--font-mono); }
+    .text-green { color: var(--c-green); }
+    .text-orange { color: var(--c-orange); }
+    .text-red { color: var(--c-red); }
+    .text-muted { color: var(--c-text-3); }
+    .text-primary { color: var(--c-primary); }
+
+    /* ---- Onglets périmètre ---- */
+    .perimetre-tabs { display: flex; gap: 2px; background: var(--c-grey-l); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 4px; }
+    .perimetre-tab { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--c-text-2); transition: all 0.15s; white-space: nowrap; }
+    .perimetre-tab:hover { background: rgba(255,255,255,0.7); color: var(--c-text); }
+    .perimetre-tab--active { background: var(--c-surface); color: var(--c-primary); font-weight: 600; box-shadow: var(--shadow-sm); }
+    .perimetre-tab--ext.perimetre-tab--active { color: var(--c-green); }
+    .perimetre-tab--client.perimetre-tab--active { color: var(--c-accent); }
+
+    /* ---- Layout arborescence + liste ---- */
+    .ged-layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); min-height: 480px; }
+
+    /* Arborescence */
+    .tree-panel { border-right: 1px solid var(--c-border); padding: 12px 0; overflow-y: auto; }
+    .tree-panel__title { padding: 6px 14px 10px; font-size: 11px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; }
+    .tree-node { display: flex; align-items: center; gap: 6px; padding: 5px 14px; font-size: 13px; cursor: pointer; transition: background 0.1s; user-select: none; }
+    .tree-node:hover { background: var(--c-grey-l); }
+    .tree-node--active { background: var(--c-primary-l); color: var(--c-primary); font-weight: 600; }
+    .tree-node--indent1 { padding-left: 28px; }
+    .tree-node--indent2 { padding-left: 42px; font-size: 12.5px; }
+    .tree-node--indent3 { padding-left: 56px; font-size: 12px; color: var(--c-text-2); }
+    .tree-node__icon { font-size: 13px; flex-shrink: 0; }
+    .tree-node__count { margin-left: auto; font-size: 11px; font-family: var(--font-mono); color: var(--c-text-3); }
+    .tree-node__badge { margin-left: 4px; }
+    .tree-separator { height: 1px; background: var(--c-border); margin: 8px 14px; }
+
+    /* Liste fichiers */
+    .file-panel { display: flex; flex-direction: column; }
+    .file-panel__header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--c-border); background: var(--c-grey-l); gap: 10px; flex-wrap: wrap; }
+    .file-panel__path { font-size: 13px; font-weight: 600; color: var(--c-text); display: flex; align-items: center; gap: 6px; }
+    .file-panel__path span { color: var(--c-text-3); font-weight: 400; font-size: 12px; }
+    .file-panel__actions { display: flex; gap: 6px; align-items: center; }
+
+    /* Tableau fichiers */
+    .file-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .file-table thead th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--c-border); white-space: nowrap; cursor: pointer; background: var(--c-surface); }
+    .file-table thead th:hover { color: var(--c-text); }
+    .file-table tbody tr { border-bottom: 1px solid var(--c-border); transition: background 0.1s; cursor: pointer; }
+    .file-table tbody tr:last-child { border-bottom: none; }
+    .file-table tbody tr:hover { background: var(--c-primary-l); }
+    .file-table tbody tr.row--active { background: rgba(27,73,101,0.05); }
+    .file-table td { padding: 10px 12px; vertical-align: middle; }
+
+    .file-icon { font-size: 18px; }
+    .file-name { font-weight: 600; font-size: 13px; }
+    .file-meta { font-size: 11px; color: var(--c-text-3); margin-top: 1px; }
+    .indice-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 700; border: 1.5px solid; }
+    .indice--B { background: var(--c-primary-l); color: var(--c-primary); border-color: var(--c-primary); }
+    .indice--A { background: var(--c-green-l); color: var(--c-green); border-color: var(--c-green); }
+    .indice--draft { background: var(--c-grey-l); color: var(--c-text-3); border-color: var(--c-border-md); }
+
+    .verrou-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--c-red); }
+
+    .action-links { display: flex; gap: 8px; font-size: 12px; }
+    .action-link { color: var(--c-primary); cursor: pointer; white-space: nowrap; }
+    .action-link:hover { text-decoration: underline; }
+    .action-link--muted { color: var(--c-text-3); }
+    .action-link--muted:hover { color: var(--c-text-2); text-decoration: underline; }
+
+    /* Zone diffusion */
+    .diffusion-bar { display: flex; align-items: stretch; gap: 12px; padding: 12px 16px; background: var(--c-grey-l); border-top: 1px solid var(--c-border); flex-wrap: wrap; }
+    .diffusion-bar__list { flex: 1; font-size: 12.5px; color: var(--c-text-2); display: flex; flex-direction: column; gap: 3px; }
+    .diffusion-bar__title { font-size: 11px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .diffusion-bar__actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+
+    /* =============================================
+       DÉTAIL DOCUMENT — PAGE 2
+    ============================================= */
+    .detail-layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
+
+    /* Preview zone */
+    .preview-zone { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .preview-zone__header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--c-border); background: var(--c-grey-l); }
+    .preview-zone__title { font-size: 13px; font-weight: 600; }
+    .preview-zone__body { background: #2a2a2a; display: flex; align-items: center; justify-content: center; min-height: 380px; position: relative; }
+
+    /* Simulated DWG preview */
+    .dwg-preview { width: 100%; height: 380px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+    .dwg-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 30px 30px; }
+    .dwg-content { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .dwg-drawing { width: 340px; height: 240px; border: 2px solid rgba(255,255,255,0.3); border-radius: 2px; position: relative; background: rgba(255,255,255,0.02); }
+    /* Simulated floor plan lines */
+    .dwg-drawing::before { content: ''; position: absolute; inset: 20px; border: 1.5px solid rgba(100,180,255,0.7); border-radius: 1px; }
+    .dwg-drawing::after { content: ''; position: absolute; top: 40px; left: 40px; right: 40px; bottom: 40px; border-left: 1.5px solid rgba(100,180,255,0.4); border-top: 1.5px solid rgba(100,180,255,0.4); }
+    .dwg-label { position: absolute; bottom: 8px; right: 10px; font-family: var(--font-mono); font-size: 10px; color: rgba(100,180,255,0.6); }
+    .dwg-annotation { position: absolute; top: 60px; left: 80px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .dwg-annotation__dot { width: 10px; height: 10px; background: var(--c-orange); border-radius: 50%; border: 2px solid #fff; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(184,134,11,0.5); } 50% { box-shadow: 0 0 0 6px rgba(184,134,11,0); } }
+    .dwg-meta { font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,0.4); text-align: center; }
+
+    /* Historique versions */
+    .version-list { display: flex; flex-direction: column; }
+    .version-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--c-border); font-size: 12.5px; cursor: pointer; }
+    .version-item:last-child { border-bottom: none; }
+    .version-item:hover .version-item__name { color: var(--c-primary); }
+    .version-item--current { background: var(--c-primary-l); padding: 8px 10px; border-radius: var(--radius-sm); margin: 0 -10px; }
+    .version-item__indice { width: 28px; flex-shrink: 0; }
+    .version-item__info { flex: 1; }
+    .version-item__name { font-weight: 600; font-size: 12.5px; }
+    .version-item__meta { font-size: 11px; color: var(--c-text-3); }
+    .version-item__actions { display: flex; gap: 6px; }
+
+    /* Workflow steps */
+    .wf-track { display: flex; align-items: center; gap: 0; margin-bottom: 12px; overflow-x: auto; }
+    .wf-step { display: flex; align-items: center; gap: 5px; padding: 5px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid; border-radius: var(--radius-sm); }
+    .wf-step--done { background: var(--c-green-l); color: var(--c-green); border-color: var(--c-green); }
+    .wf-step--active { background: var(--c-primary-l); color: var(--c-primary); border-color: var(--c-primary); }
+    .wf-step--pending { background: var(--c-grey-l); color: var(--c-text-3); border-color: var(--c-border); }
+    .wf-arrow { color: var(--c-text-3); padding: 0 4px; font-size: 12px; }
+
+    .wf-log { display: flex; flex-direction: column; gap: 6px; }
+    .wf-log-item { display: flex; gap: 8px; font-size: 12px; }
+    .wf-log-item__dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .wf-log-item__dot--done { background: var(--c-green); }
+    .wf-log-item__dot--active { background: var(--c-primary); }
+    .wf-log-item__dot--pending { background: var(--c-border-md); }
+
+    /* Commentaires */
+    .comment-list { display: flex; flex-direction: column; gap: 8px; }
+    .comment-item { padding: 8px 10px; background: var(--c-grey-l); border-radius: var(--radius-sm); font-size: 12.5px; }
+    .comment-item__author { font-weight: 700; margin-right: 6px; }
+    .comment-item__time { color: var(--c-text-3); font-size: 11px; }
+    .comment-item__body { margin-top: 4px; color: var(--c-text-2); line-height: 1.4; }
+    .comment-input { width: 100%; padding: 7px 10px; border: 1px solid var(--c-border-md); border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 12.5px; color: var(--c-text); outline: none; resize: none; }
+    .comment-input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 2px rgba(27,73,101,0.1); }
+
+    /* Visibilité toggles */
+    .visib-toggle { display: flex; flex-direction: column; gap: 6px; }
+    .visib-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border: 1px solid var(--c-border); border-radius: var(--radius-sm); font-size: 12.5px; }
+    .visib-item__label { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+    .toggle { width: 36px; height: 20px; border-radius: 10px; background: var(--c-border-md); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }
+    .toggle--on { background: var(--c-primary); }
+    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+    .toggle--on::after { transform: translateX(16px); }
+
+    /* Modales */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay--open { display: flex; }
+    .modal { background: var(--c-surface); border-radius: var(--radius-lg); width: 100%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modal-in 0.2s ease; }
+    .modal--wide { max-width: 680px; }
+    @keyframes modal-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal__header { padding: 20px 24px; border-bottom: 1px solid var(--c-border); display: flex; align-items: center; justify-content: space-between; }
+    .modal__title { font-size: 16px; font-weight: 700; }
+    .modal__close { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--c-grey-l); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--c-text-2); }
+    .modal__body { padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+    .modal__footer { padding: 14px 24px; border-top: 1px solid var(--c-border); display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12.5px; font-weight: 600; }
+    .form-input, .form-select { padding: 8px 11px; border: 1px solid var(--c-border-md); border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; color: var(--c-text); outline: none; }
+    .form-input:focus, .form-select:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(27,73,101,0.12); }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Zone dépôt */
+    .dropzone { border: 2px dashed var(--c-border-md); border-radius: var(--radius); padding: 28px; text-align: center; cursor: pointer; transition: all 0.15s; }
+    .dropzone:hover { border-color: var(--c-primary); background: var(--c-primary-l); }
+    .dropzone__icon { font-size: 28px; margin-bottom: 8px; }
+    .dropzone__label { font-size: 14px; font-weight: 600; color: var(--c-primary); }
+    .dropzone__sub { font-size: 12px; color: var(--c-text-3); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     MODALE — DÉPÔT DOCUMENT
+============================================================ -->
+<div class="modal-overlay" id="modal-depot" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title">Déposer un document</h2>
+      <button class="modal__close" onclick="closeModal('modal-depot')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="dropzone" onclick="return false">
+        <div class="dropzone__icon">📂</div>
+        <div class="dropzone__label">Glisser-déposer ou cliquer pour sélectionner</div>
+        <div class="dropzone__sub">PDF, DWG, IFC, DOCX, XLSX — max. 100 Mo par fichier</div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Phase</label>
+          <select class="form-select"><option>APD</option><option>PRO</option><option>DCE</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Type de document</label>
+          <select class="form-select"><option>Plans</option><option>Études techniques</option><option>Notes & CR</option><option>Administratif</option></select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Lot / Spécialité</label>
+          <select class="form-select"><option>Architecture</option><option>Structure</option><option>Fluides</option><option>Électricité</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Statut initial</label>
+          <select class="form-select"><option>Brouillon</option><option>En revue</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Visibilité</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer"><input type="checkbox" checked> 🔒 Interne</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer"><input type="checkbox"> 🤝 Co-traitants</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer"><input type="checkbox"> 👤 Client / MOA</label>
+        </div>
+      </div>
+      <div class="alert-banner alert-banner--info" style="font-size:12px">
+        ℹ️ La visibilité "Client / MOA" ne sera activable qu'une fois le document passé au statut <strong>Validé</strong>.
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-depot')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-depot')">Déposer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALE — DIFFUSION
+============================================================ -->
+<div class="modal-overlay" id="modal-diffusion" role="dialog" aria-modal="true">
+  <div class="modal modal--wide">
+    <div class="modal__header">
+      <h2 class="modal__title">Diffuser les documents sélectionnés</h2>
+      <button class="modal__close" onclick="closeModal('modal-diffusion')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label">Documents à diffuser</label>
+        <div style="background:var(--c-grey-l);border-radius:var(--radius-sm);padding:8px 12px;font-size:12.5px;display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:8px"><input type="checkbox" checked> 📐 Plans APD ind. B <span class="badge badge--blue">En revue</span></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Destinataires</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:7px 10px;border:1px solid var(--c-border);border-radius:var(--radius-sm);cursor:pointer">
+            <input type="checkbox" checked> 🤝 <strong>BET Thermex</strong> — Lot Fluides
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:7px 10px;border:1px solid var(--c-border);border-radius:var(--radius-sm);cursor:pointer">
+            <input type="checkbox" checked> 🤝 <strong>BET Écobat</strong> — Lot Structure
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:7px 10px;border:1px solid var(--c-border);border-radius:var(--radius-sm);cursor:pointer">
+            <input type="checkbox"> 👤 <strong>MOA — Ville de Nantes</strong>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Message d'accompagnement</label>
+        <textarea class="form-input" rows="3" style="resize:vertical">Veuillez trouver ci-joint les plans APD indice B pour votre vérification.</textarea>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--c-primary-l);border-radius:var(--radius-sm);font-size:12.5px">
+        <span>📋 Bordereau d'envoi généré automatiquement</span>
+        <span class="text-primary" style="font-weight:600">Prévisualiser →</span>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-diffusion')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-diffusion')">Diffuser via portail →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODALE — GÉNÉRATION DOCUMENT
+============================================================ -->
+<div class="modal-overlay" id="modal-generer" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title">Générer un document</h2>
+      <button class="modal__close" onclick="closeModal('modal-generer')">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label">Type de document à générer</label>
+        <select class="form-select">
+          <option>Contrat / Convention d'honoraires</option>
+          <option>Attestation sur l'honneur</option>
+          <option>Compte-rendu de réunion</option>
+          <option>Compte-rendu de chantier</option>
+          <option>CCTP (trame DCE)</option>
+          <option>DPGF (trame DCE)</option>
+          <option>Ordre de mission sous-traitant</option>
+          <option>Bordereau d'envoi</option>
+        </select>
+      </div>
+      <div class="alert-banner alert-banner--info" style="font-size:12px">
+        ℹ️ Le document sera pré-rempli avec les données du projet : <strong>Groupe scolaire Victor Hugo</strong>, Ville de Nantes, 255 000 € HT, phases ESQ→AOR.
+      </div>
+      <div class="form-group">
+        <label class="form-label">Modèle de référence</label>
+        <select class="form-select">
+          <option>Contrat MOE — Marché public (défaut)</option>
+          <option>Contrat MOE — Marché privé</option>
+          <option>Convention honoraires simplifiée</option>
+        </select>
+      </div>
+      <div style="font-size:12px;color:var(--c-text-3)">Les modèles sont paramétrables dans le module 2.5 — Administration.</div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-generer')">Annuler</button>
+      <button class="btn btn--primary" onclick="closeModal('modal-generer')">Générer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+  <nav class="nav-sidebar">
+    <div class="nav-sidebar__logo"><span class="nav-sidebar__logo-dot"></span>GAA</div>
+    <div class="nav-sidebar__section">Pilotage</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">⬜</span> Tableau de bord</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📁</span> Projets</a>
+    <div class="nav-sidebar__section">Commercial</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📄</span> Devis</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">👥</span> CRM</a>
+    <div class="nav-sidebar__section">Opérationnel</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">⏱</span> Temps</a>
+    <a class="nav-sidebar__item nav-sidebar__item--active" href="#" onclick="return false"><span class="nav-sidebar__icon">📂</span> Documents</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">✓</span> Tâches</a>
+    <div class="nav-sidebar__section">Finance</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">💰</span> Facturation</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📊</span> Reporting</a>
+    <div class="nav-sidebar__user">
+      <div class="nav-sidebar__avatar">ML</div>
+      <div><div style="font-weight:600;font-size:12px">M. Lefort</div><div style="color:rgba(255,255,255,0.5);font-size:11px">Chef de projet</div></div>
+    </div>
+  </nav>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar__breadcrumb" id="breadcrumb">
+        <a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <strong>Documents</strong>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="topbar__search" onclick="return false"><span>🔍</span><span>Rechercher dans les documents…</span></div>
+        <div class="topbar__avatar">ML</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         PAGE 1 — ARBORESCENCE + LISTE DOCUMENTS
+    ================================================ -->
+    <main class="page page--active" id="page-ged">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Documents — Groupe scolaire Victor Hugo</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">GED projet · MOE complète · Phase active : APD</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost" onclick="openModal('modal-generer')">⚙ Générer document</button>
+          <!-- hx-get="/documents/deposer/?projet=1" hx-target="#modal-depot" -->
+          <button class="btn btn--primary" onclick="openModal('modal-depot')">+ Déposer</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Documents</div>
+          <div class="kpi-card__value">47</div>
+          <div class="kpi-card__detail">12 en revue · 28 validés · 7 brouillons</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Dernière activité</div>
+          <div class="kpi-card__value" style="font-size:18px">il y a 2h</div>
+          <div class="kpi-card__detail">Plans APD ind. B déposés par C. Petit</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Stockage utilisé</div>
+          <div class="kpi-card__value">1,2 Go</div>
+          <div class="kpi-card__detail">sur 5 Go quota · 24% utilisé</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Diffusions externes</div>
+          <div class="kpi-card__value">3</div>
+          <div class="kpi-card__detail">2 BET + 1 MOA</div>
+        </div>
+      </div>
+
+      <!-- Onglets périmètre -->
+      <div class="perimetre-tabs">
+        <div class="perimetre-tab perimetre-tab--active" id="tab-interne" onclick="switchPerimetre('interne')">🔒 Espace interne</div>
+        <div class="perimetre-tab perimetre-tab--ext" id="tab-bet" onclick="switchPerimetre('bet')">🤝 Co-traitants / BET</div>
+        <div class="perimetre-tab perimetre-tab--client" id="tab-moa" onclick="switchPerimetre('moa')">👤 Client / MOA</div>
+        <div style="flex:1"></div>
+        <div style="font-size:12px;color:var(--c-text-3);display:flex;align-items:center;gap:6px;padding-right:4px">
+          <span>📋 Matrice de diffusion</span>
+          <span style="color:var(--c-border-md)">|</span>
+          <span>📦 Constituer DOE</span>
+        </div>
+      </div>
+
+      <!-- Layout arborescence + liste -->
+      <div class="ged-layout">
+
+        <!-- Arborescence gauche -->
+        <div class="tree-panel">
+          <div class="tree-panel__title">Arborescence</div>
+
+          <div class="tree-node" onclick="return false">
+            <span class="tree-node__icon">📁</span>
+            <span style="font-weight:700">Groupe scolaire V. Hugo</span>
+          </div>
+
+          <!-- ESQ validée -->
+          <div class="tree-node tree-node--indent1" onclick="return false">
+            <span class="tree-node__icon">📂</span>
+            <span>ESQ</span>
+            <span class="badge badge--green tree-node__badge" style="font-size:10px">✓</span>
+            <span class="tree-node__count">6</span>
+          </div>
+
+          <!-- APS validée -->
+          <div class="tree-node tree-node--indent1" onclick="return false">
+            <span class="tree-node__icon">📂</span>
+            <span>APS</span>
+            <span class="badge badge--green tree-node__badge" style="font-size:10px">✓</span>
+            <span class="tree-node__count">10</span>
+          </div>
+
+          <!-- APD active -->
+          <div class="tree-node tree-node--indent1 tree-node--active" style="font-weight:700">
+            <span class="tree-node__icon">📂</span>
+            <span>APD ●</span>
+            <span class="tree-node__count">12</span>
+          </div>
+
+          <div class="tree-node tree-node--indent2" onclick="selectFolder('plans')" id="tree-plans" style="font-weight:600;color:var(--c-primary)">
+            <span class="tree-node__icon">📐</span>
+            <span>Plans</span>
+            <span class="tree-node__count">3</span>
+          </div>
+          <div class="tree-node tree-node--indent2" onclick="selectFolder('etudes')">
+            <span class="tree-node__icon">📊</span>
+            <span>Études techniques</span>
+            <span class="tree-node__count">4</span>
+          </div>
+          <div class="tree-node tree-node--indent2" onclick="selectFolder('notes')">
+            <span class="tree-node__icon">📝</span>
+            <span>Notes & CR</span>
+            <span class="tree-node__count">3</span>
+          </div>
+          <div class="tree-node tree-node--indent2" onclick="selectFolder('admin')">
+            <span class="tree-node__icon">📋</span>
+            <span>Administratif</span>
+            <span class="tree-node__count">2</span>
+          </div>
+
+          <!-- Phases à venir -->
+          <div class="tree-node tree-node--indent1 text-muted" onclick="return false">
+            <span class="tree-node__icon">📂</span><span>PRO</span>
+            <span class="tree-node__count">—</span>
+          </div>
+          <div class="tree-node tree-node--indent1 text-muted" onclick="return false">
+            <span class="tree-node__icon">📂</span><span>DCE</span>
+            <span class="tree-node__count">—</span>
+          </div>
+          <div class="tree-node tree-node--indent1 text-muted" onclick="return false">
+            <span class="tree-node__icon">📂</span><span>DET</span>
+            <span class="tree-node__count">—</span>
+          </div>
+          <div class="tree-node tree-node--indent1 text-muted" onclick="return false">
+            <span class="tree-node__icon">📂</span><span>AOR</span>
+            <span class="tree-node__count">—</span>
+          </div>
+
+          <div class="tree-separator"></div>
+
+          <div class="tree-node tree-node--indent1 text-muted" onclick="return false">
+            <span class="tree-node__icon">📦</span><span>Pièces marché</span>
+            <span class="tree-node__count">5</span>
+          </div>
+          <div class="tree-node tree-node--indent1 text-muted" onclick="return false">
+            <span class="tree-node__icon">📦</span><span>DOE</span>
+            <span class="tree-node__count">—</span>
+          </div>
+        </div>
+
+        <!-- Liste fichiers droite -->
+        <div class="file-panel">
+          <div class="file-panel__header">
+            <div class="file-panel__path">
+              📂 APD / <span id="folder-current">Plans</span>
+              <span id="folder-count">— 3 documents</span>
+            </div>
+            <div class="file-panel__actions">
+              <select class="form-select" style="padding:4px 24px 4px 8px;font-size:12px">
+                <option>Trier : Date ↓</option>
+                <option>Trier : Nom A→Z</option>
+                <option>Trier : Indice</option>
+                <option>Trier : Statut</option>
+              </select>
+            </div>
+          </div>
+
+          <table class="file-table" id="file-list">
+            <thead>
+              <tr>
+                <th style="width:3%"></th>
+                <th style="width:28%">Document</th>
+                <th style="width:8%">Indice</th>
+                <th style="width:11%">Statut</th>
+                <th style="width:9%">Auteur</th>
+                <th style="width:9%">Date</th>
+                <th style="width:10%">Visibilité</th>
+                <th style="width:9%">Verrou</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="file-tbody">
+
+              <!-- Plans APD ind. B — En revue, verrouillé -->
+              <tr class="row--active" onclick="showPage('detail')">
+                <td><span class="file-icon">📐</span></td>
+                <td>
+                  <div class="file-name">Plans APD ind. B</div>
+                  <div class="file-meta">.dwg · 4,2 Mo</div>
+                </td>
+                <td>
+                  <span class="indice-badge indice--B">B</span>
+                  <span style="font-size:10px;color:var(--c-text-3);margin-left:3px">A→B</span>
+                </td>
+                <td><span class="badge badge--blue">En revue</span></td>
+                <td style="font-size:12.5px">C. Petit</td>
+                <td class="text-mono" style="font-size:12px">04/03/26</td>
+                <td style="font-size:12px">🔒 Interne</td>
+                <td><span class="verrou-badge">🔐 M. Lefort</span></td>
+                <td>
+                  <div class="action-links">
+                    <span class="action-link" onclick="event.stopPropagation();showPage('detail')">Voir</span>
+                    <span class="action-link--muted action-link">Comparer</span>
+                    <span class="action-link--muted action-link" onclick="event.stopPropagation();openModal('modal-diffusion')">Diffuser</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Plans APD ind. A — Validé -->
+              <tr onclick="showPage('detail')">
+                <td><span class="file-icon">📐</span></td>
+                <td>
+                  <div class="file-name">Plans APD ind. A</div>
+                  <div class="file-meta">.dwg · 3,8 Mo</div>
+                </td>
+                <td><span class="indice-badge indice--A">A</span></td>
+                <td><span class="badge badge--green">Validé</span></td>
+                <td style="font-size:12.5px">C. Petit</td>
+                <td class="text-mono" style="font-size:12px">15/02/26</td>
+                <td style="font-size:12px">🤝 BET</td>
+                <td class="text-muted" style="font-size:12px">—</td>
+                <td>
+                  <div class="action-links">
+                    <span class="action-link" onclick="event.stopPropagation();showPage('detail')">Voir</span>
+                    <span class="action-link--muted action-link">Comparer</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Coupes détails — Brouillon -->
+              <tr onclick="showPage('detail')">
+                <td><span class="file-icon">📐</span></td>
+                <td>
+                  <div class="file-name">Coupes détails</div>
+                  <div class="file-meta">.dwg · 2,1 Mo</div>
+                </td>
+                <td><span class="indice-badge indice--draft">A</span></td>
+                <td><span class="badge badge--orange">Brouillon</span></td>
+                <td style="font-size:12.5px">T. Morel</td>
+                <td class="text-mono" style="font-size:12px">03/03/26</td>
+                <td style="font-size:12px">🔒 Interne</td>
+                <td class="text-muted" style="font-size:12px">—</td>
+                <td>
+                  <div class="action-links">
+                    <span class="action-link" onclick="event.stopPropagation();showPage('detail')">Voir</span>
+                    <span class="action-link--muted action-link">Modifier</span>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <!-- Dernières diffusions -->
+          <div class="diffusion-bar">
+            <div class="diffusion-bar__list">
+              <div class="diffusion-bar__title">Dernières diffusions</div>
+              <div>📤 <strong>BET Thermex</strong> — Plans APD ind. A + Étude thermique — 16/02/26</div>
+              <div>📤 <strong>BET Écobat</strong> — Plans APD ind. A + Note structurelle — 16/02/26</div>
+              <div>📤 <strong>MOA Ville de Nantes</strong> — Plans APS validés + CR réunion — 10/01/26</div>
+            </div>
+            <div class="diffusion-bar__actions">
+              <button class="btn btn--ghost btn--sm" onclick="openModal('modal-diffusion')">📤 Diffuser</button>
+              <button class="btn btn--ghost btn--sm" onclick="return false">📋 Matrice</button>
+              <button class="btn btn--ghost btn--sm" onclick="return false">📦 DOE</button>
+            </div>
+          </div>
+
+        </div><!-- /file-panel -->
+      </div><!-- /ged-layout -->
+
+    </main>
+
+    <!-- ================================================
+         PAGE 2 — DÉTAIL DOCUMENT
+    ================================================ -->
+    <main class="page" id="page-detail">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
+            <h1 style="font-size:20px;font-weight:700;letter-spacing:-0.3px">Plans APD ind. B</h1>
+            <span class="indice-badge indice--B">B</span>
+            <span class="badge badge--blue">En revue</span>
+            <span style="font-size:12px;color:var(--c-red);display:flex;align-items:center;gap:4px">🔐 Verrouillé par M. Lefort</span>
+          </div>
+          <p style="font-size:13px;color:var(--c-text-2)">📐 .dwg · 4,2 Mo · Groupe scolaire V. Hugo · Phase APD · Lot Architecture</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn--danger" onclick="return false">↩ Renvoyer en correction</button>
+          <button class="btn btn--ghost" onclick="openModal('modal-diffusion')">📤 Diffuser</button>
+          <!-- hx-post="/documents/plans-apd-b/valider/" -->
+          <button class="btn btn--primary" onclick="return false">✓ Valider le document</button>
+        </div>
+      </div>
+
+      <!-- Contenu 2 colonnes -->
+      <div class="detail-layout">
+
+        <!-- Colonne gauche : prévisualisation + historique -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- Preview -->
+          <div class="preview-zone">
+            <div class="preview-zone__header">
+              <div class="preview-zone__title">Prévisualisation — Plans APD ind. B</div>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn--ghost btn--sm">Télécharger</button>
+                <button class="btn btn--ghost btn--sm">Plein écran</button>
+              </div>
+            </div>
+            <div class="preview-zone__body">
+              <div class="dwg-preview">
+                <div class="dwg-grid"></div>
+                <div class="dwg-content">
+                  <div class="dwg-drawing">
+                    <!-- Lignes plan simulées -->
+                    <div style="position:absolute;top:25%;left:20%;width:40%;height:1px;background:rgba(100,180,255,0.5)"></div>
+                    <div style="position:absolute;top:50%;left:20%;width:60%;height:1px;background:rgba(100,180,255,0.4)"></div>
+                    <div style="position:absolute;top:75%;left:30%;width:40%;height:1px;background:rgba(100,180,255,0.3)"></div>
+                    <div style="position:absolute;top:20%;left:50%;width:1px;height:60%;background:rgba(100,180,255,0.4)"></div>
+                    <div style="position:absolute;top:20%;left:70%;width:1px;height:30%;background:rgba(100,180,255,0.3)"></div>
+                    <!-- Annotation -->
+                    <div class="dwg-annotation" style="top:45%;left:22%">
+                      <div class="dwg-annotation__dot"></div>
+                    </div>
+                    <div class="dwg-label">Plans APD ind. B · Arch. · C. Petit · 04/03/26</div>
+                  </div>
+                  <div class="dwg-meta">Format DWG — Prévisualisation générée par GAA<br>Cliquer sur ● pour voir l'annotation</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historique versions -->
+          <div class="info-block">
+            <div class="info-block__title">
+              Historique des versions
+              <button class="btn btn--ghost btn--sm" onclick="return false">Comparer A ↔ B</button>
+            </div>
+            <div class="version-list">
+              <div class="version-item version-item--current">
+                <div class="version-item__indice"><span class="indice-badge indice--B">B</span></div>
+                <div class="version-item__info">
+                  <div class="version-item__name">Plans APD ind. B <span style="font-size:11px;color:var(--c-primary);margin-left:4px">Version courante</span></div>
+                  <div class="version-item__meta">C. Petit · 04/03/26 · 4,2 Mo · Suite retour M. Lefort (escalier ERP)</div>
+                </div>
+                <div class="version-item__actions">
+                  <span class="badge badge--blue">En revue</span>
+                </div>
+              </div>
+              <div class="version-item">
+                <div class="version-item__indice"><span class="indice-badge indice--A">A</span></div>
+                <div class="version-item__info">
+                  <div class="version-item__name">Plans APD ind. A</div>
+                  <div class="version-item__meta">C. Petit · 15/02/26 · 3,8 Mo · Version initiale APD</div>
+                </div>
+                <div class="version-item__actions">
+                  <span class="badge badge--green">Validé</span>
+                  <span class="action-link text-primary" style="font-size:11.5px">Voir</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Colonne droite : métadonnées + workflow + commentaires -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- Métadonnées -->
+          <div class="info-block">
+            <div class="info-block__title">Métadonnées</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Phase</div><div style="font-size:13px">APD</div></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Type</div><div style="font-size:13px">Plans</div></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Lot</div><div style="font-size:13px">Architecture</div></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Auteur</div><div style="font-size:13px">C. Petit</div></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Indice</div><div style="font-size:13px">B</div></div>
+              <div><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Format</div><div style="font-size:13px font-family:var(--font-mono)">.dwg · 4,2 Mo</div></div>
+              <div style="grid-column:1/-1"><div style="font-size:11px;font-weight:600;color:var(--c-text-3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">Verrou</div><div style="font-size:13px;color:var(--c-red)">🔐 M. Lefort — depuis 2h</div></div>
+            </div>
+          </div>
+
+          <!-- Circuit de validation -->
+          <div class="info-block">
+            <div class="info-block__title">Circuit de validation</div>
+            <div class="wf-track" style="margin-bottom:12px">
+              <div class="wf-step wf-step--done">✓ Brouillon</div>
+              <div class="wf-arrow">→</div>
+              <div class="wf-step wf-step--active">● En revue</div>
+              <div class="wf-arrow">→</div>
+              <div class="wf-step wf-step--pending">Validé</div>
+              <div class="wf-arrow">→</div>
+              <div class="wf-step wf-step--pending">Diffusé</div>
+            </div>
+            <div class="wf-log">
+              <div class="wf-log-item">
+                <div class="wf-log-item__dot wf-log-item__dot--done"></div>
+                <div><strong>C. Petit</strong> a déposé le document · 04/03/26 10h15</div>
+              </div>
+              <div class="wf-log-item">
+                <div class="wf-log-item__dot wf-log-item__dot--done"></div>
+                <div><strong>M. Lefort</strong> a pris en charge la relecture · 04/03/26 11h30</div>
+              </div>
+              <div class="wf-log-item">
+                <div class="wf-log-item__dot wf-log-item__dot--active"></div>
+                <div style="color:var(--c-primary);font-weight:600">En attente de validation par M. Lefort</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Visibilité & diffusion -->
+          <div class="info-block">
+            <div class="info-block__title">Visibilité & diffusion</div>
+            <div class="visib-toggle">
+              <div class="visib-item">
+                <span class="visib-item__label">🔒 Espace interne</span>
+                <button class="toggle toggle--on" onclick="this.classList.toggle('toggle--on')" aria-label="Interne activé"></button>
+              </div>
+              <div class="visib-item">
+                <span class="visib-item__label">🤝 Co-traitants / BET</span>
+                <button class="toggle" onclick="this.classList.toggle('toggle--on')" aria-label="BET désactivé"></button>
+              </div>
+              <div class="visib-item" style="opacity:0.6" title="Uniquement disponible après validation">
+                <span class="visib-item__label">👤 Client / MOA</span>
+                <button class="toggle" disabled aria-label="MOA bloqué — validation requise"></button>
+              </div>
+            </div>
+            <div style="margin-top:8px;font-size:11.5px;color:var(--c-text-3)">
+              La diffusion MOA est bloquée jusqu'à validation. Dernière diffusion ind. A : 16/02/26 aux BET.
+            </div>
+          </div>
+
+          <!-- Annotations & commentaires -->
+          <div class="info-block">
+            <div class="info-block__title">Annotations & commentaires</div>
+            <div class="comment-list" style="margin-bottom:10px">
+              <div class="comment-item">
+                <div><span class="comment-item__author">M. Lefort</span><span class="comment-item__time">il y a 1h</span></div>
+                <div class="comment-item__body">Vérifier le positionnement de l'escalier de secours par rapport à la norme ERP. Voir article R. 235-4-4.</div>
+              </div>
+              <div class="comment-item" style="background:var(--c-primary-l)">
+                <div><span class="comment-item__author">C. Petit</span><span class="comment-item__time">il y a 45 min</span></div>
+                <div class="comment-item__body">Corrigé — escalier décalé de 1,20 m vers le nord. Voir coupe D-D' de l'indice B.</div>
+              </div>
+            </div>
+            <textarea class="comment-input" rows="2" placeholder="Ajouter un commentaire…"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px">
+              <button class="btn btn--primary btn--sm">Envoyer</button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Retour -->
+      <div>
+        <button class="btn btn--ghost" onclick="showPage('ged')">← Retour à la GED</button>
+      </div>
+
+    </main>
+
+  </div>
+</div>
+
+<script>
+  /* ---- Navigation ---- */
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+    document.getElementById('page-' + name).classList.add('page--active');
+    const bc = document.getElementById('breadcrumb');
+    if (name === 'ged') {
+      bc.innerHTML = '<a href="#">Projets</a> / <a href="#">Groupe scolaire V. Hugo</a> / <strong>Documents</strong>';
+    } else if (name === 'detail') {
+      bc.innerHTML = '<a href="#">Projets</a> / <a href="#">V. Hugo</a> / <a href="#" onclick="showPage(\'ged\');return false">Documents</a> / APD / Plans / <strong>Plans APD ind. B</strong>';
+    }
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- Onglets périmètre ---- */
+  function switchPerimetre(p) {
+    ['interne','bet','moa'].forEach(id => {
+      const tab = document.getElementById('tab-' + id);
+      tab.classList.toggle('perimetre-tab--active', id === p);
+    });
+    // Dans la vraie impl : hx-get="/documents/?projet=1&perimetre=..." hx-target="#file-tbody"
+  }
+
+  /* ---- Sélection dossier arborescence ---- */
+  const folders = {
+    plans:  { label: 'Plans',             count: '— 3 documents' },
+    etudes: { label: 'Études techniques', count: '— 4 documents' },
+    notes:  { label: 'Notes & CR',        count: '— 3 documents' },
+    admin:  { label: 'Administratif',     count: '— 2 documents' },
+  };
+
+  function selectFolder(f) {
+    document.querySelectorAll('.tree-node--indent2').forEach(n => n.style.color = '');
+    document.getElementById('folder-current').textContent = folders[f].label;
+    document.getElementById('folder-count').textContent = folders[f].count;
+    // hx-get="/documents/?projet=1&phase=apd&type=..." hx-target="#file-tbody"
+  }
+
+  /* ---- Modales ---- */
+  function openModal(id) {
+    document.getElementById(id).classList.add('modal-overlay--open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('modal-overlay--open');
+    document.body.style.overflow = '';
+  }
+  document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', e => { if (e.target === o) { o.classList.remove('modal-overlay--open'); document.body.style.overflow = ''; } });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-overlay--open').forEach(m => { m.classList.remove('modal-overlay--open'); document.body.style.overflow = ''; });
+  });
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaToastTimer;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_gaaToastTimer);_gaaToastTimer=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+  document.querySelectorAll('.nav__user > div > div:first-child,.nav-sidebar__user > div > div:first-child').forEach(el=>el.textContent=me?.nom||'M. Lefort');
+}
+
+const GED_KEY='ged_documents';
+function getDocs(){ return GAAStore.get(GED_KEY)||[]; }
+function saveDoc(d){ const list=getDocs(); const i=list.findIndex(x=>x.id===d.id); if(i>=0)list[i]=d; else list.push(d); GAAStore.set(GED_KEY,list); }
+
+// ── Peupler les selects du modal depuis le store ──────────
+function initModalDepot(){
+  // Select phase
+  const phaseSel=document.querySelector('#modal-depot select:first-of-type');
+  if(phaseSel){
+    const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+    const phases=(projet?.phases||[]).filter(p=>p.statut==='en_cours'||p.statut==='valide');
+    if(phases.length) phaseSel.innerHTML=phases.map(p=>`<option value="${p.code}">${p.code}</option>`).join('');
+  }
+  // Patcher bouton Déposer
+  const btn=document.querySelector('#modal-depot .modal__footer .btn--primary');
+  if(btn) btn.onclick=deposerDocument;
+}
+
+function initModalDiffusion(){
+  // Peupler destinataires depuis contacts
+  const contacts=GAAStore.getContacts();
+  const destCont=document.querySelector('#modal-diffusion .form-group:nth-child(2) > div');
+  if(destCont&&contacts.length){
+    const dynDest=contacts.filter(c=>c.role==='BET'||c.role==='MOA').map(c=>`
+      <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:7px 10px;border:1px solid var(--c-border);border-radius:var(--radius-sm);cursor:pointer">
+        <input type="checkbox" ${c.role==='BET'?'checked':''}> ${c.role==='MOA'?'👤':'🤝'} <strong>${c.societe||c.nom}</strong> — ${c.role}
+      </label>`).join('');
+    destCont.innerHTML=dynDest;
+  }
+  // Patcher bouton Diffuser
+  const btn=document.querySelector('#modal-diffusion .modal__footer .btn--primary');
+  if(btn) btn.onclick=diffuserDocuments;
+}
+
+// ── Dépôt d'un document ────────────────────────────────────
+function deposerDocument(){
+  const selects=document.querySelectorAll('#modal-depot select');
+  const phase=selects[0]?.value||'APD';
+  const typeDoc=selects[1]?.value||'Plans';
+  const lot=selects[2]?.value||'Architecture';
+  const statut=selects[3]?.value||'Brouillon';
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+
+  const doc={
+    id:'doc-'+Date.now(),
+    nom:`${typeDoc}_${phase}_Ind-A`,
+    type:typeDoc,phase,lot,statut,
+    projet_id:projet?.id||'—',
+    projet_nom:projet?.nom||'—',
+    depose_par:GAAStore.getMe()?.nom,
+    date_depot:new Date().toISOString().split('T')[0],
+    created_at:new Date().toISOString(),
+  };
+  saveDoc(doc);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Document "${doc.nom}" déposé — ${phase}`,'1.4 GED');
+  closeModal('modal-depot');
+  renderFileListe();
+  showToast(`"${doc.nom}" déposé ✓`,'success');
+}
+
+// ── Diffusion ─────────────────────────────────────────────
+function diffuserDocuments(){
+  const checked=[...document.querySelectorAll('#modal-diffusion input[type="checkbox"]:checked')];
+  const nb=checked.length;
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Documents diffusés à ${nb} destinataire(s)`,'1.4 GED');
+  closeModal('modal-diffusion');
+  showToast(`Diffusé à ${nb} destinataire(s) ✓`,'success');
+}
+
+// ── Tableau de fichiers dynamique ─────────────────────────
+function renderFileListe(){
+  const tbody=document.getElementById('file-tbody');
+  if(!tbody) return;
+  const docs=getDocs();
+  if(!docs.length) return;
+
+  const sCfg={Brouillon:{cls:'badge--grey'},Validé:{cls:'badge--green'},'En revue':{cls:'badge--blue'},Diffusé:{cls:'badge--primary'}};
+  const newRows=docs.map(d=>{
+    const s=sCfg[d.statut]||sCfg.Brouillon;
+    return `<tr onclick="showPage('detail')" style="cursor:pointer">
+      <td><input type="checkbox" onclick="event.stopPropagation()"></td>
+      <td>📄 <strong>${d.nom}</strong></td>
+      <td>${d.type}</td>
+      <td><span class="badge ${s.cls}">${d.statut}</span></td>
+      <td>Ind. A</td>
+      <td>${d.depose_par||'—'}</td>
+      <td class="mono" style="font-size:12px">${d.date_depot||'—'}</td>
+      <td>
+        <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();validerDoc('${d.id}')">Valider</button>
+        <button class="btn btn--ghost btn--sm" onclick="event.stopPropagation();supprimerDoc('${d.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Insérer avant les lignes statiques
+  const firstStatic=tbody.querySelector('tr');
+  const temp=document.createElement('tbody');
+  temp.innerHTML=newRows;
+  [...temp.rows].forEach(r=>tbody.insertBefore(r,firstStatic));
+}
+
+function validerDoc(id){
+  const docs=getDocs();const d=docs.find(x=>x.id===id);
+  if(!d)return;d.statut='Validé';saveDoc(d);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Document "${d.nom}" validé`,'1.4 GED');
+  // Rafraîchir la ligne
+  document.querySelector(`[data-doc-id="${id}"] .badge`)?.className?.replace(/badge--\w+/,'badge--green');
+  showToast(`"${d.nom}" validé ✓`,'success');
+}
+
+function supprimerDoc(id){
+  const d=getDocs().find(x=>x.id===id);if(!d||!confirm(`Supprimer "${d.nom}" ?`))return;
+  GAAStore.set(GED_KEY,getDocs().filter(x=>x.id!==id));
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Document "${d.nom}" supprimé`,'1.4 GED');
+  renderFileListe();showToast(`"${d.nom}" supprimé`,'');
+}
+
+// ── Titre + breadcrumb depuis projet courant ─────────────
+function initPage(){
+  const projet=GAAStore.getProjets().find(p=>p.statut==='en_cours');
+  if(!projet)return;
+  const h=document.querySelector('#page-ged h1, h1');
+  if(h) h.textContent=`Documents — ${projet.nom}`;
+  const bc=document.getElementById('breadcrumb');
+  if(bc) bc.innerHTML=`<a href="#">Projets</a> / <a href="#">${projet.nom}</a> / <strong>Documents</strong>`;
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  initPage();
+  initModalDepot();
+  initModalDiffusion();
+  renderFileListe();
+});
+
+</script>
+</body>
+</html>

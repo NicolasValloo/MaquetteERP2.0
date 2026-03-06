@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<!-- ============================================================
+     GAA — Module 1.3 — Gestion du temps et pointage
+     Maquette fonctionnelle HTML (simulant Django/htmx)
+     Écrans : feuille-de-temps.html + analyse-temps.html
+     ============================================================ -->
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 1.3 — Temps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --c-bg:        #F4F3EF;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E0D8;
+      --c-border-md: #C8C5BB;
+      --c-text:      #1C1B18;
+      --c-text-2:    #6B6860;
+      --c-text-3:    #9B998F;
+      --c-primary:   #1B4965;
+      --c-primary-l: #EAF1F6;
+      --c-accent:    #C75B37;
+      --c-green:     #2D6A4F;
+      --c-green-l:   #E8F5EE;
+      --c-orange:    #B8860B;
+      --c-orange-l:  #FDF6DC;
+      --c-red:       #C0392B;
+      --c-red-l:     #FDECEA;
+      --c-grey-l:    #F0EFEB;
+      --sidebar-w:   220px;
+      --header-h:    52px;
+      --font-main:   'Sora', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.07);
+      --shadow-md:   0 4px 12px rgba(0,0,0,0.08);
+      --radius-sm:   4px;
+      --radius:      8px;
+      --radius-lg:   12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body { font-family: var(--font-main); background: var(--c-bg); color: var(--c-text); line-height: 1.5; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+
+    /* Layout */
+    .shell { display: flex; min-height: 100vh; }
+    .nav-sidebar { width: var(--sidebar-w); background: var(--c-primary); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow-y: auto; }
+    .nav-sidebar__logo { padding: 20px 20px 16px; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; }
+    .nav-sidebar__logo-dot { width: 8px; height: 8px; background: var(--c-accent); border-radius: 50%; }
+    .nav-sidebar__section { padding: 16px 20px 4px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    .nav-sidebar__item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; transition: background 0.15s; position: relative; }
+    .nav-sidebar__item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-sidebar__item--active { background: rgba(255,255,255,0.12); color: #fff; font-weight: 600; }
+    .nav-sidebar__item--active::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px; background: var(--c-accent); border-radius: 0 2px 2px 0; }
+    .nav-sidebar__icon { font-size: 15px; width: 18px; text-align: center; }
+    .nav-sidebar__badge { margin-left: auto; background: rgba(255,255,255,0.15); font-size: 11px; font-family: var(--font-mono); padding: 1px 6px; border-radius: 10px; }
+    .nav-sidebar__user { margin-top: auto; padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .nav-sidebar__avatar { width: 30px; height: 30px; background: var(--c-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+    .topbar { height: var(--header-h); background: var(--c-surface); border-bottom: 1px solid var(--c-border); display: flex; align-items: center; padding: 0 28px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar__breadcrumb { font-size: 13px; color: var(--c-text-2); flex: 1; }
+    .topbar__breadcrumb strong { color: var(--c-text); font-weight: 600; }
+    .topbar__search { display: flex; align-items: center; gap: 6px; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 5px 10px; font-size: 12.5px; color: var(--c-text-3); width: 200px; }
+    .topbar__avatar { width: 32px; height: 32px; background: var(--c-primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .page { padding: 28px; display: none; flex-direction: column; gap: 20px; }
+    .page--active { display: flex; }
+
+    /* Composants */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; white-space: nowrap; }
+    .btn--primary { background: var(--c-primary); color: #fff; }
+    .btn--primary:hover { background: #153d52; }
+    .btn--ghost { background: transparent; color: var(--c-text); border-color: var(--c-border-md); }
+    .btn--ghost:hover { background: var(--c-grey-l); }
+    .btn--sm { padding: 5px 10px; font-size: 12px; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge--green  { background: var(--c-green-l);  color: var(--c-green); }
+    .badge--blue   { background: var(--c-primary-l); color: var(--c-primary); }
+    .badge--orange { background: var(--c-orange-l); color: var(--c-orange); }
+    .badge--grey   { background: var(--c-grey-l);   color: var(--c-text-2); }
+    .badge--red    { background: var(--c-red-l);    color: var(--c-red); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .kpi-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+    .kpi-card__label { font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .kpi-card__value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; margin-bottom: 4px; font-family: var(--font-mono); }
+    .kpi-card__detail { font-size: 11.5px; color: var(--c-text-3); }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 10px 14px; box-shadow: var(--shadow-sm); }
+    .toolbar__spacer { flex: 1; }
+
+    .view-toggle { display: flex; border: 1px solid var(--c-border); border-radius: var(--radius-sm); overflow: hidden; }
+    .view-toggle__btn { padding: 5px 12px; font-size: 12.5px; cursor: pointer; background: var(--c-bg); color: var(--c-text-2); border: none; font-family: var(--font-main); font-weight: 500; }
+    .view-toggle__btn--active { background: var(--c-primary); color: #fff; }
+    .view-toggle__btn:not(:last-child) { border-right: 1px solid var(--c-border); }
+
+    .filter-select { appearance: none; background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 5px 28px 5px 10px; font-family: var(--font-main); font-size: 12.5px; color: var(--c-text); cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B6860' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; }
+
+    .info-block { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+    .info-block__title { font-size: 12px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .info-block__title a { font-size: 11px; color: var(--c-primary); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+    .alert-banner { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+    .alert-banner--warn { background: var(--c-orange-l); border: 1px solid #d4a017; color: #7a5c00; }
+
+    .progress-bar { height: 6px; background: var(--c-border); border-radius: 3px; overflow: hidden; }
+    .progress-bar__fill { height: 100%; border-radius: 3px; }
+    .progress-bar__fill--green  { background: var(--c-green); }
+    .progress-bar__fill--blue   { background: var(--c-primary); }
+    .progress-bar__fill--orange { background: var(--c-orange); }
+    .progress-bar__fill--red    { background: var(--c-red); }
+
+    .text-mono { font-family: var(--font-mono); }
+    .text-green { color: var(--c-green); }
+    .text-orange { color: var(--c-orange); }
+    .text-red { color: var(--c-red); }
+    .text-muted { color: var(--c-text-3); }
+    .text-primary { color: var(--c-primary); }
+
+    /* =============================================
+       TIMER WIDGET
+    ============================================= */
+    .timer-widget {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timer-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--c-red);
+      flex-shrink: 0;
+      animation: blink 1.2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    .timer-display {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--c-text);
+      letter-spacing: 1px;
+      min-width: 80px;
+    }
+
+    .timer-context {
+      flex: 1;
+      font-size: 12.5px;
+      color: var(--c-text-2);
+    }
+
+    .timer-context strong { color: var(--c-text); font-weight: 600; }
+
+    .timer-actions { display: flex; gap: 6px; }
+
+    /* =============================================
+       GRILLE FEUILLE DE TEMPS
+    ============================================= */
+    .timesheet-wrap {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timesheet {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    /* En-tête */
+    .timesheet thead th {
+      background: var(--c-grey-l);
+      border-bottom: 2px solid var(--c-border);
+      padding: 9px 10px;
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--c-text-2);
+      white-space: nowrap;
+    }
+
+    .timesheet thead th:first-child {
+      text-align: left;
+      width: 30%;
+      padding-left: 14px;
+    }
+
+    .timesheet thead th.col-today {
+      background: var(--c-primary-l);
+      color: var(--c-primary);
+    }
+
+    .timesheet thead th.col-total {
+      text-align: right;
+      padding-right: 14px;
+      background: var(--c-grey-l);
+    }
+
+    /* Lignes */
+    .timesheet tbody tr { border-bottom: 1px solid var(--c-border); }
+    .timesheet tbody tr:last-child { border-bottom: none; }
+
+    /* Ligne projet */
+    .timesheet .row-project td {
+      background: var(--c-grey-l);
+      padding: 6px 10px 5px 14px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--c-text);
+    }
+
+    .timesheet .row-project td:last-child {
+      text-align: right;
+      padding-right: 14px;
+      font-family: var(--font-mono);
+    }
+
+    /* Ligne projet en attente */
+    .timesheet .row-project--pending td { color: var(--c-orange); background: rgba(184,134,11,0.04); }
+
+    /* Ligne non productif */
+    .timesheet .row-project--nonprod td { color: var(--c-text-2); background: rgba(0,0,0,0.02); }
+
+    /* Ligne phase */
+    .timesheet .row-phase td {
+      padding: 4px 10px 3px 26px;
+      font-size: 11.5px;
+      color: var(--c-text-3);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      background: rgba(0,0,0,0.01);
+    }
+
+    /* Ligne tâche */
+    .timesheet .row-task td {
+      padding: 2px 10px;
+      vertical-align: middle;
+    }
+
+    .timesheet .row-task td:first-child {
+      padding-left: 36px;
+      font-size: 12.5px;
+      color: var(--c-text);
+    }
+
+    /* Cellule saisie */
+    .ts-cell {
+      text-align: center;
+      position: relative;
+    }
+
+    .ts-cell input {
+      width: 52px;
+      text-align: center;
+      padding: 4px 6px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      background: transparent;
+      color: var(--c-text);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .ts-cell input:hover { background: var(--c-bg); border-color: var(--c-border); }
+    .ts-cell input:focus { background: #fff; border-color: var(--c-primary); outline: none; box-shadow: 0 0 0 2px rgba(27,73,101,0.15); }
+    .ts-cell input.empty { color: var(--c-text-3); }
+    .ts-cell input.non-refact { color: var(--c-orange); }
+
+    .ts-cell--today input { background: var(--c-primary-l); }
+    .ts-cell--today input:focus { background: #fff; }
+
+    .ts-total {
+      text-align: right;
+      padding-right: 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-text);
+    }
+
+    .ts-total--project { color: var(--c-primary); }
+    .ts-total--pending { color: var(--c-orange); }
+    .ts-total--nonprod { color: var(--c-text-3); }
+
+    /* Ligne total journalier */
+    .timesheet .row-daily-total td {
+      background: var(--c-primary);
+      color: #fff;
+      padding: 8px 10px;
+      font-weight: 700;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .timesheet .row-daily-total td:first-child {
+      text-align: left;
+      padding-left: 14px;
+      font-family: var(--font-main);
+    }
+
+    .timesheet .row-daily-total td.col-today { background: #153d52; }
+    .timesheet .row-daily-total td:last-child {
+      text-align: right;
+      padding-right: 14px;
+      font-size: 14px;
+    }
+
+    /* Badge non refacturable */
+    .tag-nonrefact {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      background: var(--c-orange-l);
+      color: var(--c-orange);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 600;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    /* Add row button */
+    .add-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      color: var(--c-primary);
+      cursor: pointer;
+      border-top: 1px solid var(--c-border);
+      background: var(--c-grey-l);
+      transition: background 0.15s;
+    }
+
+    .add-row:hover { background: var(--c-primary-l); }
+
+    /* Footer feuille */
+    .timesheet-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* =============================================
+       MODALE SAISIE RAPIDE
+    ============================================= */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay--open { display: flex; }
+    .modal { background: var(--c-surface); border-radius: var(--radius-lg); width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modal-in 0.2s ease; }
+    @keyframes modal-in { from { transform: translateY(-16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal__header { padding: 20px 24px; border-bottom: 1px solid var(--c-border); display: flex; align-items: center; justify-content: space-between; }
+    .modal__title { font-size: 16px; font-weight: 700; }
+    .modal__close { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--c-grey-l); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--c-text-2); }
+    .modal__body { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+    .modal__footer { padding: 14px 24px; border-top: 1px solid var(--c-border); display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 12.5px; font-weight: 600; }
+    .form-input, .form-select { padding: 8px 11px; border: 1px solid var(--c-border-md); border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 13px; color: var(--c-text); outline: none; transition: border-color 0.15s; }
+    .form-input:focus, .form-select:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(27,73,101,0.12); }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* =============================================
+       VUE ANALYSE — écran 2
+    ============================================= */
+    .analyse-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; }
+
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table thead th { background: var(--c-grey-l); border-bottom: 1px solid var(--c-border); padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--c-text-2); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+    .data-table tbody tr { border-bottom: 1px solid var(--c-border); transition: background 0.1s; }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody tr:hover { background: var(--c-primary-l); }
+    .data-table td { padding: 9px 14px; vertical-align: middle; }
+
+    /* Graphique barres SVG-like (CSS) */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      height: 130px;
+      padding: 0 8px 24px;
+      position: relative;
+    }
+
+    .bar-chart::before {
+      content: '';
+      position: absolute;
+      bottom: 24px; left: 8px; right: 8px;
+      border-bottom: 1px solid var(--c-border);
+    }
+
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .bar-group__label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--c-text-3);
+      margin-top: 4px;
+      position: absolute;
+      bottom: 6px;
+    }
+
+    .bar-pair {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 100px;
+    }
+
+    .bar {
+      width: 18px;
+      border-radius: 3px 3px 0 0;
+      min-height: 2px;
+      transition: filter 0.15s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .bar:hover { filter: brightness(0.85); }
+    .bar:hover::after { content: attr(data-val); position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-family: var(--font-mono); background: var(--c-text); color: #fff; padding: 1px 4px; border-radius: 2px; white-space: nowrap; }
+
+    .bar--real-ok     { background: var(--c-green); }
+    .bar--real-warn   { background: var(--c-orange); }
+    .bar--real-over   { background: var(--c-red); }
+    .bar--real-active { background: var(--c-primary); }
+    .bar--budget      { background: var(--c-border-md); }
+
+    .bar-group__lbl { font-size: 11px; color: var(--c-text-3); font-weight: 600; }
+    .bar-group__val { font-size: 11px; font-family: var(--font-mono); font-weight: 600; }
+
+    /* Collab list */
+    .collab-list { display: flex; flex-direction: column; gap: 10px; }
+    .collab-row { display: flex; flex-direction: column; gap: 4px; }
+    .collab-row__header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+    .collab-row__name { font-weight: 600; }
+    .collab-row__stats { font-size: 12px; font-family: var(--font-mono); }
+
+    /* Validation status list */
+    .validation-list { display: flex; flex-direction: column; }
+    .validation-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--c-border); font-size: 12.5px; }
+    .validation-item:last-child { border-bottom: none; }
+    .validation-item__name { font-weight: 500; flex: 1; }
+
+    /* Alert items */
+    .alerts-list { display: flex; flex-direction: column; gap: 6px; }
+    .alert-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: var(--radius-sm); font-size: 12.5px; cursor: pointer; transition: filter 0.15s; }
+    .alert-item:hover { filter: brightness(0.95); }
+    .alert-item--red    { background: var(--c-red-l);    border: 1px solid rgba(192,57,43,0.3); color: var(--c-red); }
+    .alert-item--orange { background: var(--c-orange-l); border: 1px solid rgba(184,134,11,0.3); color: #7a5c00; }
+
+    @media (max-width: 1200px) { .analyse-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .kpi-row { grid-template-columns: 1fr 1fr; } .nav-sidebar { display: none; } .main-wrap { margin-left: 0; } }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     MODALE — SAISIE RAPIDE / IMPUTER MANUELLEMENT
+     hx-get="/temps/imputer/" hx-target="#modal-saisie"
+============================================================ -->
+<div class="modal-overlay" id="modal-saisie" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal__header">
+      <h2 class="modal__title">Imputer manuellement</h2>
+      <button class="modal__close" onclick="closeModal('modal-saisie')" aria-label="Fermer">×</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group">
+        <label class="form-label" for="imp-projet">Projet <span style="color:var(--c-red)">*</span></label>
+        <select class="form-select" id="imp-projet">
+          <option>Groupe scolaire Victor Hugo</option>
+          <option>Médiathèque de Brest</option>
+          <option>Résidence Les Tilleuls</option>
+          <option>École Montreuil (non refact.)</option>
+          <option>— Temps non productif</option>
+        </select>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="imp-phase">Phase</label>
+          <select class="form-select" id="imp-phase">
+            <option>APD</option>
+            <option>PRO</option>
+            <option>DCE</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="imp-tache">Tâche</label>
+          <select class="form-select" id="imp-tache">
+            <option>Plans APD ind. B</option>
+            <option>Coupe détails</option>
+            <option>Notice descriptive</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="imp-date">Date <span style="color:var(--c-red)">*</span></label>
+          <input class="form-input" type="date" id="imp-date" value="2026-03-05">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="imp-duree">Durée <span style="color:var(--c-red)">*</span></label>
+          <select class="form-select" id="imp-duree">
+            <option>0h15</option>
+            <option>0h30</option>
+            <option>1h00</option>
+            <option>1h30</option>
+            <option selected>2h00</option>
+            <option>2h30</option>
+            <option>3h00</option>
+            <option>4h00</option>
+            <option>demi-journée (3h30)</option>
+            <option>journée (7h)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="imp-note">Note (optionnel)</label>
+        <input class="form-input" type="text" id="imp-note" placeholder="Ex. : révision suite retour MOA">
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="btn btn--ghost" onclick="closeModal('modal-saisie')">Annuler</button>
+      <!-- hx-post="/temps/imputer/" hx-target="#timesheet-body" hx-swap="beforeend" -->
+      <button class="btn btn--primary" onclick="closeModal('modal-saisie')">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <nav class="nav-sidebar" aria-label="Navigation principale">
+    <div class="nav-sidebar__logo"><span class="nav-sidebar__logo-dot"></span>GAA</div>
+    <div class="nav-sidebar__section">Pilotage</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">⬜</span> Tableau de bord</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📁</span> Projets <span class="nav-sidebar__badge">12</span></a>
+    <div class="nav-sidebar__section">Commercial</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📄</span> Devis</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">👥</span> CRM</a>
+    <div class="nav-sidebar__section">Opérationnel</div>
+    <a class="nav-sidebar__item nav-sidebar__item--active" href="#" onclick="return false"><span class="nav-sidebar__icon">⏱</span> Temps</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📂</span> Documents</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">✓</span> Tâches</a>
+    <div class="nav-sidebar__section">Finance</div>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">💰</span> Facturation</a>
+    <a class="nav-sidebar__item" href="#" onclick="return false"><span class="nav-sidebar__icon">📊</span> Reporting</a>
+    <div class="nav-sidebar__user">
+      <div class="nav-sidebar__avatar">TM</div>
+      <div><div style="font-weight:600;font-size:12px">T. Morel</div><div style="color:rgba(255,255,255,0.5);font-size:11px">Dessinateur</div></div>
+    </div>
+  </nav>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar__breadcrumb" id="breadcrumb"><strong>Feuille de temps</strong> — T. Morel</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="topbar__search"><span>🔍</span><span>Rechercher…</span></div>
+        <div class="topbar__avatar" title="T. Morel">TM</div>
+      </div>
+    </header>
+
+    <!-- ================================================
+         PAGE 1 — FEUILLE DE TEMPS HEBDOMADAIRE
+    ================================================ -->
+    <main class="page page--active" id="page-feuille">
+
+      <!-- En-tête semaine + navigation -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Feuille de temps</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">T. Morel — Dessinateur · Capacité : 35h/semaine</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <!-- hx-get="/temps/?semaine=prev" hx-target="#page-feuille" -->
+          <button class="btn btn--ghost btn--sm">← Sem. préc.</button>
+          <span style="font-size:14px;font-weight:700;color:var(--c-text);white-space:nowrap">Semaine 10 — 3 au 7 mars 2026</span>
+          <!-- hx-get="/temps/?semaine=next" hx-target="#page-feuille" -->
+          <button class="btn btn--ghost btn--sm">Sem. suiv. →</button>
+          <div class="view-toggle">
+            <button class="view-toggle__btn view-toggle__btn--active" onclick="return false">Ma semaine</button>
+            <!-- hx-get="/temps/analyse/" hx-target="#main-content" hx-push-url="true" -->
+            <button class="view-toggle__btn" onclick="showPage('analyse')">Analyse →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPIs semaine -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Heures saisies</div>
+          <div class="kpi-card__value">32 h</div>
+          <div class="kpi-card__detail">sur 35h capacité</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Productif</div>
+          <div class="kpi-card__value text-green">28 h</div>
+          <div class="kpi-card__detail">80% du temps</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Non productif</div>
+          <div class="kpi-card__value text-muted">4 h</div>
+          <div class="kpi-card__detail">Formation · Admin</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Statut</div>
+          <div class="kpi-card__value text-orange" style="font-size:18px">Brouillon</div>
+          <div class="kpi-card__detail">3h manquantes</div>
+        </div>
+      </div>
+
+      <!-- Timer actif -->
+      <div class="timer-widget">
+        <div class="timer-dot" aria-label="Timer en cours"></div>
+        <div class="timer-display" id="timer-display">01:42:15</div>
+        <div class="timer-context">
+          <strong>Groupe scolaire V. Hugo</strong> · Phase APD · Plans APD ind. B
+        </div>
+        <div class="timer-actions">
+          <!-- hx-post="/temps/timer/stop/" hx-target="#timesheet-body" -->
+          <button class="btn btn--ghost btn--sm" onclick="stopTimer()">⏹ Arrêter</button>
+          <button class="btn btn--primary btn--sm" onclick="openModal('modal-saisie')">+ Imputer</button>
+        </div>
+      </div>
+
+      <!-- Grille feuille de temps -->
+      <div class="timesheet-wrap">
+        <table class="timesheet" aria-label="Feuille de temps semaine 10">
+          <thead>
+            <tr>
+              <th>Projet / Phase / Tâche</th>
+              <th>Lun 3</th>
+              <th class="col-today">Mar 4 ●</th>
+              <th>Mer 5</th>
+              <th>Jeu 6</th>
+              <th>Ven 7</th>
+              <th class="col-total">Total</th>
+            </tr>
+          </thead>
+          <tbody id="timesheet-body">
+
+            <!-- PROJET 1 -->
+            <tr class="row-project">
+              <td>📁 Groupe scolaire V. Hugo <span class="badge badge--blue">En cours</span></td>
+              <td></td><td></td><td></td><td></td><td></td>
+              <td>17h</td>
+            </tr>
+            <tr class="row-phase"><td colspan="7">Phase APD</td></tr>
+            <tr class="row-task">
+              <td>Plans APD ind. B</td>
+              <td class="ts-cell"><input type="text" value="3h" aria-label="Lundi"></td>
+              <td class="ts-cell ts-cell--today"><input type="text" value="4h" class="active" aria-label="Mardi"></td>
+              <td class="ts-cell"><input type="text" value="3h" aria-label="Mercredi"></td>
+              <td class="ts-cell"><input type="text" value="2h" aria-label="Jeudi"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty" aria-label="Vendredi"></td>
+              <td class="ts-total ts-total--project">12h</td>
+            </tr>
+            <tr class="row-task">
+              <td>Coupe détails</td>
+              <td class="ts-cell"><input type="text" value="—" class="empty" aria-label="Lundi"></td>
+              <td class="ts-cell ts-cell--today"><input type="text" value="—" class="empty" aria-label="Mardi"></td>
+              <td class="ts-cell"><input type="text" value="2h" aria-label="Mercredi"></td>
+              <td class="ts-cell"><input type="text" value="1h" aria-label="Jeudi"></td>
+              <td class="ts-cell"><input type="text" value="2h" aria-label="Vendredi"></td>
+              <td class="ts-total ts-total--project">5h</td>
+            </tr>
+
+            <!-- PROJET 2 -->
+            <tr class="row-project">
+              <td>📁 Médiathèque de Brest <span class="badge badge--blue">En cours</span></td>
+              <td></td><td></td><td></td><td></td><td></td>
+              <td>11h</td>
+            </tr>
+            <tr class="row-phase"><td colspan="7">Phase DET</td></tr>
+            <tr class="row-task">
+              <td>Suivi chantier — visites</td>
+              <td class="ts-cell"><input type="text" value="2h" aria-label="Lundi"></td>
+              <td class="ts-cell ts-cell--today"><input type="text" value="3h" aria-label="Mardi"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty" aria-label="Mercredi"></td>
+              <td class="ts-cell"><input type="text" value="4h" aria-label="Jeudi"></td>
+              <td class="ts-cell"><input type="text" value="2h" aria-label="Vendredi"></td>
+              <td class="ts-total ts-total--project">11h</td>
+            </tr>
+
+            <!-- PROJET EN ATTENTE (avant-vente non refact.) -->
+            <tr class="row-project row-project--pending">
+              <td>📁 École Montreuil <span class="badge badge--orange">En attente</span></td>
+              <td></td><td></td><td></td><td></td><td></td>
+              <td>3h</td>
+            </tr>
+            <tr class="row-phase" style="color:var(--c-orange)"><td colspan="7">Concours / Avant-vente</td></tr>
+            <tr class="row-task">
+              <td style="color:var(--c-orange)">
+                Esquisses concours
+                <span class="tag-nonrefact">non refact.</span>
+              </td>
+              <td class="ts-cell"><input type="text" value="—" class="empty" aria-label="Lundi"></td>
+              <td class="ts-cell ts-cell--today"><input type="text" value="—" class="empty" aria-label="Mardi"></td>
+              <td class="ts-cell"><input type="text" value="1h" class="non-refact" aria-label="Mercredi"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty" aria-label="Jeudi"></td>
+              <td class="ts-cell"><input type="text" value="2h" class="non-refact" aria-label="Vendredi"></td>
+              <td class="ts-total ts-total--pending">3h</td>
+            </tr>
+
+            <!-- NON PRODUCTIF -->
+            <tr class="row-project row-project--nonprod">
+              <td>⚙ Temps non productif</td>
+              <td></td><td></td><td></td><td></td><td></td>
+              <td style="color:var(--c-text-3);font-family:var(--font-mono)">4h</td>
+            </tr>
+            <tr class="row-task">
+              <td class="text-muted">Formation BIM</td>
+              <td class="ts-cell"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell ts-cell--today"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell"><input type="text" value="3h"></td>
+              <td class="ts-total ts-total--nonprod">3h</td>
+            </tr>
+            <tr class="row-task">
+              <td class="text-muted">Réunion agence</td>
+              <td class="ts-cell"><input type="text" value="1h"></td>
+              <td class="ts-cell ts-cell--today"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty"></td>
+              <td class="ts-cell"><input type="text" value="—" class="empty"></td>
+              <td class="ts-total ts-total--nonprod">1h</td>
+            </tr>
+
+            <!-- TOTAL JOURNALIER -->
+            <tr class="row-daily-total">
+              <td>Total journalier</td>
+              <td>6h</td>
+              <td class="col-today">7h ●</td>
+              <td>6h</td>
+              <td>7h</td>
+              <td>9h</td>
+              <td>32h / 35h</td>
+            </tr>
+
+          </tbody>
+        </table>
+
+        <!-- Ajouter une ligne -->
+        <div class="add-row" onclick="openModal('modal-saisie')">
+          <span style="font-size:16px;font-weight:700">+</span>
+          <span>Ajouter une ligne (projet / tâche)</span>
+          <span style="font-size:11px;color:var(--c-text-3);margin-left:auto">ou cliquer sur une cellule</span>
+        </div>
+      </div>
+
+      <!-- Footer actions -->
+      <div class="timesheet-footer">
+        <div class="alert-banner alert-banner--warn" style="flex:1;border-radius:var(--radius-sm)">
+          ⚠️ <strong>3h manquantes</strong> cette semaine (capacité : 35h). Complétez avant vendredi 18h pour éviter un rappel automatique.
+        </div>
+        <div style="display:flex;gap:8px">
+          <!-- hx-post="/temps/enregistrer/?mode=brouillon" -->
+          <button class="btn btn--ghost">Enregistrer brouillon</button>
+          <!-- hx-post="/temps/soumettre/" hx-confirm="Soumettre la semaine pour validation ?" -->
+          <button class="btn btn--primary">Soumettre la semaine →</button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ================================================
+         PAGE 2 — ANALYSE ET RAPPORTS TEMPS
+         Simule : analyse-temps.html (vue chef de projet / direction)
+    ================================================ -->
+    <main class="page" id="page-analyse">
+
+      <!-- En-tête -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:700;letter-spacing:-0.3px">Analyse du temps</h1>
+          <p style="font-size:13px;color:var(--c-text-2);margin-top:2px">Vue chef de projet · Direction</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--ghost">Exporter CSV</button>
+          <button class="btn btn--ghost">Export paie</button>
+        </div>
+      </div>
+
+      <!-- Toolbar axes + filtres -->
+      <div class="toolbar">
+        <!-- hx-get="/temps/analyse/?axe=projet" hx-target="#analyse-content" -->
+        <div class="view-toggle">
+          <button class="view-toggle__btn view-toggle__btn--active" id="axe-projet" onclick="switchAxe('projet')">Par projet</button>
+          <button class="view-toggle__btn" id="axe-collab" onclick="switchAxe('collab')">Par collaborateur</button>
+          <button class="view-toggle__btn" id="axe-phase" onclick="switchAxe('phase')">Par phase</button>
+        </div>
+
+        <select class="filter-select">
+          <option>Janv — Mars 2026</option>
+          <option>Fév — Avr 2026</option>
+          <option>Tout 2026</option>
+          <option>2025</option>
+        </select>
+
+        <select class="filter-select">
+          <option>Toute l'équipe</option>
+          <option>M. Lefort</option>
+          <option>T. Morel</option>
+          <option>C. Petit</option>
+          <option>S. Moreau</option>
+          <option>T. Durand</option>
+        </select>
+
+        <div class="toolbar__spacer"></div>
+
+        <button class="btn btn--ghost btn--sm" onclick="showPage('feuille')">← Feuille de temps</button>
+      </div>
+
+      <!-- KPIs globaux -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-card__label">Total heures période</div>
+          <div class="kpi-card__value">1 240 h</div>
+          <div class="kpi-card__detail">6 collaborateurs</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Taux productif</div>
+          <div class="kpi-card__value text-green">82%</div>
+          <div class="kpi-card__detail">1 017h productives</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Taux refacturable</div>
+          <div class="kpi-card__value text-primary">74%</div>
+          <div class="kpi-card__detail">917h refacturables</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__label">Valorisation</div>
+          <div class="kpi-card__value text-green">68 775 €</div>
+          <div class="kpi-card__detail">Taux moyen 75 €/h</div>
+        </div>
+      </div>
+
+      <!-- Contenu analyse (2 colonnes) -->
+      <div id="analyse-content">
+
+        <!-- Vue par projet -->
+        <div id="vue-projet">
+          <div class="analyse-grid">
+
+            <!-- Colonne gauche : tableau + graphique -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Tableau par projet -->
+              <div class="info-block">
+                <div class="info-block__title">Détail par projet — Janv. › Mars 2026</div>
+                <div style="overflow-x:auto">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Projet</th>
+                        <th style="text-align:right">Budget h</th>
+                        <th style="text-align:right">Passé</th>
+                        <th>Conso.</th>
+                        <th style="text-align:right">Refact.</th>
+                        <th style="text-align:right">Non ref.</th>
+                        <th style="text-align:right">Valoris.</th>
+                        <th style="text-align:right">Écart</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Groupe scolaire V. Hugo</strong></td>
+                        <td class="text-mono" style="text-align:right">480h</td>
+                        <td class="text-mono" style="text-align:right">342h</td>
+                        <td><span class="text-primary text-mono">71%</span></td>
+                        <td class="text-mono" style="text-align:right">320h</td>
+                        <td class="text-mono" style="text-align:right">22h</td>
+                        <td class="text-mono" style="text-align:right">25 650 €</td>
+                        <td class="text-green text-mono" style="text-align:right">+138h</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Médiathèque de Brest</strong></td>
+                        <td class="text-mono" style="text-align:right">600h</td>
+                        <td class="text-mono" style="text-align:right">485h</td>
+                        <td><span class="text-orange text-mono">81%</span></td>
+                        <td class="text-mono" style="text-align:right">440h</td>
+                        <td class="text-red text-mono" style="text-align:right">45h ⚠</td>
+                        <td class="text-mono" style="text-align:right">33 000 €</td>
+                        <td class="text-green text-mono" style="text-align:right">+115h</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Résidence Les Tilleuls</strong></td>
+                        <td class="text-mono" style="text-align:right">320h</td>
+                        <td class="text-mono" style="text-align:right">298h</td>
+                        <td><span class="text-red text-mono">93%</span></td>
+                        <td class="text-mono" style="text-align:right">275h</td>
+                        <td class="text-red text-mono" style="text-align:right">23h</td>
+                        <td class="text-mono" style="text-align:right">20 625 €</td>
+                        <td class="text-orange text-mono" style="text-align:right">+22h</td>
+                      </tr>
+                      <tr style="opacity:0.65">
+                        <td><strong>École Montreuil</strong> <span class="badge badge--orange" style="font-size:10px">En att.</span></td>
+                        <td class="text-muted text-mono" style="text-align:right">—</td>
+                        <td class="text-orange text-mono" style="text-align:right">38h</td>
+                        <td class="text-muted">—</td>
+                        <td class="text-muted text-mono" style="text-align:right">0h</td>
+                        <td class="text-orange text-mono" style="text-align:right">38h</td>
+                        <td class="text-muted text-mono" style="text-align:right">0 €</td>
+                        <td class="text-muted text-mono" style="text-align:right">—</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Graphique temps passé vs budget par phase -->
+              <div class="info-block">
+                <div class="info-block__title">Temps passé vs budget par phase — Groupe scolaire V. Hugo</div>
+                <div class="bar-chart">
+                  <!-- ESQ -->
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div class="bar bar--real-ok" style="height:48px" data-val="58h réel" title="ESQ réel : 58h"></div>
+                      <div class="bar bar--budget" style="height:50px" data-val="60h budget" title="ESQ budget : 60h"></div>
+                    </div>
+                    <div class="bar-group__lbl">ESQ</div>
+                  </div>
+                  <!-- APS -->
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div class="bar bar--real-over" style="height:80px" data-val="96h réel !" title="APS réel : 96h (dépassement)"></div>
+                      <div class="bar bar--budget" style="height:75px" data-val="90h budget" title="APS budget : 90h"></div>
+                    </div>
+                    <div class="bar-group__lbl" style="color:var(--c-red)">APS</div>
+                  </div>
+                  <!-- APD -->
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div class="bar bar--real-active" style="height:70px" data-val="84h réel" title="APD réel : 84h (en cours)"></div>
+                      <div class="bar bar--budget" style="height:100px" data-val="120h budget" title="APD budget : 120h"></div>
+                    </div>
+                    <div class="bar-group__lbl" style="color:var(--c-primary)">APD ●</div>
+                  </div>
+                  <!-- PRO -->
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div class="bar bar--budget" style="height:2px;opacity:0.2"></div>
+                      <div class="bar bar--budget" style="height:75px" data-val="90h budget" title="PRO budget : 90h"></div>
+                    </div>
+                    <div class="bar-group__lbl">PRO</div>
+                  </div>
+                  <!-- DCE -->
+                  <div class="bar-group">
+                    <div class="bar-pair">
+                      <div class="bar bar--budget" style="height:2px;opacity:0.2"></div>
+                      <div class="bar bar--budget" style="height:42px" data-val="50h budget" title="DCE budget : 50h"></div>
+                    </div>
+                    <div class="bar-group__lbl">DCE</div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:var(--c-text-2)">
+                  <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-primary);display:inline-block"></span> Réel (en cours)</span>
+                  <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-green);display:inline-block"></span> Réel (OK)</span>
+                  <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-red);display:inline-block"></span> Réel (dépassement)</span>
+                  <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:10px;border-radius:2px;background:var(--c-border-md);display:inline-block"></span> Budget prévu</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Colonne droite : charge, alertes, validation -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+              <!-- Charge par collaborateur -->
+              <div class="info-block">
+                <div class="info-block__title">
+                  Charge par collaborateur
+                  <!-- hx-get="/temps/analyse/collaborateurs/" -->
+                  <a href="#">Détail →</a>
+                </div>
+                <div class="collab-list">
+                  <div class="collab-row">
+                    <div class="collab-row__header">
+                      <span class="collab-row__name">M. Lefort</span>
+                      <span class="collab-row__stats text-green text-mono">280h · 84% prod.</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--green" style="width:84%"></div></div>
+                  </div>
+                  <div class="collab-row">
+                    <div class="collab-row__header">
+                      <span class="collab-row__name">T. Morel</span>
+                      <span class="collab-row__stats text-green text-mono">245h · 80% prod.</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--green" style="width:80%"></div></div>
+                  </div>
+                  <div class="collab-row">
+                    <div class="collab-row__header">
+                      <span class="collab-row__name">C. Petit</span>
+                      <span class="collab-row__stats text-primary text-mono">310h · 88% prod.</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--blue" style="width:88%"></div></div>
+                  </div>
+                  <div class="collab-row">
+                    <div class="collab-row__header">
+                      <span class="collab-row__name">S. Moreau</span>
+                      <span class="collab-row__stats text-orange text-mono">205h · 72% prod.</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--orange" style="width:72%"></div></div>
+                  </div>
+                  <div class="collab-row">
+                    <div class="collab-row__header">
+                      <span class="collab-row__name">T. Durand</span>
+                      <span class="collab-row__stats text-green text-mono">200h · 79% prod.</span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-bar__fill progress-bar__fill--green" style="width:79%"></div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Alertes -->
+              <div class="info-block">
+                <div class="info-block__title">Alertes en cours</div>
+                <div class="alerts-list">
+                  <div class="alert-item alert-item--red">
+                    <span>🔴</span>
+                    <span><strong>Résidence Tilleuls — phase PRO :</strong> 93% du budget heures consommé (298h / 320h)</span>
+                  </div>
+                  <div class="alert-item alert-item--orange">
+                    <span>🟡</span>
+                    <span><strong>Médiathèque Brest :</strong> 45h non refacturables — investiguer avenant</span>
+                  </div>
+                  <div class="alert-item alert-item--orange">
+                    <span>🟡</span>
+                    <span><strong>S. Moreau :</strong> saisie incomplète sem. 9 (24h / 35h)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Validation feuilles sem. 10 -->
+              <div class="info-block">
+                <div class="info-block__title">
+                  Validation feuilles — Sem. 10
+                  <a href="#">Tout valider</a>
+                </div>
+                <div class="validation-list">
+                  <div class="validation-item">
+                    <span class="validation-item__name">M. Lefort</span>
+                    <span class="badge badge--green">Validé ✓</span>
+                  </div>
+                  <div class="validation-item">
+                    <span class="validation-item__name">C. Petit</span>
+                    <!-- hx-post="/temps/valider/cpetit/semaine/10/" -->
+                    <span class="badge badge--blue" style="cursor:pointer" title="Cliquer pour valider">Soumis — Valider ?</span>
+                  </div>
+                  <div class="validation-item">
+                    <span class="validation-item__name">T. Morel</span>
+                    <span class="badge badge--orange">Brouillon</span>
+                  </div>
+                  <div class="validation-item">
+                    <span class="validation-item__name">S. Moreau</span>
+                    <span class="badge badge--red">Non saisi ⚠</span>
+                  </div>
+                  <div class="validation-item">
+                    <span class="validation-item__name">T. Durand</span>
+                    <span class="badge badge--green">Validé ✓</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /analyse-content -->
+    </main>
+
+  </div><!-- /main-wrap -->
+</div><!-- /shell -->
+
+<script>
+  /* ---- Timer ---- */
+  let timerSeconds = 6135; // 01:42:15
+  let timerRunning = true;
+  let timerInterval;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function updateTimer() {
+    if (!timerRunning) return;
+    timerSeconds++;
+    const h = Math.floor(timerSeconds / 3600);
+    const m = Math.floor((timerSeconds % 3600) / 60);
+    const s = timerSeconds % 60;
+    const el = document.getElementById('timer-display');
+    if (el) el.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
+
+  timerInterval = setInterval(updateTimer, 1000);
+
+  function stopTimer() {
+    timerRunning = false;
+    clearInterval(timerInterval);
+    const dot = document.querySelector('.timer-dot');
+    if (dot) { dot.style.background = 'var(--c-text-3)'; dot.style.animation = 'none'; }
+    openModal('modal-saisie');
+  }
+
+  /* ---- Navigation pages ---- */
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+    document.getElementById('page-' + name).classList.add('page--active');
+    const bc = document.getElementById('breadcrumb');
+    if (name === 'feuille')  bc.innerHTML = '<strong>Feuille de temps</strong> — T. Morel';
+    if (name === 'analyse')  bc.innerHTML = '<strong>Analyse du temps</strong> — Direction';
+    window.scrollTo(0, 0);
+  }
+
+  /* ---- Bascule axes analyse ---- */
+  function switchAxe(axe) {
+    ['projet','collab','phase'].forEach(a => {
+      document.getElementById('axe-' + a).classList.toggle('view-toggle__btn--active', a === axe);
+    });
+    // Dans la vraie impl : hx-get="/temps/analyse/?axe=..." hx-target="#analyse-content"
+  }
+
+  /* ---- Modales ---- */
+  function openModal(id) {
+    document.getElementById(id).classList.add('modal-overlay--open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('modal-overlay--open');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('modal-overlay--open'), document.body.style.overflow = '';
+    });
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay--open').forEach(m => {
+        m.classList.remove('modal-overlay--open');
+        document.body.style.overflow = '';
+      });
+    }
+  });
+
+  /* ---- Cellules éditables : saisie au clic ---- */
+  document.querySelectorAll('.ts-cell input').forEach(input => {
+    input.addEventListener('focus', function() {
+      if (this.value === '—') this.value = '';
+      this.classList.remove('empty');
+    });
+    input.addEventListener('blur', function() {
+      if (this.value.trim() === '') {
+        this.value = '—';
+        this.classList.add('empty');
+      }
+    });
+    // Validation format heures (ex. "2h", "2h30", "2.5")
+    input.addEventListener('change', function() {
+      const val = this.value.trim().toLowerCase();
+      if (val && val !== '—') {
+        // Normaliser en format "Xh"
+        if (/^\d+$/.test(val)) this.value = val + 'h';
+        else if (/^\d+[,\.]\d+$/.test(val)) {
+          const h = parseFloat(val.replace(',', '.'));
+          this.value = h + 'h';
+        }
+        this.classList.remove('empty');
+      }
+    });
+  });
+</script>
+
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+// ── Store clé pour les saisies de temps ───────────────────
+const TS_KEY = 'temps_saisies';
+
+function getSaisies(){ return GAAStore.get(TS_KEY)||[]; }
+function saveSaisie(s){ const list=getSaisies(); list.unshift(s); GAAStore.set(TS_KEY,list.slice(0,500)); }
+
+// ── Branding ──────────────────────────────────────────────
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+  // Breadcrumb utilisateur
+  const bc=document.getElementById('breadcrumb');
+  if(bc&&bc.textContent.includes('T. Morel')) bc.innerHTML=`<strong>Feuille de temps</strong> — ${me?.nom||'M. Lefort'}`;
+}
+
+// ── Peupler le select projet du modal ─────────────────────
+function populateModalProjet(){
+  const sel=document.getElementById('imp-projet');
+  if(!sel) return;
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours'||p.statut==='en_attente');
+  const cur=sel.value;
+  sel.innerHTML=projets.map(p=>`<option value="${p.id}">${p.nom}</option>`).join('')
+    +'<option value="nonprod">— Temps non productif</option>';
+  sel.addEventListener('change', populateModalPhase);
+  populateModalPhase();
+}
+
+function populateModalPhase(){
+  const projetId=document.getElementById('imp-projet')?.value;
+  const sel=document.getElementById('imp-phase');
+  if(!sel) return;
+  if(projetId==='nonprod'){
+    sel.innerHTML='<option value="nonprod">—</option>';
+    return;
+  }
+  const p=GAAStore.getProjet(projetId);
+  const phases=(p?.phases||[]).filter(ph=>ph.statut==='en_cours'||ph.statut==='valide');
+  sel.innerHTML=phases.map(ph=>`<option value="${ph.code}">${ph.code} — ${ph.libelle||ph.code}</option>`).join('');
+}
+
+// ── Enregistrer une saisie depuis le modal ────────────────
+function enregistrerSaisie(){
+  const projetId=document.getElementById('imp-projet')?.value;
+  const phase=document.getElementById('imp-phase')?.value;
+  const tache=document.getElementById('imp-tache')?.value?.trim()||'Saisie libre';
+  const date=document.getElementById('imp-date')?.value;
+  const dureeStr=document.getElementById('imp-duree')?.value||'1h00';
+  const note=document.getElementById('imp-note')?.value?.trim()||'';
+
+  if(!projetId||!date){showToast('Projet et date requis','error');return;}
+
+  // Convertir durée en heures décimales
+  const dureeH=parseDuree(dureeStr);
+  const me=GAAStore.getMe();
+  const projet=GAAStore.getProjet(projetId);
+
+  // Taux horaire de l'utilisateur courant
+  const taux=GAAStore.get(GAAStore.K.TAUX)||[];
+  const tauxUser=taux.find(t=>me?.role?.includes(t.profil.split('/')[0].trim()))||taux[1]||{taux:80};
+
+  const saisie={
+    id:'ts-'+Date.now(),
+    user_id:me?.id,
+    user_nom:me?.nom,
+    projet_id:projetId,
+    projet_nom:projet?.nom||projetId,
+    phase,tache,date,
+    duree:dureeH,
+    duree_str:dureeStr,
+    taux_horaire:tauxUser.taux,
+    montant:Math.round(dureeH*tauxUser.taux),
+    note,
+    created_at:new Date().toISOString(),
+  };
+
+  saveSaisie(saisie);
+  GAAStore.addAudit(me?.nom,`${dureeStr} pointé(e) sur "${projet?.nom||projetId}" — phase ${phase}`,'1.3 Temps');
+
+  closeModal('modal-saisie');
+  renderTimesheetLive(saisie);
+  showToast(`${dureeStr} enregistrée sur ${projet?.nom||projetId} ✓`,'success');
+  updateTotaux();
+}
+
+function parseDuree(str){
+  if(!str) return 0;
+  const s=str.toLowerCase().replace(',','.');
+  if(s.includes('journée')) return 7;
+  if(s.includes('demi')) return 3.5;
+  const m=s.match(/^(\d+)h(\d+)?$/);
+  if(m) return parseInt(m[1])+(parseInt(m[2]||0)/60);
+  const n=parseFloat(s);
+  return isNaN(n)?0:n;
+}
+
+// ── Ajouter une ligne dans le timesheet actuel ────────────
+function renderTimesheetLive(saisie){
+  const tbody=document.getElementById('timesheet-body');
+  if(!tbody) return;
+  // Trouver ou créer la ligne projet
+  const existingProjRow=tbody.querySelector(`tr[data-projet="${saisie.projet_id}"]`);
+  if(!existingProjRow){
+    const tr=document.createElement('tr');
+    tr.className='row-project';
+    tr.dataset.projet=saisie.projet_id;
+    tr.innerHTML=`<td>📁 ${saisie.projet_nom} <span class="badge badge--blue">En cours</span></td>
+      <td></td><td></td><td></td><td></td><td></td><td data-total="${saisie.projet_id}">${saisie.duree_str}</td>`;
+    tbody.prepend(tr);
+    // Ajouter la ligne phase + tâche
+    const trPhase=document.createElement('tr');
+    trPhase.className='row-phase';
+    trPhase.innerHTML=`<td colspan="7">${saisie.phase}</td>`;
+    tbody.insertBefore(trPhase, tr.nextSibling);
+    const trTask=document.createElement('tr');
+    trTask.className='row-task';
+    const today=new Date().getDay();
+    const cells=[0,1,2,3,4].map(i=>`<td class="ts-cell${i+1===today?' ts-cell--today':''}"><input type="text" value="${i+1===today?saisie.duree_str:'—'}" class="${i+1===today?'':'empty'}"></td>`).join('');
+    trTask.innerHTML=`<td>${saisie.tache}</td>${cells}<td class="ts-total ts-total--project">${saisie.duree_str}</td>`;
+    tbody.insertBefore(trTask, trPhase.nextSibling);
+  }
+}
+
+// ── Calcul totaux timesheet ───────────────────────────────
+function updateTotaux(){
+  let totalH=0;
+  document.querySelectorAll('.ts-cell input').forEach(inp=>{
+    totalH+=parseDuree(inp.value==='—'?'0':inp.value);
+  });
+  // Mettre à jour le total semaine dans le footer si présent
+  document.querySelectorAll('.ts-week-total,[data-total="semaine"]').forEach(el=>{
+    el.textContent=Math.round(totalH*10)/10+'h';
+  });
+}
+
+// ── Timer — arrêt → pré-remplir le modal ─────────────────
+const _origStopTimer=window.stopTimer;
+window.stopTimer=function(){
+  if(typeof _origStopTimer==='function') _origStopTimer();
+  // Pré-remplir durée avec le chrono
+  const display=document.getElementById('timer-display');
+  if(display){
+    const parts=display.textContent.split(':');
+    const h=parseInt(parts[0]||0);
+    const m=parseInt(parts[1]||0);
+    const hDecimal=h+(m/60);
+    // Trouver l'option la plus proche
+    const sel=document.getElementById('imp-duree');
+    if(sel){
+      const opts=[...sel.options].map(o=>({val:o.value,h:parseDuree(o.value)}));
+      const closest=opts.reduce((a,b)=>Math.abs(b.h-hDecimal)<Math.abs(a.h-hDecimal)?b:a);
+      sel.value=closest.val;
+    }
+  }
+  // Pré-remplir date
+  const dateInp=document.getElementById('imp-date');
+  if(dateInp) dateInp.value=new Date().toISOString().split('T')[0];
+  populateModalProjet();
+};
+
+// ── Patcher le bouton Enregistrer du modal ─────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  populateModalProjet();
+
+  const saveBtn=document.querySelector('#modal-saisie .modal__footer .btn--primary');
+  if(saveBtn) saveBtn.onclick=enregistrerSaisie;
+
+  // Date = aujourd'hui par défaut
+  const dateInp=document.getElementById('imp-date');
+  if(dateInp) dateInp.value=new Date().toISOString().split('T')[0];
+
+  // Écouter les changements de cellules pour recalculer les totaux
+  document.querySelectorAll('.ts-cell input').forEach(inp=>{
+    inp.addEventListener('change',updateTotaux);
+  });
+
+  updateTotaux();
+});
+
+let _tt4;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_tt4);_tt4=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+</script>
+</body>
+</html>

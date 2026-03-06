@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — Module 2.5 — Administration</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --admin-w:240px;--font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--shadow-md:0 4px 12px rgba(0,0,0,.09);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .shell{display:flex;min-height:100vh}
+    /* Nav principale */
+    .nav{width:60px;background:var(--primary);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;align-items:center;padding:12px 0;z-index:200}
+    .nav__logo{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;margin-bottom:16px}
+    .nav__ico{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:rgba(255,255,255,.6);transition:all .15s;margin-bottom:4px}
+    .nav__ico:hover,.nav__ico--on{background:rgba(255,255,255,.12);color:#fff}
+    .nav__avatar{margin-top:auto;width:32px;height:32px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+    /* Admin sidebar */
+    .admin-nav{width:var(--admin-w);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:0;left:60px;bottom:0;overflow-y:auto;z-index:100}
+    .admin-nav__hd{padding:16px 16px 10px;border-bottom:1px solid var(--border);background:var(--grey-l)}
+    .admin-nav__title{font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px}
+    .admin-sec{padding:12px 16px 2px;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px}
+    .admin-item{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:13px;color:var(--text-2);cursor:pointer;border-left:3px solid transparent;transition:all .12s;position:relative}
+    .admin-item:hover{background:var(--grey-l);color:var(--text)}
+    .admin-item--on{background:var(--primary-l);color:var(--primary);font-weight:600;border-left-color:var(--primary)}
+    .admin-item__badge{margin-left:auto;font-size:10px;background:var(--orange-l);color:var(--orange);padding:1px 5px;border-radius:3px;font-weight:700}
+    /* Main */
+    .wrap{margin-left:calc(60px + var(--admin-w));flex:1;display:flex;flex-direction:column}
+    .topbar{height:50px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar__bc{font-size:13px;color:var(--text-2);flex:1}
+    .topbar__bc strong{color:var(--text)}
+    .section{padding:24px;display:none;flex-direction:column;gap:20px;max-width:1100px}
+    .section--on{display:flex}
+    /* Cards */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .card__hd{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .card__title{font-size:13px;font-weight:700;color:var(--text)}
+    .card__sub{font-size:12px;color:var(--text-3);margin-top:1px}
+    .card__body{padding:16px 18px}
+    /* Formulaires */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-group--full{grid-column:1/-1}
+    .form-label{font-size:12.5px;font-weight:600;color:var(--text)}
+    .form-sub{font-size:11.5px;color:var(--text-3);margin-top:3px}
+    .form-input,.form-select,.form-textarea{padding:8px 11px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;color:var(--text);outline:none;transition:border-color .15s;background:var(--bg)}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(27,73,101,.1);background:var(--surface)}
+    .form-textarea{resize:vertical;min-height:70px}
+    /* Boutons */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--danger{background:var(--red-l);color:var(--red);border-color:rgba(192,57,43,.3)}.btn--danger:hover{background:var(--red);color:#fff}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .badge--purple{background:var(--purple-l);color:var(--purple)}
+    /* Tables */
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{background:var(--grey-l);border-bottom:1px solid var(--border);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+    .tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .tbl tr:last-child td{border-bottom:none}
+    .tbl tr:hover td{background:rgba(27,73,101,.015)}
+    /* Toggle */
+    .toggle{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:var(--border-md);border-radius:10px;transition:.2s}
+    .toggle input:checked + .toggle-slider{background:var(--primary)}
+    .toggle-slider::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle input:checked + .toggle-slider::after{left:19px}
+    /* Upload logo */
+    .upload-zone{border:2px dashed var(--border-md);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all .15s;color:var(--text-3)}
+    .upload-zone:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-l)}
+    /* Liste phases / types */
+    .sortable-list{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .sortable-item{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px;background:var(--surface);transition:background .12s}
+    .sortable-item:last-child{border-bottom:none}
+    .sortable-item:hover{background:var(--grey-l)}
+    .sortable-handle{color:var(--text-3);cursor:grab;font-size:16px;flex-shrink:0}
+    .sortable-handle:active{cursor:grabbing}
+    .sortable-item__name{font-weight:600;flex:1}
+    .sortable-item__meta{font-size:12px;color:var(--text-3)}
+    /* Matrice colonnes */
+    .ratio-grid{display:grid;grid-template-columns:auto 1fr 90px 90px 80px;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .ratio-grid__hd{background:var(--grey-l);padding:7px 10px;font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border)}
+    .ratio-grid__cell{padding:7px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;font-size:13px}
+    .ratio-grid__cell:last-child{border-right:none}
+    .ratio-input{width:64px;padding:4px 7px;border:1px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--mono);font-size:13px;text-align:right}
+    .ratio-total{background:var(--primary-l);font-weight:700;font-family:var(--mono);color:var(--primary)}
+    /* Audit log */
+    .audit-row{display:flex;gap:14px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center}
+    .audit-row:last-child{border-bottom:none}
+    .audit-time{font-family:var(--mono);font-size:11.5px;color:var(--text-3);min-width:130px;flex-shrink:0}
+    .audit-user{font-weight:700;min-width:90px;flex-shrink:0}
+    .audit-action{flex:1;color:var(--text-2)}
+    .audit-module{font-size:11px;background:var(--grey-l);padding:1px 6px;border-radius:3px;color:var(--text-2)}
+    /* Users table */
+    .user-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+    /* Abonnement */
+    .plan-card{border:2px solid var(--primary);border-radius:var(--r);padding:18px;background:var(--primary-l)}
+    .plan-card__name{font-size:18px;font-weight:700;color:var(--primary);margin-bottom:6px}
+    .plan-card__price{font-size:28px;font-weight:700;font-family:var(--mono);color:var(--primary)}
+    .plan-feature{display:flex;align-items:center;gap:6px;font-size:13px;padding:4px 0}
+    .plan-feature::before{content:'✓';color:var(--green);font-weight:700;width:16px;flex-shrink:0}
+    /* Couleurs swatch picker */
+    .swatch-row{display:flex;gap:6px;margin-top:4px}
+    .swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .12s}
+    .swatch:hover,.swatch--on{transform:scale(1.2);border-color:var(--text)}
+    /* Numéro format preview */
+    .num-preview{font-family:var(--mono);font-size:13px;background:var(--grey-l);padding:6px 12px;border-radius:var(--r-sm);margin-top:5px;color:var(--primary)}
+    /* Alerte inline */
+    .inline-alert{border-radius:var(--r-sm);padding:10px 14px;font-size:12.5px;display:flex;align-items:flex-start;gap:8px;margin-bottom:4px}
+    .inline-alert--warn{background:var(--orange-l);border:1px solid rgba(184,134,11,.3);color:#7a5c00}
+    .inline-alert--info{background:var(--primary-l);border:1px solid rgba(27,73,101,.2);color:var(--primary)}
+    .inline-alert--success{background:var(--green-l);border:1px solid rgba(45,106,79,.3);color:var(--green)}
+    /* Modèle contrat */
+    .template-editor{border:1.5px solid var(--border-md);border-radius:var(--r-sm);overflow:hidden}
+    .template-editor__toolbar{background:var(--grey-l);border-bottom:1px solid var(--border);padding:6px 10px;display:flex;gap:6px;flex-wrap:wrap}
+    .te-btn{padding:3px 8px;border:1px solid var(--border-md);border-radius:3px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2)}
+    .te-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .te-var{background:var(--primary-l);color:var(--primary);border-color:rgba(27,73,101,.3);font-family:var(--mono);font-size:11px}
+    .template-editor__body{padding:14px;font-size:13px;color:var(--text-2);min-height:140px;line-height:1.7;background:var(--bg)}
+    .tvar{background:var(--primary-l);color:var(--primary);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:12px}
+    /* Section title */
+    .sec-title{font-size:18px;font-weight:700;letter-spacing:-.3px}
+    .sec-sub{font-size:13px;color:var(--text-2);margin-top:3px}
+    .mono{font-family:var(--mono)}
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Icônes nav -->
+  <nav class="nav">
+    <div class="nav__logo">G</div>
+    <div class="nav__ico nav__ico--on" title="Admin">⚙</div>
+    <div class="nav__ico" title="Projets">📁</div>
+    <div class="nav__ico" title="Temps">⏱</div>
+    <div class="nav__ico" title="Finance">💰</div>
+    <div class="nav__avatar">DG</div>
+  </nav>
+
+  <!-- Sidebar admin -->
+  <aside class="admin-nav">
+    <div class="admin-nav__hd">
+      <div class="admin-nav__title">Administration</div>
+    </div>
+
+    <div class="admin-sec">Agence</div>
+    <div class="admin-item admin-item--on" onclick="show('agence')">🏢 Informations agence</div>
+    <div class="admin-item" onclick="show('users')">👥 Utilisateurs</div>
+    <div class="admin-item" onclick="show('abonnement')">💳 Abonnement SaaS</div>
+
+    <div class="admin-sec">Préférences projet</div>
+    <div class="admin-item" onclick="show('phases')">📐 Bibliothèque de phases</div>
+    <div class="admin-item" onclick="show('types')">📋 Types de mission</div>
+    <div class="admin-item" onclick="show('roles-projet')">👤 Rôles projet</div>
+    <div class="admin-item" onclick="show('taux')">💶 Taux horaires</div>
+
+    <div class="admin-sec">Documents & modèles</div>
+    <div class="admin-item" onclick="show('modeles-docs')">📄 Modèles de documents</div>
+    <div class="admin-item" onclick="show('contrats')">📝 Contrats-types</div>
+
+    <div class="admin-sec">Paramétrage</div>
+    <div class="admin-item" onclick="show('numerotation')">🔢 Numérotation automatique</div>
+    <div class="admin-item" onclick="show('signature')">✍ Signature électronique</div>
+    <div class="admin-item" onclick="show('alertes')">🔔 Alertes devis</div>
+    <div class="admin-item" onclick="show('categories')">🏷 Catégories & statuts</div>
+
+    <div class="admin-sec">Sécurité & audit</div>
+    <div class="admin-item" onclick="show('audit')"><span>📋</span> Journal d'audit <span class="admin-item__badge">New</span></div>
+    <div class="admin-item" onclick="show('rgpd')">🔐 Export RGPD</div>
+  </aside>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="topbar__bc">Paramètres / <strong id="topbar-title">Informations agence</strong></div>
+      <div id="topbar-actions">
+        <button class="btn btn--primary btn--sm" onclick="save()">Enregistrer les modifications</button>
+      </div>
+    </header>
+
+    <!-- ═══ AGENCE ═══ -->
+    <section class="section section--on" id="sec-agence">
+      <div><div class="sec-title">Informations agence</div><div class="sec-sub">Données légales et branding utilisés dans tous les documents produits.</div></div>
+
+      <div class="card">
+        <div class="card__hd"><div><div class="card__title">Identité légale</div></div></div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">Raison sociale <span style="color:var(--red)">*</span></label><input class="form-input" id="f-raison_sociale" value="Agence Lefort & Associés SARL"></div>
+            <div class="form-group"><label class="form-label">SIRET <span style="color:var(--red)">*</span></label><input class="form-input" id="f-siret" value="123 456 789 00012" class="mono"></div>
+            <div class="form-group"><label class="form-label">N° TVA intracommunautaire</label><input class="form-input" id="f-tva" value="FR12 123456789"></div>
+            <div class="form-group"><label class="form-label">Code APE</label><input class="form-input" id="f-ape" value="7111Z — Activités d'architecture"></div>
+            <div class="form-group form-group--full"><label class="form-label">Adresse du siège</label><input class="form-input" id="f-adresse_complete" value="14 rue des Architectes, 75011 Paris"></div>
+            <div class="form-group"><label class="form-label">Email de contact</label><input class="form-input" id="f-email" value="contact@agence-lefort.fr"></div>
+            <div class="form-group"><label class="form-label">Téléphone</label><input class="form-input" id="f-telephone" value="+33 1 42 00 00 00"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__hd"><div class="card__title">Coordonnées bancaires</div></div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div class="form-group"><label class="form-label">IBAN</label><input class="form-input mono" id="f-iban" value="FR76 3000 4000 0100 0000 0000 123"></div>
+            <div class="form-group"><label class="form-label">BIC / SWIFT</label><input class="form-input mono" id="f-bic" value="BNPAFRPP"></div>
+            <div class="form-group"><label class="form-label">Banque</label><input class="form-input" id="f-banque" value="BNP Paribas — Agence Paris 11e"></div>
+            <div class="form-group"><label class="form-label">Délai de paiement par défaut</label>
+              <select class="form-select" id="f-delai_paiement"><option value="30">30 jours nets</option><option>45 jours fin de mois</option><option>60 jours</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__hd"><div class="card__title">Branding & identité visuelle</div></div>
+        <div class="card__body">
+          <div class="form-grid">
+            <div>
+              <div class="form-label" style="margin-bottom:8px">Logo agence</div>
+              <div class="upload-zone" id="logo-zone">
+                <div style="font-size:28px;margin-bottom:4px">🖼</div>
+                <div style="font-size:13px;font-weight:600">Déposer un fichier ou cliquer</div>
+                <div style="font-size:11.5px;margin-top:4px;color:var(--text-3)">PNG, SVG — max 2 Mo — fond transparent recommandé</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="form-group">
+                <label class="form-label">Couleur principale</label>
+                <div class="swatch-row">
+                  <div class="swatch swatch--on" style="background:#1B4965"></div>
+                  <div class="swatch" style="background:#2D6A4F"></div>
+                  <div class="swatch" style="background:#B8860B"></div>
+                  <div class="swatch" style="background:#C0392B"></div>
+                  <div class="swatch" style="background:#6A3D9A"></div>
+                  <input type="color" id="color-primary" value="#1B4965" style="width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;padding:0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Couleur accent</label>
+                <div class="swatch-row">
+                  <div class="swatch swatch--on" style="background:#C75B37"></div>
+                  <div class="swatch" style="background:#E74C3C"></div>
+                  <div class="swatch" style="background:#F39C12"></div>
+                  <input type="color" id="color-accent" value="#C75B37" style="width:28px;height:28px;border:none;border-radius:50%;cursor:pointer;padding:0">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pied de page documents</label>
+                <input class="form-input" id="f-pied_de_page" value="Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ UTILISATEURS ═══ -->
+    <section class="section" id="sec-users">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div><div class="sec-title">Utilisateurs (11)</div><div class="sec-sub">Gérez les comptes, les rôles et les accès.</div></div>
+        <button class="btn btn--primary btn--sm">+ Inviter un collaborateur</button>
+      </div>
+      <div class="card">
+        <div class="card__body" style="padding:0">
+          <table class="tbl">
+            <thead><tr><th>Collaborateur</th><th>Rôle système</th><th>Agence</th><th>2FA</th><th>Dernière connexion</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:#C0392B">DG</div><div><div style="font-weight:700">D. Garnier</div><div style="font-size:11.5px;color:var(--text-3)">d.garnier@agence-lefort.fr</div></div></div></td>
+                <td><span class="badge badge--red">Dirigeant</span></td>
+                <td>Paris</td>
+                <td><span class="badge badge--green">✓ Actif</span></td>
+                <td class="mono" style="font-size:12px">Auj. 09:14</td>
+                <td><span class="badge badge--green">Actif</span></td>
+                <td><button class="btn btn--ghost btn--sm">⋯</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:#1B4965">ML</div><div><div style="font-weight:700">M. Lefort</div><div style="font-size:11.5px;color:var(--text-3)">m.lefort@agence-lefort.fr</div></div></div></td>
+                <td><span class="badge badge--blue">Chef de projet</span></td>
+                <td>Paris</td>
+                <td><span class="badge badge--green">✓ TOTP</span></td>
+                <td class="mono" style="font-size:12px">Auj. 08:32</td>
+                <td><span class="badge badge--green">Actif</span></td>
+                <td><button class="btn btn--ghost btn--sm">⋯</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:#2D6A4F">SM</div><div><div style="font-weight:700">S. Moreau</div><div style="font-size:11.5px;color:var(--text-3)">s.moreau@agence-lefort.fr</div></div></div></td>
+                <td><span class="badge badge--blue">Chef de projet</span></td>
+                <td>Paris</td>
+                <td><span class="badge badge--orange">Grace 5j</span></td>
+                <td class="mono" style="font-size:12px">05/03 17:22</td>
+                <td><span class="badge badge--green">Actif</span></td>
+                <td><button class="btn btn--ghost btn--sm">⋯</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:#B8860B">AD</div><div><div style="font-weight:700">A. Dupont</div><div style="font-size:11.5px;color:var(--text-3)">a.dupont@agence-lefort.fr</div></div></div></td>
+                <td><span class="badge badge--grey">Dessinateur</span></td>
+                <td>Paris</td>
+                <td><span class="badge badge--green">✓ TOTP</span></td>
+                <td class="mono" style="font-size:12px">Auj. 08:55</td>
+                <td><span class="badge badge--green">Actif</span></td>
+                <td><button class="btn btn--ghost btn--sm">⋯</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:#6A3D9A">LC</div><div><div style="font-weight:700">L. Chen</div><div style="font-size:11.5px;color:var(--text-3)">l.chen@agence-lefort.fr</div></div></div></td>
+                <td><span class="badge badge--grey">Dessinateur</span></td>
+                <td>Paris</td>
+                <td><span class="badge badge--green">✓ TOTP</span></td>
+                <td class="mono" style="font-size:12px">Auj. 08:41</td>
+                <td><span class="badge badge--green">Actif</span></td>
+                <td><button class="btn btn--ghost btn--sm">⋯</button></td>
+              </tr>
+              <tr style="opacity:.55">
+                <td><div style="display:flex;align-items:center;gap:8px"><div class="user-avatar" style="background:#555">TM</div><div><div style="font-weight:700">T. Martin</div><div style="font-size:11.5px;color:var(--text-3)">t.martin@agence-lefort.fr</div></div></div></td>
+                <td><span class="badge badge--grey">Stagiaire</span></td>
+                <td>Paris</td>
+                <td><span class="badge badge--grey">—</span></td>
+                <td class="mono" style="font-size:12px">01/03 11:00</td>
+                <td><span class="badge badge--orange">Invitation envoyée</span></td>
+                <td><button class="btn btn--ghost btn--sm">Renvoyer</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PHASES ═══ -->
+    <section class="section" id="sec-phases">
+      <div><div class="sec-title">Bibliothèque de phases</div><div class="sec-sub">Phases disponibles pour tous les projets. Glissez-déposez pour réordonner.</div></div>
+
+      <div class="card">
+        <div class="card__hd"><div class="card__title">Phases standards MOP (13)</div><button class="btn btn--ghost btn--sm">+ Ajouter une phase</button></div>
+        <div class="card__body" style="padding:0">
+          <div class="sortable-list">
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">ESQ</span><span class="sortable-item__name">Esquisse</span><span class="sortable-item__meta">Phase MOP standard</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">APS</span><span class="sortable-item__name">Avant-Projet Sommaire</span><span class="sortable-item__meta">Phase MOP standard</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">APD</span><span class="sortable-item__name">Avant-Projet Détaillé</span><span class="sortable-item__meta">Phase MOP standard</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">PRO</span><span class="sortable-item__name">Projet</span><span class="sortable-item__meta">Phase MOP standard</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">DCE</span><span class="sortable-item__name">Dossier de Consultation des Entreprises</span><span class="sortable-item__meta">Phase MOP standard</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--text-3);font-weight:700">ACT</span><span class="sortable-item__name">Assistance aux Contrats de Travaux</span><span class="sortable-item__meta">Phase MOP standard</span><span class="badge badge--grey">Optionnel</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">DET</span><span class="sortable-item__name">Direction de l'Exécution des Travaux</span><span class="sortable-item__meta">Phase chantier 🏗</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--primary);font-weight:700">AOR</span><span class="sortable-item__name">Assistance aux Opérations de Réception</span><span class="sortable-item__meta">Phase chantier 🏗</span><span class="badge badge--green">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--orange);font-weight:700">OPC</span><span class="sortable-item__name">Ordonnancement, Pilotage, Coordination</span><span class="sortable-item__meta">Mission complémentaire</span><span class="badge badge--orange">Complémentaire</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+            <div class="sortable-item"><span class="sortable-handle">⠿</span><span style="font-family:var(--mono);font-size:12px;min-width:40px;color:var(--orange);font-weight:700">DIAG</span><span class="sortable-item__name">Diagnostic</span><span class="sortable-item__meta">Mission spécifique</span><span class="badge badge--orange">Complémentaire</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TYPES DE MISSION ═══ -->
+    <section class="section" id="sec-types">
+      <div><div class="sec-title">Types de mission</div><div class="sec-sub">Configurez les formulaires projet, phases par défaut et ratios d'honoraires pour chaque type.</div></div>
+
+      <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start">
+        <div class="sortable-list">
+          <div class="sortable-item" style="background:var(--primary-l);border-left:3px solid var(--primary)"><span class="sortable-handle">⠿</span><span class="sortable-item__name" style="color:var(--primary)">MOE</span></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">OPC</span></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Diagnostic</span></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Concours</span></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">AMO</span></div>
+          <div class="sortable-item" style="padding:8px 14px;border-top:1px solid var(--border)"><button class="btn btn--ghost btn--sm" style="width:100%">+ Ajouter</button></div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card__hd"><div><div class="card__title">Type de mission : MOE</div><div class="card__sub">Maîtrise d'Œuvre complète</div></div></div>
+            <div class="card__body" style="display:flex;flex-direction:column;gap:16px">
+
+              <!-- Champs formulaire -->
+              <div>
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px">Champs du formulaire de création</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked disabled> Nom du projet <span class="badge badge--red" style="font-size:10px">Tronc commun</span></label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked disabled> Type de mission <span class="badge badge--red" style="font-size:10px">Tronc commun</span></label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked disabled> MOA <span class="badge badge--red" style="font-size:10px">Tronc commun</span></label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Adresse chantier</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Surface SHON (m²)</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Montant travaux HT</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Montant honoraires HT</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Mode de rémunération</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Phases MOP</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox"> Type de marché</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox" checked> Programme</label>
+                  <label style="display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 8px;border-radius:var(--r-sm);border:1px solid var(--border);cursor:pointer"><input type="checkbox"> Jalons personnalisés</label>
+                </div>
+              </div>
+
+              <!-- Ratios par phase -->
+              <div>
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px">Ratios d'honoraires et durées par phase</div>
+                <div class="ratio-grid">
+                  <div class="ratio-grid__hd">Phase</div>
+                  <div class="ratio-grid__hd">Libellé</div>
+                  <div class="ratio-grid__hd" style="text-align:right">Ratio %</div>
+                  <div class="ratio-grid__hd" style="text-align:right">Durée (sem.)</div>
+                  <div class="ratio-grid__hd" style="text-align:center">Pré-cochée</div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">ESQ</span></div>
+                  <div class="ratio-grid__cell">Esquisse</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="8" type="number" min="0" max="100"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="4" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">APS</span></div>
+                  <div class="ratio-grid__cell">Avant-Projet Sommaire</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="12" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="6" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">APD</span></div>
+                  <div class="ratio-grid__cell">Avant-Projet Détaillé</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="15" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="8" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">PRO</span></div>
+                  <div class="ratio-grid__cell">Projet</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="20" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="10" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">DCE</span></div>
+                  <div class="ratio-grid__cell">DCE</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="10" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="4" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">DET</span></div>
+                  <div class="ratio-grid__cell">Direction Exécution Travaux</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="25" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="40" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell"><span class="mono" style="color:var(--primary);font-weight:700">AOR</span></div>
+                  <div class="ratio-grid__cell">Assistance Opérations Réception</div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="10" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:flex-end"><input class="ratio-input" value="8" type="number"></div>
+                  <div class="ratio-grid__cell" style="justify-content:center"><input type="checkbox" checked></div>
+
+                  <div class="ratio-grid__cell ratio-total">TOTAL</div>
+                  <div class="ratio-grid__cell ratio-total"></div>
+                  <div class="ratio-grid__cell ratio-total" style="justify-content:flex-end">100 %</div>
+                  <div class="ratio-grid__cell ratio-total" style="justify-content:flex-end">80 sem.</div>
+                  <div class="ratio-grid__cell ratio-total"></div>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Le total doit être égal à 100%. Ces valeurs sont utilisées pour décomposer automatiquement les devis et plans de facturation.</div>
+              </div>
+
+              <!-- Modèle de contrat associé -->
+              <div class="form-group">
+                <label class="form-label">Modèle de contrat par défaut</label>
+                <select class="form-select"><option>Contrat MOE standard (lettre de mission)</option><option>Convention d'honoraires longue</option><option>Aucun</option></select>
+                <div class="form-sub">Proposé automatiquement à la génération d'un devis pour ce type de mission.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ TAUX HORAIRES ═══ -->
+    <section class="section" id="sec-taux">
+      <div><div class="sec-title">Taux horaires</div><div class="sec-sub">Par profil et par année. Les changements s'appliquent aux nouvelles saisies sans modifier l'historique.</div></div>
+      <div class="card">
+        <div class="card__hd"><div class="card__title">Taux 2026</div><div style="display:flex;gap:8px"><button class="btn btn--ghost btn--sm">Copier depuis 2025</button><button class="btn btn--ghost btn--sm">+ Ajouter un profil</button></div></div>
+        <div class="card__body" style="padding:0">
+          <table class="tbl" id="taux-table">
+            <thead><tr><th>Profil</th><th>Taux horaire HT</th><th>Taux chargé (coût)</th><th>Marge cible</th><th>Valide depuis</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><strong>Dirigeant / Associé</strong></td><td><input class="ratio-input" value="130" style="width:80px">€/h</td><td class="mono" style="color:var(--text-3)">55 €/h</td><td><input class="ratio-input" value="58" style="width:60px">%</td><td class="mono" style="font-size:12px">01/01/2026</td><td><button class="btn btn--ghost btn--sm">✏</button></td></tr>
+              <tr><td><strong>Chef de projet</strong></td><td><input class="ratio-input" value="95" style="width:80px">€/h</td><td class="mono" style="color:var(--text-3)">48 €/h</td><td><input class="ratio-input" value="50" style="width:60px">%</td><td class="mono" style="font-size:12px">01/01/2026</td><td><button class="btn btn--ghost btn--sm">✏</button></td></tr>
+              <tr><td><strong>Architecte / Collaborateur</strong></td><td><input class="ratio-input" value="80" style="width:80px">€/h</td><td class="mono" style="color:var(--text-3)">40 €/h</td><td><input class="ratio-input" value="50" style="width:60px">%</td><td class="mono" style="font-size:12px">01/01/2026</td><td><button class="btn btn--ghost btn--sm">✏</button></td></tr>
+              <tr><td><strong>Dessinateur / Projeteur</strong></td><td><input class="ratio-input" value="58" style="width:80px">€/h</td><td class="mono" style="color:var(--text-3)">30 €/h</td><td><input class="ratio-input" value="48" style="width:60px">%</td><td class="mono" style="font-size:12px">01/01/2026</td><td><button class="btn btn--ghost btn--sm">✏</button></td></tr>
+              <tr><td><strong>Stagiaire</strong></td><td><input class="ratio-input" value="25" style="width:80px">€/h</td><td class="mono" style="color:var(--text-3)">12 €/h</td><td><input class="ratio-input" value="52" style="width:60px">%</td><td class="mono" style="font-size:12px">01/01/2026</td><td><button class="btn btn--ghost btn--sm">✏</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ NUMÉROTATION ═══ -->
+    <section class="section" id="sec-numerotation">
+      <div><div class="sec-title">Numérotation automatique</div><div class="sec-sub">Format des identifiants générés automatiquement. Les modifications s'appliquent aux prochains documents créés.</div></div>
+      <div class="card">
+        <div class="card__body" style="display:flex;flex-direction:column;gap:16px">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Format Projets</label>
+              <input class="form-input mono" value="PRJ-{YEAR}-{SEQ:3}">
+              <div class="num-preview">→ PRJ-2026-001</div>
+              <div class="form-sub">Variables : {YEAR}, {MONTH}, {SEQ:N}, {AGENCY}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Format Devis</label>
+              <input class="form-input mono" value="D-{YEAR}-{SEQ:3}">
+              <div class="num-preview">→ D-2026-008</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Format Factures</label>
+              <input class="form-input mono" value="FAC-{YEAR}-{SEQ:3}">
+              <div class="num-preview">→ FAC-2026-012</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Format Avoirs</label>
+              <input class="form-input mono" value="AV-{YEAR}-{SEQ:3}">
+              <div class="num-preview">→ AV-2026-001</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prochain N° de projet</label>
+              <input class="form-input mono" value="14">
+              <div class="form-sub">Compteur actuel. Modifiable manuellement (irréversible).</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prochain N° de facture</label>
+              <input class="form-input mono" value="13">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SIGNATURE ÉLECTRONIQUE ═══ -->
+    <section class="section" id="sec-signature">
+      <div><div class="sec-title">Signature électronique</div><div class="sec-sub">Paramétrez le prestataire de signature et les règles d'envoi.</div></div>
+      <div class="card">
+        <div class="card__body" style="display:flex;flex-direction:column;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Prestataire de signature</label>
+            <div style="display:flex;gap:10px">
+              <label style="flex:1;border:2px solid var(--primary);border-radius:var(--r-sm);padding:10px 14px;cursor:pointer;background:var(--primary-l);display:flex;align-items:center;gap:8px"><input type="radio" name="provider" checked> <strong>Yousign</strong> <span class="badge badge--green" style="font-size:10px">Configuré</span></label>
+              <label style="flex:1;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:8px"><input type="radio" name="provider"> DocuSign</label>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Durée de validité des liens de signature</label>
+              <div style="display:flex;align-items:center;gap:8px"><input class="form-input" value="30" type="number" style="width:80px"> <span style="color:var(--text-2)">jours</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Relance automatique avant expiration</label>
+              <div style="display:flex;align-items:center;gap:8px"><input class="form-input" value="5" type="number" style="width:80px"> <span style="color:var(--text-2)">jours avant</span></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Niveau de signature requis par type de marché</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:10px"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Marché privé</div><select class="form-select" style="font-size:12px"><option>Signature simple</option><option>Signature avancée</option></select></div>
+              <div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:10px"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Marché public</div><select class="form-select" style="font-size:12px"><option>Signature avancée</option><option>Signature qualifiée eIDAS</option></select></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Modèle d'email d'envoi</label>
+            <div class="template-editor">
+              <div class="template-editor__toolbar">
+                <button class="te-btn te-var" onclick="insertVar('{{nom_projet}}')">{{nom_projet}}</button>
+                <button class="te-btn te-var" onclick="insertVar('{{nom_moa}}')">{{nom_moa}}</button>
+                <button class="te-btn te-var" onclick="insertVar('{{montant_ht}}')">{{montant_ht}}</button>
+                <button class="te-btn te-var" onclick="insertVar('{{lien_signature}}')">{{lien_signature}}</button>
+                <button class="te-btn te-var" onclick="insertVar('{{date_expiration}}')">{{date_expiration}}</button>
+              </div>
+              <div class="template-editor__body" contenteditable="true">
+                Bonjour,<br><br>Veuillez trouver ci-joint la proposition d'honoraires pour le projet <span class="tvar">{{nom_projet}}</span> d'un montant de <span class="tvar">{{montant_ht}}</span> € HT.<br><br>Vous pouvez signer ce document en ligne via le lien suivant (valable jusqu'au <span class="tvar">{{date_expiration}}</span>) :<br><span class="tvar">{{lien_signature}}</span><br><br>Cordialement,<br>L'équipe Agence Lefort & Associés
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CONTRATS-TYPES ═══ -->
+    <section class="section" id="sec-contrats">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div><div class="sec-title">Modèles de contrats-types</div><div class="sec-sub">Gabarits réutilisables avec variables dynamiques. Associés automatiquement au type de mission.</div></div>
+        <button class="btn btn--primary btn--sm">+ Nouveau modèle</button>
+      </div>
+      <div class="card">
+        <div class="card__hd"><div><div class="card__title">Contrat MOE standard — Lettre de mission</div><div class="card__sub">Associé à : MOE · Dernière modification : 15/01/2026</div></div><div style="display:flex;gap:6px"><button class="btn btn--ghost btn--sm">Dupliquer</button><button class="btn btn--ghost btn--sm">Prévisualiser</button></div></div>
+        <div class="card__body">
+          <div class="template-editor">
+            <div class="template-editor__toolbar">
+              <button class="te-btn" style="font-weight:700">G</button>
+              <button class="te-btn" style="font-style:italic">I</button>
+              <button class="te-btn" style="text-decoration:underline">S</button>
+              <span style="width:1px;background:var(--border);margin:0 4px"></span>
+              <button class="te-btn te-var">{{nom_agence}}</button>
+              <button class="te-btn te-var">{{nom_moa}}</button>
+              <button class="te-btn te-var">{{nom_projet}}</button>
+              <button class="te-btn te-var">{{adresse_chantier}}</button>
+              <button class="te-btn te-var">{{montant_ht}}</button>
+              <button class="te-btn te-var">{{phases}}</button>
+              <button class="te-btn te-var">{{date_signature}}</button>
+            </div>
+            <div class="template-editor__body" contenteditable="true" style="min-height:180px">
+              <strong>LETTRE DE MISSION DE MAÎTRISE D'ŒUVRE</strong><br><br>
+              Entre : <span class="tvar">{{nom_agence}}</span>, SARL d'architecture, SIRET <span class="tvar">{{siret_agence}}</span>, ci-après désignée « l'Architecte »,<br>
+              Et : <span class="tvar">{{nom_moa}}</span>, ci-après désigné « le Maître d'Ouvrage »,<br><br>
+              Il est convenu ce qui suit pour l'opération : <span class="tvar">{{nom_projet}}</span> sise <span class="tvar">{{adresse_chantier}}</span>.<br><br>
+              <strong>Article 1 — Objet de la mission</strong><br>
+              L'Architecte est chargé d'une mission de maîtrise d'œuvre comprenant les phases suivantes : <span class="tvar">{{phases}}</span>.<br><br>
+              <strong>Article 2 — Honoraires</strong><br>
+              Les honoraires sont fixés à <span class="tvar">{{montant_ht}}</span> € HT (<span class="tvar">{{montant_ttc}}</span> € TTC), décomposés selon le tableau joint.<br>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn--primary btn--sm">Enregistrer le modèle</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ AUDIT ═══ -->
+    <section class="section" id="sec-audit">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div><div class="sec-title">Journal d'audit</div><div class="sec-sub">Traçabilité complète — qui a fait quoi, quand, sur quel objet.</div></div>
+        <button class="btn btn--ghost btn--sm">⬇ Exporter CSV</button>
+      </div>
+      <div class="card">
+        <div class="card__hd" style="gap:10px;flex-wrap:wrap">
+          <input class="form-input" placeholder="Rechercher…" style="width:200px;padding:6px 10px;font-size:12.5px">
+          <select class="form-select" style="font-size:12.5px;padding:6px 10px"><option>Tous les utilisateurs</option><option>M. Lefort</option><option>D. Garnier</option></select>
+          <select class="form-select" style="font-size:12.5px;padding:6px 10px"><option>Tous les modules</option><option>1.5 Facturation</option><option>2.3 Rôles</option></select>
+          <input type="date" class="form-input" value="2026-03-01" style="padding:6px 10px;font-size:12.5px">
+          <span style="color:var(--text-3)">→</span>
+          <input type="date" class="form-input" value="2026-03-06" style="padding:6px 10px;font-size:12.5px">
+        </div>
+        <div style="border-top:1px solid var(--border)">
+          <div class="audit-row"><span class="audit-time">06/03/2026 09:22</span><span class="audit-user">D. Garnier</span><span class="audit-action">A activé le 2FA obligatoire pour l'agence</span><span class="audit-module">2.5 Admin</span></div>
+          <div class="audit-row"><span class="audit-time">06/03/2026 08:45</span><span class="audit-user">M. Lefort</span><span class="audit-action">A acté le projet « École Jules-Ferry » (date signature : 04/03/2026)</span><span class="audit-module">1.1 Projets</span></div>
+          <div class="audit-row"><span class="audit-time">05/03/2026 17:30</span><span class="audit-user">M. Lefort</span><span class="audit-action">A modifié les droits du rôle « Stagiaire » (1.3 Temps : écriture retirée)</span><span class="audit-module">2.3 Rôles</span></div>
+          <div class="audit-row"><span class="audit-time">05/03/2026 14:12</span><span class="audit-user">S. Moreau</span><span class="audit-action">A validé la feuille de temps S09 (délégation M. Lefort)</span><span class="audit-module">1.3 Temps</span></div>
+          <div class="audit-row"><span class="audit-time">04/03/2026 16:00</span><span class="audit-user">D. Garnier</span><span class="audit-action">A émis la facture FAC-2026-012 — Groupe scolaire V. Hugo — 45 900 €</span><span class="audit-module">1.5 Finance</span></div>
+          <div class="audit-row"><span class="audit-time">04/03/2026 11:22</span><span class="audit-user">D. Garnier</span><span class="audit-action">A modifié le taux horaire « Chef de projet » de 90 €/h → 95 €/h (2026)</span><span class="audit-module">2.5 Admin</span></div>
+          <div class="audit-row"><span class="audit-time">03/03/2026 09:05</span><span class="audit-user">M. Lefort</span><span class="audit-action">A invité T. Martin (t.martin@…) avec rôle « Stagiaire »</span><span class="audit-module">2.5 Admin</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ ABONNEMENT ═══ -->
+    <section class="section" id="sec-abonnement">
+      <div><div class="sec-title">Abonnement SaaS</div><div class="sec-sub">Gestion de votre plan et de la facturation Anthropic GAA.</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div class="plan-card">
+          <div class="plan-card__name">Plan Team</div>
+          <div class="plan-card__price">149 <span style="font-size:16px;font-weight:500">€/mois</span></div>
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:12px">pour 11 utilisateurs · facturé annuellement</div>
+          <div class="plan-feature">Tous les modules cœur métier (1.1 → 1.10)</div>
+          <div class="plan-feature">Modules plateforme SaaS (2.x)</div>
+          <div class="plan-feature">Multi-tenant jusqu'à 3 entités</div>
+          <div class="plan-feature">50 Go de stockage GED</div>
+          <div class="plan-feature">Signature électronique via Yousign (incluse)</div>
+          <div class="plan-feature">Support email J+1</div>
+          <div style="margin-top:14px;display:flex;gap:8px">
+            <button class="btn btn--primary btn--sm">Passer au plan Enterprise</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div class="card__hd"><div class="card__title">Détails de l'abonnement</div></div>
+            <div class="card__body" style="font-size:13px;display:flex;flex-direction:column;gap:7px">
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">Prochain renouvellement</span><span class="mono" style="font-weight:700">01/04/2026</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">Utilisateurs actifs</span><span class="mono">10 / 20 inclus</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">Stockage utilisé</span><span class="mono">18,4 Go / 50 Go</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">Facturé à</span><span>Agence Lefort & Associés</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:var(--text-3)">Moyen de paiement</span><span>CB Visa ···· 4242</span></div>
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button class="btn btn--ghost btn--sm">Télécharger les factures</button>
+                <button class="btn btn--ghost btn--sm">Modifier la CB</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card__hd"><div class="card__title">Export RGPD</div></div>
+            <div class="card__body" style="font-size:13px">
+              <p style="color:var(--text-2);margin-bottom:10px">Exportez l'intégralité des données de votre agence (projets, temps, contacts, documents…) au format JSON ou CSV.</p>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn--ghost btn--sm">⬇ Export JSON complet</button>
+                <button class="btn btn--ghost btn--sm">⬇ Export CSV</button>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:8px">Dernier export : 01/02/2026 · Traitement ~15 min pour les grandes agences.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Autres sections stub -->
+    <section class="section" id="sec-roles-projet">
+      <div><div class="sec-title">Rôles projet</div><div class="sec-sub">Fonctions métier assignables aux collaborateurs sur un projet (distincts des rôles RBAC système).</div></div>
+      <div class="card"><div class="card__hd"><div class="card__title">Rôles disponibles</div><button class="btn btn--ghost btn--sm">+ Ajouter</button></div>
+      <div class="card__body" style="padding:0">
+        <div class="sortable-list">
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Chef de projet</span><span class="sortable-item__meta">Rôle par défaut · Requis par projet</span><span class="badge badge--red">Requis</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Architecte</span><span class="sortable-item__meta">Rôle standard</span><span class="badge badge--grey">Optionnel</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Dessinateur</span><span class="sortable-item__meta">Rôle standard</span><span class="badge badge--grey">Optionnel</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Projeteur</span><span class="sortable-item__meta">Rôle standard</span><span class="badge badge--grey">Optionnel</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">BIM Manager</span><span class="sortable-item__meta">Rôle personnalisé</span><span class="badge badge--purple">Personnalisé</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+          <div class="sortable-item"><span class="sortable-handle">⠿</span><span class="sortable-item__name">Assistant</span><span class="sortable-item__meta">Rôle standard</span><span class="badge badge--grey">Optionnel</span><button class="btn btn--ghost btn--sm" style="margin-left:8px">✏</button></div>
+        </div>
+      </div></div>
+    </section>
+    <section class="section" id="sec-modeles-docs"><div><div class="sec-title">Modèles de documents</div><div class="sec-sub">En-têtes, pieds de page, chartes graphiques appliqués aux documents générés.</div></div><div class="card"><div class="card__body"><div class="inline-alert inline-alert--info">ℹ️ Les modèles de documents utilisent les couleurs et le logo configurés dans "Informations agence". Cliquez sur un type pour l'éditer.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px"><div style="border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;text-align:center"><div style="font-size:24px;margin-bottom:6px">📄</div><div style="font-weight:700;font-size:13px">Devis / proposition</div><div style="font-size:11.5px;color:var(--text-3);margin-top:3px">Modèle configuré</div></div><div style="border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;text-align:center"><div style="font-size:24px;margin-bottom:6px">🧾</div><div style="font-weight:700;font-size:13px">Facture</div><div style="font-size:11.5px;color:var(--text-3);margin-top:3px">Modèle configuré</div></div><div style="border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;text-align:center"><div style="font-size:24px;margin-bottom:6px">📋</div><div style="font-weight:700;font-size:13px">Compte-rendu</div><div style="font-size:11.5px;color:var(--text-3);margin-top:3px">Modèle par défaut</div></div></div></div></div></section>
+    <section class="section" id="sec-alertes"><div><div class="sec-title">Alertes devis</div><div class="sec-sub">Seuils déclenchant les alertes sur les devis autonomes et les propositions en attente.</div></div><div class="card"><div class="card__body" style="display:flex;flex-direction:column;gap:14px"><div class="form-group"><label class="form-label">Délai alerte "devis en attente de signature" (jours)</label><div style="display:flex;align-items:center;gap:8px"><input class="form-input" value="15" type="number" style="width:80px"><span style="color:var(--text-2)">jours sans réponse du MOA</span></div></div><div class="form-group"><label class="form-label">Délai alerte "devis autonome non converti en projet" (jours)</label><div style="display:flex;align-items:center;gap:8px"><input class="form-input" value="30" type="number" style="width:80px"><span style="color:var(--text-2)">jours depuis la création du devis</span></div></div><div class="form-group"><label class="form-label">Destinataires des alertes</label><select class="form-select"><option>Créateur du devis + Dirigeant</option><option>Créateur du devis uniquement</option><option>Dirigeant uniquement</option></select></div></div></div></section>
+    <section class="section" id="sec-categories"><div><div class="sec-title">Catégories & statuts</div><div class="sec-sub">Catégories de dépenses, types de documents, statuts projet personnalisables.</div></div><div class="card"><div class="card__body"><div class="inline-alert inline-alert--warn">⚠ La modification des statuts projet est limitée — les statuts du cycle de vie (Brouillon, En attente, Acté…) sont des valeurs système non modifiables. Seuls les libellés affichés peuvent être personnalisés.</div></div></div></section>
+    <section class="section" id="sec-rgpd"><div><div class="sec-title">Export RGPD</div><div class="sec-sub">Exportez ou supprimez les données personnelles conformément au RGPD.</div></div><div class="card"><div class="card__body"><p style="font-size:13px;color:var(--text-2);margin-bottom:14px">L'export inclut toutes les données de l'agence : projets, contacts, temps, documents (métadonnées), factures, journaux d'audit. Traitement asynchrone — vous recevrez un email avec le lien de téléchargement.</p><div style="display:flex;gap:8px"><button class="btn btn--primary btn--sm">Demander un export complet</button><button class="btn btn--danger btn--sm">Demander une suppression de compte</button></div></div></div></section>
+
+  </div>
+</div>
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- GAA STORE + LOGIQUE FONCTIONNELLE                  -->
+<!-- ═══════════════════════════════════════════════════ -->
+<style>
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+  .toast--on{transform:translateY(0);opacity:1}
+  .toast--success{background:var(--green)}
+  .toast--error{background:var(--red)}
+  #dirty-bar{display:none;position:sticky;top:50px;z-index:49;background:var(--orange-l);border-bottom:1px solid rgba(184,134,11,.3);padding:8px 24px;display:none;align-items:center;gap:12px;font-size:13px;color:#7a5c00}
+</style>
+
+<div id="dirty-bar">
+  <span>● Modifications non enregistrées</span>
+  <button class="btn btn--ghost btn--sm" onclick="discardChanges()">Annuler</button>
+  <button class="btn btn--primary btn--sm" onclick="saveCurrentSection()">Enregistrer</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// STORE
+// ─────────────────────────────────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  const DEFAULTS = {
+    agence:{
+      raison_sociale:'Agence Lefort & Associés SARL',
+      siret:'123 456 789 00012', tva:'FR12 123456789',
+      ape:'7111Z', adresse_complete:'14 rue des Architectes, 75011 Paris',
+      email:'contact@agence-lefort.fr', telephone:'+33 1 42 00 00 00',
+      iban:'FR76 3000 4000 0100 0000 0000 123', bic:'BNPAFRPP',
+      banque:'BNP Paribas — Agence Paris 11e', delai_paiement:'30',
+      pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345',
+    },
+    branding:{ couleur_principale:'#1B4965', couleur_accent:'#C75B37', logo_url:null },
+    taux:[
+      {profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},
+      {profil:'Chef de projet',taux:95,cout:48,marge:50},
+      {profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},
+      {profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},
+      {profil:'Stagiaire',taux:25,cout:12,marge:52},
+    ],
+    numerotation:{
+      projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},
+      devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},
+      facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},
+      avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1},
+    },
+    phases:[
+      {code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},
+      {code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},
+      {code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},
+      {code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},
+      {code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},
+      {code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},
+      {code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},
+      {code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true},
+    ],
+    utilisateurs:[
+      {id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},
+      {id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},
+      {id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},
+      {id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},
+      {id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},
+      {id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},
+      {id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false},
+    ],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+  };
+  function _ts(){const n=new Date();return `${pad(n.getDate())}/${pad(n.getMonth()+1)}/${n.getFullYear()} ${pad(n.getHours())}:${pad(n.getMinutes())}`;}
+  function pad(n){return String(n).padStart(2,'0');}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch{return false;}};
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){return w(k,v);},
+    update(k,p){const c=this.get(k);if(Array.isArray(c)){console.warn('use set for arrays');return false;}return w(k,{...c,...p});},
+    addAudit(user,action,module){
+      const log=this.get(K.AUDIT)||[];
+      log.unshift({time:_ts(),user,action,module});
+      w(K.AUDIT,log.slice(0,200));
+    },
+    previewNumero(type){
+      const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return '—';
+      const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');
+      return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);
+    },
+    reset(){Object.values(K).forEach(k=>localStorage.removeItem(P+k));this.init();},
+    dump(){const o={};Object.values(K).forEach(k=>{o[k]=r(k);});return o;},
+  };
+})();
+
+GAAStore.init();
+window.GAAStore = GAAStore; // exposé pour les autres modules
+
+// ─────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────
+const SECTION_IDS = ['agence','users','phases','taux','numerotation','alertes','audit','rgpd','abonnement'];
+const SECTION_LABELS = {
+  agence:'Informations agence', users:'Utilisateurs', phases:'Bibliothèque de phases',
+  taux:'Taux horaires', numerotation:'Numérotation automatique',
+  alertes:'Alertes devis', audit:'Journal d\'audit', rgpd:'Export RGPD', abonnement:'Abonnement SaaS',
+};
+let currentSection = 'agence';
+let isDirty = false;
+
+// Patch la fonction show() qui existe déjà en static
+const _showOrig = window.show;
+window.show = function(id) {
+  if(isDirty && !confirm('Modifications non enregistrées — continuer sans enregistrer ?')) return;
+  isDirty = false;
+  updateDirtyBar();
+  SECTION_IDS.forEach(s => {
+    document.getElementById('sec-'+s)?.classList.remove('section--on');
+    document.querySelectorAll('.admin-item').forEach(el => {
+      if(el.getAttribute('onclick') === `show('${s}')`) el.classList.remove('admin-item--on');
+    });
+  });
+  const sec = document.getElementById('sec-'+id);
+  if(sec) sec.classList.add('section--on');
+  document.querySelectorAll('.admin-item').forEach(el => {
+    if(el.getAttribute('onclick') === `show('${id}')`) el.classList.add('admin-item--on');
+  });
+  const tb = document.getElementById('topbar-title');
+  if(tb) tb.textContent = SECTION_LABELS[id] || id;
+  currentSection = id;
+  loadSection(id);
+};
+
+function loadSection(id) {
+  if(id==='agence')       loadAgence();
+  if(id==='users')        renderUsers();
+  if(id==='phases')       renderPhases();
+  if(id==='taux')         renderTaux();
+  if(id==='numerotation') renderNumerotation();
+  if(id==='alertes')      loadAlertes();
+  if(id==='audit')        renderAudit();
+  if(id==='abonnement')   renderAbonnement();
+}
+
+// ─────────────────────────────────────────────
+// DIRTY STATE
+// ─────────────────────────────────────────────
+function markDirty() { isDirty=true; updateDirtyBar(); }
+function updateDirtyBar() {
+  const bar = document.getElementById('dirty-bar');
+  if(bar) bar.style.display = isDirty ? 'flex' : 'none';
+}
+function discardChanges() {
+  isDirty=false; updateDirtyBar();
+  loadSection(currentSection);
+  toast('Modifications annulées');
+}
+function saveCurrentSection() {
+  ({agence:saveAgence,taux:saveTaux,phases:savePhases,
+    numerotation:saveNumerotation,alertes:saveAlertes})[currentSection]?.();
+}
+
+// Écouter les modifications sur tous les inputs de la page
+document.addEventListener('input', e => {
+  if(e.target.closest('.section.section--on')) markDirty();
+});
+
+// ─────────────────────────────────────────────
+// SECTION AGENCE
+// ─────────────────────────────────────────────
+function loadAgence() {
+  const d = GAAStore.get(GAAStore.K.AGENCE);
+  const b = GAAStore.get(GAAStore.K.BRANDING);
+  const map = {
+    'f-raison_sociale':'raison_sociale','f-siret':'siret','f-tva':'tva','f-ape':'ape',
+    'f-adresse_complete':'adresse_complete','f-email':'email','f-telephone':'telephone',
+    'f-iban':'iban','f-bic':'bic','f-banque':'banque','f-pied_de_page':'pied_de_page',
+  };
+  Object.entries(map).forEach(([id,key]) => {
+    const el = document.getElementById(id);
+    if(el && d[key]!==undefined) el.value = d[key];
+  });
+  const sel = document.getElementById('f-delai_paiement');
+  if(sel) {
+    // Si c'est un select, mettre la bonne option ; si input, mettre la valeur
+    if(sel.tagName==='SELECT') {
+      const val = d.delai_paiement || '30';
+      [...sel.options].forEach(o=>{ o.selected = o.value===val||o.text.startsWith(val); });
+    } else {
+      sel.value = d.delai_paiement||'30';
+    }
+  }
+  // Couleurs
+  const cp = document.getElementById('color-primary');
+  const ca = document.getElementById('color-accent');
+  if(cp) cp.value = b.couleur_principale||'#1B4965';
+  if(ca) ca.value = b.couleur_accent||'#C75B37';
+  // Logo
+  if(b.logo_url) {
+    let img = document.getElementById('gaa-logo-preview');
+    if(!img) {
+      img = document.createElement('img');
+      img.id='gaa-logo-preview';
+      img.style.cssText='max-height:60px;max-width:180px;border:1px solid var(--border);border-radius:4px;padding:4px;margin-top:8px;display:block';
+      const zone = document.getElementById('logo-zone');
+      if(zone) zone.insertAdjacentElement('afterend',img);
+    }
+    img.src = b.logo_url;
+  }
+}
+
+function saveAgence() {
+  const map = {
+    'f-raison_sociale':'raison_sociale','f-siret':'siret','f-tva':'tva','f-ape':'ape',
+    'f-adresse_complete':'adresse_complete','f-email':'email','f-telephone':'telephone',
+    'f-iban':'iban','f-bic':'bic','f-banque':'banque','f-pied_de_page':'pied_de_page',
+  };
+  const d = {};
+  Object.entries(map).forEach(([id,key])=>{ const el=document.getElementById(id); if(el) d[key]=el.value.trim(); });
+  const sel = document.getElementById('f-delai_paiement');
+  if(sel) d.delai_paiement = sel.tagName==='SELECT' ? sel.value : sel.value;
+  if(!d.raison_sociale||!d.siret) { toast('Raison sociale et SIRET requis','error'); return; }
+  GAAStore.update(GAAStore.K.AGENCE, d);
+  GAAStore.addAudit('D. Garnier','Paramètres agence enregistrés','2.5 Admin');
+  isDirty=false; updateDirtyBar();
+  toast('Informations agence enregistrées ✓','success');
+}
+
+// Logo upload
+document.querySelector('.upload-zone')?.addEventListener('click',()=>{
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='image/png,image/svg+xml,image/jpeg';
+  inp.onchange=e=>{
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>2*1024*1024){toast('Fichier trop lourd (max 2 Mo)','error');return;}
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const url=ev.target.result;
+      GAAStore.update(GAAStore.K.BRANDING,{logo_url:url});
+      let img=document.getElementById('gaa-logo-preview');
+      if(!img){img=document.createElement('img');img.id='gaa-logo-preview';img.style.cssText='max-height:60px;max-width:180px;border:1px solid var(--border);border-radius:4px;padding:4px;margin-top:8px;display:block';}
+      img.src=url;
+      const zone=document.getElementById('logo-zone');
+      if(zone) zone.insertAdjacentElement('afterend',img);
+      GAAStore.addAudit('D. Garnier','Logo agence mis à jour','2.5 Admin');
+      toast('Logo enregistré ✓','success');
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+});
+
+// Color pickers
+document.getElementById('color-primary')?.addEventListener('change',e=>{
+  const hex=e.target.value;
+  document.documentElement.style.setProperty('--primary',hex);
+  GAAStore.update(GAAStore.K.BRANDING,{couleur_principale:hex});
+  markDirty();
+});
+document.getElementById('color-accent')?.addEventListener('change',e=>{
+  const hex=e.target.value;
+  document.documentElement.style.setProperty('--accent',hex);
+  GAAStore.update(GAAStore.K.BRANDING,{couleur_accent:hex});
+  markDirty();
+});
+document.querySelectorAll('.swatch').forEach(sw=>{
+  sw.addEventListener('click',()=>{
+    const hex=sw.style.background;
+    // Déterminer si c'est primary ou accent selon la position dans le DOM
+    const row=sw.closest('.swatch-row');
+    const groups=document.querySelectorAll('.swatch-row');
+    const idx=[...groups].indexOf(row);
+    if(idx===0){document.documentElement.style.setProperty('--primary',hex);GAAStore.update(GAAStore.K.BRANDING,{couleur_principale:hex});}
+    else{document.documentElement.style.setProperty('--accent',hex);GAAStore.update(GAAStore.K.BRANDING,{couleur_accent:hex});}
+    markDirty();
+    row.querySelectorAll('.swatch').forEach(s=>s.classList.remove('swatch--on'));
+    sw.classList.add('swatch--on');
+  });
+});
+
+// ─────────────────────────────────────────────
+// SECTION UTILISATEURS
+// ─────────────────────────────────────────────
+function renderUsers() {
+  const users = GAAStore.get(GAAStore.K.UTILISATEURS)||[];
+  const tbody = document.getElementById('users-tbody');
+  if(!tbody) return;
+  const roleBadge=r=>{const m={'Dirigeant':'badge--red','Chef de projet':'badge--blue','Architecte / Collaborateur':'badge--blue','Dessinateur / Projeteur':'badge--grey','Stagiaire':'badge--grey'};return`<span class="badge ${m[r]||'badge--grey'}">${r}</span>`;};
+  tbody.innerHTML = users.map(u=>`
+    <tr style="opacity:${u.actif?1:.6}">
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="user-avatar" style="background:${u.couleur}">${u.initiales}</div>
+        <div><div style="font-weight:700">${u.nom}</div><div style="font-size:11.5px;color:var(--text-3)">${u.email}</div></div>
+      </div></td>
+      <td>${roleBadge(u.role)}</td>
+      <td>Paris</td>
+      <td><span class="badge ${u.actif?'badge--green':'badge--grey'}">${u.actif?'✓ TOTP':'—'}</span></td>
+      <td><span class="badge ${u.actif?'badge--green':'badge--orange'}">${u.actif?'Actif':'Invitation envoyée'}</span></td>
+      <td><button class="btn btn--ghost btn--sm" onclick="removeUser('${u.id}')">✕</button></td>
+    </tr>`).join('');
+  // Update titre section
+  const title = document.querySelector('#sec-users .sec-title');
+  if(title) title.textContent = `Utilisateurs (${users.length})`;
+}
+
+// Patcher bouton + Inviter
+document.querySelector('#sec-users button.btn--primary')?.addEventListener('click',()=>openInviteModal());
+
+function openInviteModal(){
+  let modal=document.getElementById('gaa-invite-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='gaa-invite-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center';
+    modal.innerHTML=`<div style="background:var(--surface);border-radius:var(--r);padding:24px;width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25)">
+      <div style="font-size:16px;font-weight:700;margin-bottom:16px">Inviter un collaborateur</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="form-group"><label class="form-label">Nom complet <span style="color:var(--red)">*</span></label><input class="form-input" id="inv-nom" placeholder="P. Dupont"></div>
+        <div class="form-group"><label class="form-label">Email <span style="color:var(--red)">*</span></label><input class="form-input" id="inv-email" type="email" placeholder="p.dupont@agence.fr"></div>
+        <div class="form-group"><label class="form-label">Rôle</label>
+          <select class="form-select" id="inv-role">
+            <option>Dirigeant</option><option>Chef de projet</option>
+            <option selected>Architecte / Collaborateur</option>
+            <option>Dessinateur / Projeteur</option><option>Stagiaire</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+        <button class="btn btn--ghost" onclick="document.getElementById('gaa-invite-modal').style.display='none'">Annuler</button>
+        <button class="btn btn--primary" onclick="confirmInvite()">Envoyer l'invitation</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  modal.style.display='flex';
+  document.getElementById('inv-nom').value='';
+  document.getElementById('inv-email').value='';
+}
+
+function confirmInvite(){
+  const nom=document.getElementById('inv-nom')?.value.trim();
+  const email=document.getElementById('inv-email')?.value.trim();
+  const role=document.getElementById('inv-role')?.value;
+  if(!nom||!email){toast('Nom et email requis','error');return;}
+  const users=GAAStore.get(GAAStore.K.UTILISATEURS)||[];
+  if(users.find(u=>u.email===email)){toast('Email déjà utilisé','error');return;}
+  const initiales=nom.split(' ').filter(Boolean).map(p=>p[0]).join('').toUpperCase().slice(0,2);
+  const colors=['#1B4965','#2D6A4F','#B8860B','#6A3D9A','#C0392B','#555555'];
+  const newUser={id:'u'+Date.now(),initiales,nom,email,role,couleur:colors[users.length%colors.length],actif:false};
+  users.push(newUser);
+  GAAStore.set(GAAStore.K.UTILISATEURS,users);
+  GAAStore.addAudit('D. Garnier',`Invitation envoyée à ${nom} — rôle ${role}`,'2.5 Admin');
+  document.getElementById('gaa-invite-modal').style.display='none';
+  renderUsers();
+  toast(`Invitation envoyée à ${nom} ✓`,'success');
+}
+
+function removeUser(id){
+  const users=GAAStore.get(GAAStore.K.UTILISATEURS)||[];
+  const u=users.find(u=>u.id===id);
+  if(!u) return;
+  if(u.role==='Dirigeant'){toast('Impossible de supprimer le dirigeant','error');return;}
+  if(!confirm(`Supprimer ${u.nom} ?`)) return;
+  GAAStore.set(GAAStore.K.UTILISATEURS,users.filter(u=>u.id!==id));
+  GAAStore.addAudit('D. Garnier',`Utilisateur ${u.nom} supprimé`,'2.5 Admin');
+  renderUsers();
+  toast(`${u.nom} supprimé`,'');
+}
+
+// ─────────────────────────────────────────────
+// SECTION PHASES
+// ─────────────────────────────────────────────
+function renderPhases(){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  // On réécrit la liste de phases dans le conteneur existant
+  const list=document.querySelector('#sec-phases .sortable-list');
+  if(!list) return;
+  list.innerHTML=phases.map((p,i)=>`
+    <div class="sortable-item" data-idx="${i}">
+      <span class="sortable-handle">⠿</span>
+      <input style="font-family:var(--mono);font-size:12px;min-width:44px;color:var(--primary);font-weight:700;width:52px;border:1px solid var(--border);border-radius:3px;padding:2px 4px" id="ph-code-${i}" value="${p.code}">
+      <input style="flex:1;border:1px solid var(--border);border-radius:3px;padding:2px 6px;font-size:13px" id="ph-lib-${i}" value="${p.libelle}">
+      <span style="font-size:12.5px;color:var(--text-3);margin:0 4px">Ratio</span>
+      <input class="ratio-input" type="number" min="0" max="100" id="ph-ratio-${i}" value="${p.ratio}" oninput="updateRatioTotal()" style="width:52px">
+      <span style="font-size:11px;color:var(--text-3)">%</span>
+      <span style="font-size:12.5px;color:var(--text-3);margin:0 4px">Dur.</span>
+      <input class="ratio-input" type="number" min="0" id="ph-duree-${i}" value="${p.duree}" style="width:46px">
+      <span style="font-size:11px;color:var(--text-3)">sem.</span>
+      <label class="toggle" style="margin:0 6px"><input type="checkbox" id="ph-actif-${i}" ${p.actif?'checked':''} onchange="updateRatioTotal()"><div class="toggle-slider"></div></label>
+      <button class="btn btn--ghost btn--sm" style="padding:2px 7px;font-size:11px" onclick="removePhaseRow(${i})">✕</button>
+    </div>`).join('');
+  updateRatioTotal();
+  // Patcher le bouton + Ajouter une phase
+  const addBtn=document.querySelector('#sec-phases .btn--ghost');
+  if(addBtn) addBtn.onclick=addPhaseRow;
+  // Ajouter total et bouton save si pas présents
+  if(!document.getElementById('ratio-total-row')){
+    list.insertAdjacentHTML('afterend',`
+      <div id="ratio-total-row" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--primary-l);border-radius:0 0 var(--r) var(--r)">
+        <span style="font-size:12.5px;color:var(--primary)">Total ratios actifs : <strong id="ratio-total" style="font-family:var(--mono)">0</strong>% <span id="ratio-warn" style="color:var(--orange);display:none">⚠ doit être 100%</span></span>
+        <button class="btn btn--primary btn--sm" onclick="savePhases()">Enregistrer les phases</button>
+      </div>`);
+  }
+  updateRatioTotal();
+}
+
+function updateRatioTotal(){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  let total=0;
+  phases.forEach((_,i)=>{
+    const actif=document.getElementById(`ph-actif-${i}`)?.checked;
+    const ratio=parseFloat(document.getElementById(`ph-ratio-${i}`)?.value)||0;
+    if(actif) total+=ratio;
+  });
+  const el=document.getElementById('ratio-total');
+  const warn=document.getElementById('ratio-warn');
+  if(el) el.textContent=total;
+  if(warn) warn.style.display=(total!==100)?'inline':'none';
+}
+
+function addPhaseRow(){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  phases.push({code:'NEW',libelle:'Nouvelle phase',ratio:0,duree:0,actif:false});
+  GAAStore.set(GAAStore.K.PHASES,phases);
+  renderPhases(); markDirty();
+}
+
+function removePhaseRow(i){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  phases.splice(i,1);
+  GAAStore.set(GAAStore.K.PHASES,phases);
+  renderPhases(); markDirty();
+}
+
+function savePhases(){
+  const phases=GAAStore.get(GAAStore.K.PHASES)||[];
+  const updated=phases.map((_,i)=>({
+    code:(document.getElementById(`ph-code-${i}`)?.value||_.code).trim().toUpperCase(),
+    libelle:(document.getElementById(`ph-lib-${i}`)?.value||_.libelle).trim(),
+    ratio:parseFloat(document.getElementById(`ph-ratio-${i}`)?.value)||0,
+    duree:parseFloat(document.getElementById(`ph-duree-${i}`)?.value)||0,
+    actif:document.getElementById(`ph-actif-${i}`)?.checked||false,
+  }));
+  GAAStore.set(GAAStore.K.PHASES,updated);
+  GAAStore.addAudit('D. Garnier','Bibliothèque de phases mise à jour','2.5 Admin');
+  isDirty=false; updateDirtyBar();
+  toast('Phases enregistrées ✓','success');
+}
+
+// ─────────────────────────────────────────────
+// SECTION TAUX HORAIRES
+// ─────────────────────────────────────────────
+function renderTaux(){
+  const taux=GAAStore.get(GAAStore.K.TAUX)||[];
+  const tbody=document.getElementById('taux-tbody');
+  if(!tbody){
+    // Le tableau existe en static — on le remplace dynamiquement
+    const tbl=document.querySelector('#sec-taux tbody');
+    if(tbl) tbl.id='taux-tbody';
+    renderTaux(); return;
+  }
+  tbody.innerHTML=taux.map((t,i)=>`
+    <tr>
+      <td><input class="form-input" id="tx-profil-${i}" value="${t.profil}" style="padding:5px 8px;font-weight:600"></td>
+      <td><div style="display:flex;align-items:center;gap:4px"><input class="ratio-input" type="number" min="0" id="tx-taux-${i}" value="${t.taux}" oninput="calcMarge(${i})"> €/h</div></td>
+      <td><div style="display:flex;align-items:center;gap:4px"><input class="ratio-input" type="number" min="0" id="tx-cout-${i}" value="${t.cout}" oninput="calcMarge(${i})"> €/h</div></td>
+      <td><span id="tx-marge-${i}" class="mono" style="font-weight:700;color:${t.marge>=40?'var(--green)':'var(--red)'}">${t.marge}%</span></td>
+      <td class="mono" style="font-size:12px;color:var(--text-3)">${new Date().getFullYear()}-01-01</td>
+      <td><button class="btn btn--ghost btn--sm" onclick="removeTauxRow(${i})">✕</button></td>
+    </tr>`).join('');
+  // Ajouter bouton save et + profil si absents
+  if(!document.getElementById('taux-save-row')){
+    tbody.closest('table').insertAdjacentHTML('afterend',`
+      <div id="taux-save-row" style="display:flex;justify-content:flex-end;gap:8px;padding:10px 18px;border-top:1px solid var(--border)">
+        <button class="btn btn--ghost btn--sm" onclick="addTauxRow()">+ Ajouter un profil</button>
+        <button class="btn btn--primary btn--sm" onclick="saveTaux()">Enregistrer les taux</button>
+      </div>`);
+  }
+}
+
+function calcMarge(i){
+  const taux=parseFloat(document.getElementById(`tx-taux-${i}`)?.value)||0;
+  const cout=parseFloat(document.getElementById(`tx-cout-${i}`)?.value)||0;
+  const marge=taux>0?Math.round((1-cout/taux)*100):0;
+  const el=document.getElementById(`tx-marge-${i}`);
+  if(el){el.textContent=marge+'%';el.style.color=marge>=40?'var(--green)':'var(--red)';}
+  markDirty();
+}
+
+function addTauxRow(){
+  const taux=GAAStore.get(GAAStore.K.TAUX)||[];
+  taux.push({profil:'Nouveau profil',taux:70,cout:35,marge:50});
+  GAAStore.set(GAAStore.K.TAUX,taux);
+  renderTaux(); markDirty();
+}
+
+function removeTauxRow(i){
+  const taux=GAAStore.get(GAAStore.K.TAUX)||[];
+  taux.splice(i,1);
+  GAAStore.set(GAAStore.K.TAUX,taux);
+  renderTaux(); markDirty();
+}
+
+function saveTaux(){
+  const taux=GAAStore.get(GAAStore.K.TAUX)||[];
+  const updated=taux.map((_,i)=>({
+    profil:(document.getElementById(`tx-profil-${i}`)?.value||_.profil).trim(),
+    taux:parseFloat(document.getElementById(`tx-taux-${i}`)?.value)||0,
+    cout:parseFloat(document.getElementById(`tx-cout-${i}`)?.value)||0,
+    marge:parseInt(document.getElementById(`tx-marge-${i}`)?.textContent)||0,
+  }));
+  GAAStore.set(GAAStore.K.TAUX,updated);
+  GAAStore.addAudit('D. Garnier','Taux horaires mis à jour','2.5 Admin');
+  isDirty=false; updateDirtyBar();
+  toast('Taux horaires enregistrés ✓','success');
+}
+
+// ─────────────────────────────────────────────
+// SECTION NUMÉROTATION
+// ─────────────────────────────────────────────
+function renderNumerotation(){
+  const num=GAAStore.get(GAAStore.K.NUMEROTATION)||{};
+  const labels={projet:'Projets',devis:'Devis',facture:'Factures',avoir:'Avoirs'};
+  const types=Object.keys(labels);
+
+  // Les inputs existent en static — on met à jour leurs valeurs
+  types.forEach(type=>{
+    const cfg=num[type]||{format:'',prochain:1};
+    // Format input
+    const fmtEls=document.querySelectorAll(`#sec-numerotation input.mono`);
+    // Chercher par valeur ou mettre à jour l'affichage preview
+    const previewEl=document.querySelector(`#sec-numerotation .num-preview`);
+  });
+
+  // Approche directe : remplacer le contenu du card__body
+  const body=document.querySelector('#sec-numerotation .card__body');
+  if(!body) return;
+  body.innerHTML=`
+    <div class="inline-alert inline-alert--warn" style="margin-bottom:16px">⚠ La modification du prochain numéro est irréversible.</div>
+    <div class="form-grid">
+    ${types.map(type=>{
+      const cfg=num[type]||{format:'PRJ-{YEAR}-{SEQ:3}',prochain:1};
+      const label=labels[type];
+      const preview=GAAStore.previewNumero(type);
+      return `
+        <div class="form-group">
+          <label class="form-label">Format — ${label}</label>
+          <input class="form-input mono" id="num-fmt-${type}" value="${cfg.format}" oninput="updateNumPreview('${type}')">
+          <div class="num-preview" id="num-prev-${type}">→ ${preview}</div>
+          <div class="form-sub">Variables : {YEAR}, {SEQ:3}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prochain numéro — ${label}</label>
+          <input class="form-input mono" id="num-seq-${type}" type="number" min="1" value="${cfg.prochain}" oninput="updateNumPreview('${type}')">
+        </div>`;
+    }).join('')}
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn--primary btn--sm" onclick="saveNumerotation()">Enregistrer</button>
+    </div>`;
+}
+
+function updateNumPreview(type){
+  const fmt=document.getElementById(`num-fmt-${type}`)?.value||'';
+  const seq=parseInt(document.getElementById(`num-seq-${type}`)?.value)||1;
+  const y=new Date().getFullYear();
+  const s=String(seq).padStart(3,'0');
+  const preview=fmt.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);
+  const el=document.getElementById(`num-prev-${type}`);
+  if(el) el.textContent='→ '+preview;
+  markDirty();
+}
+
+function saveNumerotation(){
+  const types=['projet','devis','facture','avoir'];
+  const num={};
+  types.forEach(type=>{
+    num[type]={
+      format:(document.getElementById(`num-fmt-${type}`)?.value||'').trim(),
+      prochain:parseInt(document.getElementById(`num-seq-${type}`)?.value)||1,
+    };
+  });
+  GAAStore.set(GAAStore.K.NUMEROTATION,num);
+  GAAStore.addAudit('D. Garnier','Numérotation automatique mise à jour','2.5 Admin');
+  isDirty=false; updateDirtyBar();
+  toast('Numérotation enregistrée ✓','success');
+}
+
+// ─────────────────────────────────────────────
+// SECTION ALERTES
+// ─────────────────────────────────────────────
+function loadAlertes(){
+  const a=GAAStore.get(GAAStore.K.ALERTES)||{};
+  // Inputs existants en static
+  const inputs=document.querySelectorAll('#sec-alertes input[type="number"]');
+  if(inputs[0]) inputs[0].id='f-alerte_signature', inputs[0].value=a.alerte_signature||15;
+  if(inputs[1]) inputs[1].id='f-alerte_non_converti', inputs[1].value=a.alerte_non_converti||30;
+  // Ajouter bouton save
+  if(!document.getElementById('alertes-save')){
+    const body=document.querySelector('#sec-alertes .card__body');
+    body?.insertAdjacentHTML('beforeend',`
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button id="alertes-save" class="btn btn--primary btn--sm" onclick="saveAlertes()">Enregistrer</button>
+      </div>`);
+  }
+}
+
+function saveAlertes(){
+  const d={
+    alerte_signature:parseInt(document.getElementById('f-alerte_signature')?.value)||15,
+    alerte_non_converti:parseInt(document.getElementById('f-alerte_non_converti')?.value)||30,
+  };
+  GAAStore.set(GAAStore.K.ALERTES,d);
+  GAAStore.addAudit('D. Garnier','Seuils alertes devis modifiés','2.5 Admin');
+  isDirty=false; updateDirtyBar();
+  toast('Alertes enregistrées ✓','success');
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────
+function renderAudit(){
+  const log=GAAStore.get(GAAStore.K.AUDIT)||[];
+  // Remplacer le contenu du conteneur d'audit
+  const container=document.querySelector('#sec-audit .card');
+  if(!container) return;
+  // S'il y a un card__body existant, le réutiliser
+  let body=container.querySelector('.card__body:not(.card__hd)');
+  if(!body){body=document.createElement('div');body.className='card__body';container.appendChild(body);}
+  body.style.padding='0';
+  if(!log.length){body.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-3)">Aucune entrée.</div>';return;}
+  body.innerHTML=log.slice(0,50).map(e=>`
+    <div class="audit-row">
+      <span class="audit-time">${e.time}</span>
+      <span class="audit-user">${e.user}</span>
+      <span class="audit-action">${e.action}</span>
+      <span class="audit-module">${e.module}</span>
+    </div>`).join('');
+}
+
+// Patcher bouton export CSV
+document.querySelector('#sec-audit .btn--ghost')?.addEventListener('click',()=>{
+  const log=GAAStore.get(GAAStore.K.AUDIT)||[];
+  const csv=['Date,Utilisateur,Action,Module',...log.map(e=>`"${e.time}","${e.user}","${e.action}","${e.module}"`)].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='audit-log.csv'; a.click();
+  toast('Export CSV téléchargé','success');
+});
+
+// ─────────────────────────────────────────────
+// ABONNEMENT
+// ─────────────────────────────────────────────
+function renderAbonnement(){
+  const users=GAAStore.get(GAAStore.K.UTILISATEURS)||[];
+  const actifs=users.filter(u=>u.actif).length;
+  // Mettre à jour le compteur dans la section abonnement
+  document.querySelector('#sec-abonnement .plan-card')?.querySelectorAll('.plan-feature').forEach(()=>{});
+}
+
+// ─────────────────────────────────────────────
+// RGPD / EXPORT / RESET
+// ─────────────────────────────────────────────
+document.querySelector('#sec-rgpd .btn--primary')?.addEventListener('click',()=>{
+  const data=GAAStore.dump?.() || {};
+  Object.values(GAAStore.K||{}).forEach(k=>{data[k]=GAAStore.get(k);});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download='gaa-export.json'; a.click();
+  GAAStore.addAudit('D. Garnier','Export RGPD déclenché','2.5 Admin');
+  toast('Export téléchargé ✓','success');
+});
+document.querySelector('#sec-rgpd .btn--danger')?.addEventListener('click',()=>{
+  if(!confirm('Réinitialiser toutes les données ? Irréversible.')) return;
+  Object.values(GAAStore.K||{}).forEach(k=>localStorage.removeItem('gaa_'+k));
+  GAAStore.init();
+  toast('Store réinitialisé','');
+  loadSection(currentSection);
+});
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+let _toastTimer;
+function toast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.className='toast toast--on'+(type?' toast--'+type:'');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('toast--on'),2800);
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  // Appliquer les couleurs branding
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent)     document.documentElement.style.setProperty('--accent', b.couleur_accent);
+
+  // Avatar nav
+  const prefs=GAAStore.get(GAAStore.K.PREFERENCES)||{};
+  const users=GAAStore.get(GAAStore.K.UTILISATEURS)||[];
+  const me=users.find(u=>u.id===(prefs.utilisateur_courant||'u1'))||users[0];
+  const av=document.querySelector('.nav__avatar');
+  if(av&&me){av.textContent=me.initiales;av.style.background=me.couleur;}
+
+  //
+</script>
+</body>
+</html>

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — 4.2 Alertes & 4.3 Workflows</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .mod-bar{background:var(--primary);display:flex;position:sticky;top:0;z-index:100}
+    .mod-tab{padding:14px 24px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s}
+    .mod-tab:hover{color:rgba(255,255,255,.9)}
+    .mod-tab--on{color:#fff;border-bottom-color:var(--accent);font-weight:700}
+    .page{padding:24px;display:none;flex-direction:column;gap:18px;max-width:1100px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--danger{background:var(--red-l);color:var(--red);border-color:rgba(192,57,43,.3)}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .badge--purple{background:var(--purple-l);color:var(--purple)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .card__hd{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .card__title{font-size:13px;font-weight:700}
+    .card__sub{font-size:12px;color:var(--text-3);margin-top:2px}
+    .card__body{padding:16px 18px}
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{background:var(--grey-l);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap}
+    .tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .tbl tr:last-child td{border-bottom:none}
+    .tbl tr:hover td{background:rgba(27,73,101,.015)}
+    .mono{font-family:var(--mono)}
+    .form-group{display:flex;flex-direction:column;gap:5px}
+    .form-label{font-size:12.5px;font-weight:600}
+    .form-sub{font-size:11.5px;color:var(--text-3);margin-top:3px}
+    .form-input,.form-select{padding:8px 11px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;outline:none;color:var(--text);background:var(--bg)}
+    .form-input:focus,.form-select:focus{border-color:var(--primary)}
+    .fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    /* Toggle */
+    .toggle-wrap{display:flex;align-items:center;gap:8px}
+    .toggle{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .tslider{position:absolute;inset:0;background:var(--border-md);border-radius:10px;transition:.2s}
+    .toggle input:checked + .tslider{background:var(--primary)}
+    .tslider::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+    .toggle input:checked + .tslider::after{left:19px}
+    /* Alertes */
+    .alert-risk{border-radius:var(--r);padding:14px 16px;margin-bottom:4px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden}
+    .alert-risk::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+    .alert-risk--red{background:var(--red-l);border:1px solid rgba(192,57,43,.3)}
+    .alert-risk--red::before{background:var(--red)}
+    .alert-risk--orange{background:var(--orange-l);border:1px solid rgba(184,134,11,.3)}
+    .alert-risk--orange::before{background:var(--orange)}
+    .alert-risk--blue{background:var(--primary-l);border:1px solid rgba(27,73,101,.2)}
+    .alert-risk--blue::before{background:var(--primary)}
+    .alert-risk__icon{font-size:20px;flex-shrink:0}
+    .alert-risk__title{font-weight:700;font-size:13.5px;margin-bottom:3px}
+    .alert-risk__body{font-size:12.5px;color:var(--text-2);line-height:1.5}
+    .alert-risk__meta{font-size:11.5px;color:var(--text-3);margin-top:5px;font-family:var(--mono)}
+    .alert-risk__actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+    .alert-risk__status{position:absolute;top:12px;right:12px}
+    /* Règle card */
+    .rule-card{border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+    .rule-card--on{border-color:var(--primary)}
+    .rule-hd{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .12s}
+    .rule-hd:hover{background:var(--grey-l)}
+    .rule-name{font-weight:700;font-size:13px;flex:1}
+    .rule-icon{font-size:16px;flex-shrink:0}
+    .rule-body{padding:10px 14px 14px;border-top:1px solid var(--border);background:var(--grey-l);display:none}
+    .rule-body--on{display:block}
+    .rule-cond{font-size:12.5px;color:var(--text-2);margin-bottom:8px}
+    .cond-tag{display:inline-block;background:var(--primary-l);color:var(--primary);border:1px solid rgba(27,73,101,.2);border-radius:3px;padding:2px 7px;font-size:12px;font-family:var(--mono);margin:2px}
+    .action-tag{display:inline-block;background:var(--green-l);color:var(--green);border:1px solid rgba(45,106,79,.2);border-radius:3px;padding:2px 7px;font-size:12px;margin:2px}
+    /* Workflow builder */
+    .wf-canvas{background:var(--grey-l);border:1px solid var(--border);border-radius:var(--r);padding:24px;min-height:300px;position:relative;overflow:hidden}
+    .wf-node{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:12px 16px;width:180px;position:relative;box-shadow:var(--shadow);cursor:grab}
+    .wf-node:active{cursor:grabbing}
+    .wf-node--trigger{border-color:var(--primary);background:var(--primary-l)}
+    .wf-node--condition{border-color:var(--orange);background:var(--orange-l)}
+    .wf-node--action{border-color:var(--green);background:var(--green-l)}
+    .wf-node__type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;opacity:.7}
+    .wf-node__label{font-size:13px;font-weight:700}
+    .wf-node__sub{font-size:11.5px;color:var(--text-2);margin-top:3px}
+    .wf-connector{position:absolute;border-left:2px solid var(--border-md);border-bottom:2px solid var(--border-md);border-radius:0 0 0 8px}
+    /* Historique exécution */
+    .exec-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12.5px}
+    .exec-row:last-child{border-bottom:none}
+    .exec-icon{font-size:14px;flex-shrink:0}
+    .exec-wf{font-weight:700;flex:1}
+    .exec-proj{font-size:11.5px;color:var(--text-2)}
+    .exec-time{font-family:var(--mono);font-size:11.5px;color:var(--text-3);white-space:nowrap}
+    /* Template cards */
+    .tpl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .tpl-card{border:1.5px solid var(--border);border-radius:var(--r);padding:14px;cursor:pointer;transition:all .15s;background:var(--surface)}
+    .tpl-card:hover{border-color:var(--primary);background:var(--primary-l)}
+    .tpl-icon{font-size:24px;margin-bottom:6px}
+    .tpl-name{font-weight:700;font-size:13px;margin-bottom:3px}
+    .tpl-desc{font-size:11.5px;color:var(--text-2)}
+    .tpl-steps{font-size:11px;color:var(--text-3);margin-top:6px;font-style:italic}
+  </style>
+</head>
+<body>
+<div class="mod-bar">
+  <div class="mod-tab mod-tab--on" onclick="show('p42')">🔔 4.2 Alertes intelligentes</div>
+  <div class="mod-tab" onclick="show('p43')">⚡ 4.3 Automatisation & Workflows</div>
+</div>
+
+<!-- ══════════ 4.2 ALERTES ══════════ -->
+<main class="page page--on" id="p42">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Moteur d'alertes intelligentes</h1>
+      <p style="font-size:13px;color:var(--text-2);margin-top:3px">Règles configurables · Escalade automatique · Tableau de bord des risques</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn--ghost btn--sm">📋 Historique</button>
+      <button class="btn btn--primary btn--sm">+ Nouvelle règle</button>
+    </div>
+  </div>
+
+  <!-- Tableau de bord risques -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+    <div class="card" style="padding:14px 16px;border-color:var(--red)">
+      <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:5px">Risque élevé</div>
+      <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--red)">2</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:3px">Alertes actives non traitées</div>
+    </div>
+    <div class="card" style="padding:14px 16px;border-color:var(--orange)">
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;margin-bottom:5px">Risque modéré</div>
+      <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--orange)">5</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:3px">Alertes en cours de traitement</div>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Traitées ce mois</div>
+      <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--green)">14</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:3px">Délai moyen : 2,3 jours</div>
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Règles actives</div>
+      <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--primary)">11</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:3px">3 prédéfinies, 8 personnalisées</div>
+    </div>
+  </div>
+
+  <!-- Alertes actives -->
+  <div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">Alertes actives — Risques en cours</div>
+
+    <!-- ALERTE ROUGE - risque cumulé -->
+    <div class="alert-risk alert-risk--red">
+      <div class="alert-risk__icon">🔴</div>
+      <div style="flex:1">
+        <div class="alert-risk__title">Risque cumulé élevé — Résidence Les Oliviers</div>
+        <div class="alert-risk__body">3 signaux simultanés détectés :<br>
+          • Dépassement de charge M. Lefort +25% sur la phase en cours<br>
+          • Rentabilité phase PRO à 68% (cible 75%) — 54h passées / 48h budgétées<br>
+          • Tâche "Plans PRO RDC" en retard de 3 jours
+        </div>
+        <div class="alert-risk__meta">Déclenchée le 06/03/2026 08:00 · Règle : Risque cumulé projet</div>
+        <div class="alert-risk__actions">
+          <button class="btn btn--ghost btn--sm">Voir le projet</button>
+          <button class="btn btn--ghost btn--sm">Marquer en traitement</button>
+          <button class="btn btn--ghost btn--sm">Ignorer</button>
+        </div>
+      </div>
+      <div class="alert-risk__status"><span class="badge badge--red">Non traitée</span></div>
+    </div>
+
+    <div class="alert-risk alert-risk--red" style="margin-top:8px">
+      <div class="alert-risk__icon">🔴</div>
+      <div style="flex:1">
+        <div class="alert-risk__title">Facture en retard — Escalade direction</div>
+        <div class="alert-risk__body">FAC-2026-008 — Ville de Nantes — 18 500 € — retard de paiement +12 jours. Non traitée depuis 5 jours → escalade automatique au dirigeant.</div>
+        <div class="alert-risk__meta">Escaladée le 05/03/2026 · Règle : Retard paiement escalade J+5</div>
+        <div class="alert-risk__actions">
+          <button class="btn btn--primary btn--sm">Envoyer relance</button>
+          <button class="btn btn--ghost btn--sm">Marquer en traitement</button>
+        </div>
+      </div>
+      <div class="alert-risk__status"><span class="badge badge--red">Escaladée</span></div>
+    </div>
+
+    <div class="alert-risk alert-risk--orange" style="margin-top:8px">
+      <div class="alert-risk__icon">🟠</div>
+      <div style="flex:1">
+        <div class="alert-risk__title">Devis D-2026-005 en attente depuis 38 jours</div>
+        <div class="alert-risk__body">Résidence Trianon — 55 000 € — aucune réponse du client depuis l'envoi. Seuil configuré : 30 jours.</div>
+        <div class="alert-risk__meta">Déclenchée le 28/02/2026 · Règle : Devis sans réponse > 30j</div>
+        <div class="alert-risk__actions">
+          <button class="btn btn--ghost btn--sm">Contacter le client</button>
+          <button class="btn btn--ghost btn--sm">Marquer en traitement</button>
+        </div>
+      </div>
+      <div class="alert-risk__status"><span class="badge badge--orange">En traitement</span></div>
+    </div>
+  </div>
+
+  <!-- Bibliothèque de règles -->
+  <div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">Bibliothèque de règles</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+
+      <!-- Règle 1 — prédéfinie -->
+      <div class="rule-card rule-card--on">
+        <div class="rule-hd" onclick="toggleRule('r1')">
+          <span class="rule-icon">📊</span>
+          <span class="rule-name">Dérive de rentabilité projet</span>
+          <span class="badge badge--grey">Prédéfinie</span>
+          <div class="toggle-wrap"><label class="toggle"><input type="checkbox" checked><div class="tslider"></div></label></div>
+          <span style="color:var(--text-3);font-size:16px" id="r1-arrow">▾</span>
+        </div>
+        <div class="rule-body rule-body--on" id="r1-body">
+          <div class="rule-cond"><strong>Condition :</strong> <span class="cond-tag">rentabilité_previsionnel &lt; seuil</span> pour tout projet en cours</div>
+          <div class="rule-cond"><strong>Seuil configuré :</strong> <span class="cond-tag">10%</span></div>
+          <div class="rule-cond"><strong>Actions :</strong> <span class="action-tag">🔔 Notification in-app CdP</span> <span class="action-tag">📧 Email CdP + Direction</span></div>
+          <div class="rule-cond"><strong>Escalade :</strong> Si non traitée en <span class="cond-tag">7 jours</span> → re-notification direction</div>
+          <div style="margin-top:8px;display:flex;gap:8px">
+            <div class="form-group" style="flex:0 0 auto">
+              <label class="form-label" style="font-size:11.5px">Seuil rentabilité</label>
+              <div style="display:flex;align-items:center;gap:6px"><input class="form-input mono" value="10" type="number" style="width:70px">%</div>
+            </div>
+            <div class="form-group" style="flex:0 0 auto">
+              <label class="form-label" style="font-size:11.5px">Escalade si non traitée</label>
+              <div style="display:flex;align-items:center;gap:6px"><input class="form-input mono" value="7" type="number" style="width:70px">j</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Règle 2 -->
+      <div class="rule-card">
+        <div class="rule-hd" onclick="toggleRule('r2')">
+          <span class="rule-icon">⏰</span>
+          <span class="rule-name">Dépassement de charge collaborateur</span>
+          <span class="badge badge--grey">Prédéfinie</span>
+          <div class="toggle-wrap"><label class="toggle"><input type="checkbox" checked><div class="tslider"></div></label></div>
+          <span style="color:var(--text-3);font-size:16px" id="r2-arrow">▸</span>
+        </div>
+        <div class="rule-body" id="r2-body">
+          <div class="rule-cond"><strong>Condition :</strong> <span class="cond-tag">charge_hebdomadaire &gt; 120%</span> pour tout collaborateur</div>
+          <div class="rule-cond"><strong>Actions :</strong> <span class="action-tag">🔔 Notification in-app CdP</span> <span class="action-tag">📊 Alerte dashboard</span></div>
+          <div style="margin-top:8px"><div class="form-group" style="flex:0 0 auto"><label class="form-label" style="font-size:11.5px">Seuil</label><div style="display:flex;align-items:center;gap:6px"><input class="form-input mono" value="120" type="number" style="width:80px">%</div></div></div>
+        </div>
+      </div>
+
+      <!-- Règle 3 — personnalisée -->
+      <div class="rule-card" style="border-color:var(--purple)">
+        <div class="rule-hd" onclick="toggleRule('r3')" style="background:var(--purple-l)">
+          <span class="rule-icon">🔗</span>
+          <span class="rule-name">Risque cumulé projet (règle personnalisée)</span>
+          <span class="badge badge--purple">Personnalisée</span>
+          <div class="toggle-wrap"><label class="toggle"><input type="checkbox" checked><div class="tslider" style="background:var(--purple)"></div></label></div>
+          <span style="color:var(--text-3);font-size:16px" id="r3-arrow">▸</span>
+        </div>
+        <div class="rule-body" id="r3-body">
+          <div class="rule-cond"><strong>Condition combinée (ET) :</strong></div>
+          <div style="padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;font-size:12.5px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span class="cond-tag">charge &gt; 110%</span> <strong>ET</strong> <span class="cond-tag">rentabilité &lt; 75%</span> <strong>ET</strong> <span class="cond-tag">tâche_en_retard = true</span></div>
+            <div style="font-size:11.5px;color:var(--text-3)">Les 3 conditions doivent être vraies simultanément sur le même projet</div>
+          </div>
+          <div class="rule-cond"><strong>Actions :</strong> <span class="action-tag">🔔 Alerte risque élevé direction</span> <span class="action-tag">📧 Email équipe + CdP</span> <span class="action-tag">📊 Priorité dashboard</span></div>
+        </div>
+      </div>
+
+      <!-- Règle 4 -->
+      <div class="rule-card">
+        <div class="rule-hd" onclick="toggleRule('r4')">
+          <span class="rule-icon">💰</span>
+          <span class="rule-name">Devis sans réponse > X jours</span>
+          <span class="badge badge--grey">Prédéfinie</span>
+          <div class="toggle-wrap"><label class="toggle"><input type="checkbox" checked><div class="tslider"></div></label></div>
+          <span style="color:var(--text-3);font-size:16px" id="r4-arrow">▸</span>
+        </div>
+        <div class="rule-body" id="r4-body">
+          <div class="rule-cond"><strong>Condition :</strong> <span class="cond-tag">devis.statut = "envoyé"</span> ET <span class="cond-tag">jours_depuis_envoi &gt; seuil</span></div>
+          <div class="rule-cond"><strong>Actions :</strong> <span class="action-tag">🔔 Notification CdP</span> <span class="action-tag">📊 Alerte dashboard</span></div>
+          <div style="margin-top:8px"><div class="form-group" style="flex:0 0 auto"><label class="form-label" style="font-size:11.5px">Seuil (jours)</label><input class="form-input mono" value="30" type="number" style="width:80px"></div></div>
+        </div>
+      </div>
+
+    </div>
+    <div style="margin-top:10px"><button class="btn btn--ghost btn--sm">+ Créer une règle personnalisée</button></div>
+  </div>
+</main>
+
+<!-- ══════════ 4.3 WORKFLOWS ══════════ -->
+<main class="page" id="p43">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Automatisation & Workflows</h1>
+      <p style="font-size:13px;color:var(--text-2);margin-top:3px">Éditeur visuel · Déclencheurs métier · Actions automatiques · Log d'exécution</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn--ghost btn--sm">📋 Historique d'exécution</button>
+      <button class="btn btn--primary btn--sm">+ Nouveau workflow</button>
+    </div>
+  </div>
+
+  <!-- Templates -->
+  <div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">Templates de workflows</div>
+    <div class="tpl-grid">
+      <div class="tpl-card" style="border-color:var(--primary)">
+        <div class="tpl-icon">🎯</div>
+        <div class="tpl-name">Onboarding projet — Passage "Acté"</div>
+        <div class="tpl-desc">Génère automatiquement l'arborescence GED, le calendrier des phases, les tâches ESQ et l'invitation MOA portail.</div>
+        <div class="tpl-steps">4 actions · Déclencheur : projet.statut = "Acté"</div>
+        <div style="margin-top:10px;display:flex;gap:6px"><span class="badge badge--blue">Actif sur 3 projets</span><button class="btn btn--ghost btn--sm" style="margin-left:auto">Configurer</button></div>
+      </div>
+      <div class="tpl-card">
+        <div class="tpl-icon">✅</div>
+        <div class="tpl-name">Validation de phase automatique</div>
+        <div class="tpl-desc">Vérifie que toutes les tâches sont closes, les documents validés et les heures saisies avant de passer la phase en "Validée" et proposer la facture.</div>
+        <div class="tpl-steps">3 conditions + 2 actions · Déclencheur : phase.statut = "Terminée"</div>
+        <div style="margin-top:10px;display:flex;gap:6px"><button class="btn btn--ghost btn--sm" style="margin-left:auto">Utiliser ce template</button></div>
+      </div>
+      <div class="tpl-card">
+        <div class="tpl-icon">📧</div>
+        <div class="tpl-name">Relance devis automatique</div>
+        <div class="tpl-desc">Envoie une relance email au client quand le devis est en attente depuis plus de N jours, avec un nouveau lien de signature.</div>
+        <div class="tpl-steps">1 condition + 1 action · Déclencheur : date</div>
+        <div style="margin-top:10px;display:flex;gap:6px"><span class="badge badge--blue">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:auto">Configurer</button></div>
+      </div>
+      <div class="tpl-card">
+        <div class="tpl-icon">🏗</div>
+        <div class="tpl-name">Clôture de chantier</div>
+        <div class="tpl-desc">À la signature du PV de réception, crée les tâches de levée de réserves, génère la facture AOR et archive les documents DOE.</div>
+        <div class="tpl-steps">5 actions · Déclencheur : PV signé</div>
+        <div style="margin-top:10px"><button class="btn btn--ghost btn--sm">Utiliser ce template</button></div>
+      </div>
+      <div class="tpl-card">
+        <div class="tpl-icon">📅</div>
+        <div class="tpl-name">Rappel feuilles de temps</div>
+        <div class="tpl-desc">Chaque vendredi à 17h, rappelle les collaborateurs n'ayant pas encore saisi leurs heures de la semaine.</div>
+        <div class="tpl-steps">1 action · Déclencheur : cron vendredi 17h</div>
+        <div style="margin-top:10px;display:flex;gap:6px"><span class="badge badge--blue">Actif</span><button class="btn btn--ghost btn--sm" style="margin-left:auto">Configurer</button></div>
+      </div>
+      <div class="tpl-card" style="border-style:dashed;text-align:center;color:var(--text-3)">
+        <div style="font-size:28px;margin-bottom:6px">+</div>
+        <div style="font-weight:600;font-size:13px">Workflow personnalisé</div>
+        <div style="font-size:12px;margin-top:4px">Éditeur visuel pas-à-pas</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Éditeur visuel — workflow Onboarding -->
+  <div class="card">
+    <div class="card__hd">
+      <div><div class="card__title">Éditeur visuel — Onboarding projet "Acté"</div><div class="card__sub">Actif sur tous les projets de type MOE, OPC, Concours</div></div>
+      <div style="display:flex;gap:6px">
+        <div class="toggle-wrap" style="gap:6px;font-size:13px">Actif <label class="toggle"><input type="checkbox" checked><div class="tslider"></div></label></div>
+        <button class="btn btn--ghost btn--sm">✏ Modifier</button>
+        <button class="btn btn--ghost btn--sm">▶ Tester</button>
+      </div>
+    </div>
+    <div class="wf-canvas">
+      <!-- Nœuds positionnés -->
+      <div style="display:flex;align-items:flex-start;gap:40px;flex-wrap:wrap">
+
+        <!-- Déclencheur -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div class="wf-node wf-node--trigger">
+            <div class="wf-node__type" style="color:var(--primary)">⚡ Déclencheur</div>
+            <div class="wf-node__label">Projet acté</div>
+            <div class="wf-node__sub">statut passe à "Acté"</div>
+          </div>
+          <div style="width:2px;height:24px;background:var(--border-md)"></div>
+          <div style="font-size:10px;color:var(--text-3)">Pour tout type de projet</div>
+        </div>
+
+        <div style="display:flex;align-items:center;padding-top:16px;color:var(--text-3);font-size:20px">→</div>
+
+        <!-- Condition -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div class="wf-node wf-node--condition">
+            <div class="wf-node__type" style="color:var(--orange)">⬡ Condition</div>
+            <div class="wf-node__label">Type de mission</div>
+            <div class="wf-node__sub">MOE / OPC / Concours</div>
+          </div>
+          <div style="display:flex;gap:20px;margin-top:4px">
+            <div style="font-size:10.5px;color:var(--green);font-weight:700">OUI →</div>
+            <div style="font-size:10.5px;color:var(--red);font-weight:700">NON →</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;padding-top:16px;color:var(--text-3);font-size:20px">→</div>
+
+        <!-- Actions empilées -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="wf-node wf-node--action" style="width:200px">
+            <div class="wf-node__type" style="color:var(--green)">✓ Action 1</div>
+            <div class="wf-node__label">Créer arborescence GED</div>
+            <div class="wf-node__sub">Modèle par type de mission</div>
+          </div>
+          <div class="wf-node wf-node--action" style="width:200px">
+            <div class="wf-node__type" style="color:var(--green)">✓ Action 2</div>
+            <div class="wf-node__label">Générer calendrier phases</div>
+            <div class="wf-node__sub">+ Jalons de facturation</div>
+          </div>
+          <div class="wf-node wf-node--action" style="width:200px">
+            <div class="wf-node__type" style="color:var(--green)">✓ Action 3</div>
+            <div class="wf-node__label">Créer tâches ESQ</div>
+            <div class="wf-node__sub">Assignées au chef de projet</div>
+          </div>
+          <div class="wf-node wf-node--action" style="width:200px">
+            <div class="wf-node__type" style="color:var(--green)">✓ Action 4</div>
+            <div class="wf-node__label">Inviter MOA au portail</div>
+            <div class="wf-node__sub">Email d'invitation automatique</div>
+          </div>
+        </div>
+
+      </div>
+      <!-- Bouton ajout nœud -->
+      <div style="margin-top:20px;text-align:center">
+        <button class="btn btn--ghost btn--sm" style="border-style:dashed">+ Ajouter un nœud</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historique d'exécution -->
+  <div class="card">
+    <div class="card__hd"><div class="card__title">Historique d'exécution récent</div><button class="btn btn--ghost btn--sm">Voir tout</button></div>
+    <div style="padding:0">
+      <div class="exec-row"><span class="exec-icon" style="color:var(--green)">✓</span><div style="flex:1"><div class="exec-wf">Onboarding projet "Acté"</div><div class="exec-proj">École Jules-Ferry · 4 actions exécutées en 1,2s</div></div><span class="exec-time">06/03 08:46</span><span class="badge badge--green">Succès</span></div>
+      <div class="exec-row"><span class="exec-icon" style="color:var(--green)">✓</span><div style="flex:1"><div class="exec-wf">Rappel feuilles de temps</div><div class="exec-proj">3 collaborateurs notifiés</div></div><span class="exec-time">05/03 17:00</span><span class="badge badge--green">Succès</span></div>
+      <div class="exec-row"><span class="exec-icon" style="color:var(--orange)">⚠</span><div style="flex:1"><div class="exec-wf">Validation de phase automatique</div><div class="exec-proj">Rés. Les Oliviers · Phase PRO — 2 tâches en retard bloquantes</div></div><span class="exec-time">04/03 18:30</span><span class="badge badge--orange">Bloqué</span></div>
+      <div class="exec-row"><span class="exec-icon" style="color:var(--green)">✓</span><div style="flex:1"><div class="exec-wf">Relance devis automatique</div><div class="exec-proj">D-2026-007 — Parc Est · Email relance envoyé à M. Faure (Commune de Rezé)</div></div><span class="exec-time">03/03 10:00</span><span class="badge badge--green">Succès</span></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  function show(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('page--on'));
+    document.getElementById(id).classList.add('page--on');
+    document.querySelectorAll('.mod-tab').forEach(t=>t.classList.remove('mod-tab--on'));
+    const idx={p42:0,p43:1};
+    document.querySelectorAll('.mod-tab')[idx[id]].classList.add('mod-tab--on');
+    window.scrollTo(0,0);
+  }
+  function toggleRule(id){
+    const body=document.getElementById(id+'-body');
+    const arrow=document.getElementById(id+'-arrow');
+    const on=body.classList.toggle('rule-body--on');
+    arrow.textContent=on?'▾':'▸';
+  }
+</script>
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaToastT;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_gaaToastT);_gaaToastT=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+}
+
+const WF_KEY='workflows_config';
+function getWFs(){ return GAAStore.get(WF_KEY)||{}; }
+function saveWF(id,cfg){ const w=getWFs(); w[id]=cfg; GAAStore.set(WF_KEY,w); }
+
+// ── Alertes dynamiques depuis projets ────────────────────
+function renderAlertes(){
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  const alertes=[];
+  projets.forEach(p=>{
+    (p.phases||[]).forEach(ph=>{
+      if(ph.avancement>=90&&ph.statut==='en_cours')
+        alertes.push({type:'warning',msg:`Phase ${ph.code} — ${p.nom} à ${ph.avancement}% — prête à valider`,module:'1.2 Phases'});
+      if(ph.statut==='en_cours'&&ph.date_fin){
+        const diff=Math.round((new Date(ph.date_fin)-new Date())/86400000);
+        if(diff>=0&&diff<=7)
+          alertes.push({type:'danger',msg:`Fin phase ${ph.code} — ${p.nom} dans J–${diff}`,module:'1.2 Phases'});
+      }
+    });
+  });
+  // Stocker les alertes et mettre à jour le compteur
+  GAAStore.set(GAAStore.K.ALERTES, alertes);
+  const cnt=document.querySelector('[data-count="alertes"],.alert-count');
+  if(cnt) cnt.textContent=alertes.length;
+}
+
+// ── Toggle workflows — persistance ───────────────────────
+function toggleRule(id){
+  const body=document.getElementById(id+'-body');
+  const arrow=document.getElementById(id+'-arrow');
+  if(body) { const on=body.classList.toggle('rule-body--on'); if(arrow) arrow.textContent=on?'▾':'▸'; }
+}
+
+function toggleWorkflow(id){
+  const wfs=getWFs();
+  const current=wfs[id]?.actif!==false;
+  wfs[id]={...(wfs[id]||{}),actif:!current};
+  GAAStore.set(WF_KEY,wfs);
+  // Mettre à jour le badge visuel
+  const card=document.querySelector(`[data-wf="${id}"]`);
+  if(card){
+    const badge=card.querySelector('.badge');
+    if(badge){
+      badge.textContent=!current?'Actif':'Inactif';
+      badge.className=!current?'badge badge--green':'badge badge--grey';
+    }
+  }
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Workflow "${id}" ${!current?'activé':'désactivé'}`,'4.3 Workflows');
+  showToast(`Workflow ${!current?'activé':'désactivé'} ✓`,!current?'success':'');
+}
+
+// ── Historique d'exécution depuis audit ──────────────────
+function renderHistorique(){
+  const audit=GAAStore.get(GAAStore.K.AUDIT)||[];
+  const cont=document.querySelector('.exec-list,[class*="exec-row"]:last-child')?.parentElement;
+  if(!cont) return;
+  const wfAudit=audit.filter(a=>a.module?.startsWith('4.')||a.action?.includes('Workflow')||a.action?.includes('créé')||a.action?.includes('généré')).slice(0,4);
+  if(!wfAudit.length) return;
+  wfAudit.forEach(a=>{
+    if(cont.querySelectorAll('.exec-row').length>=8) return;
+    const div=document.createElement('div');
+    div.className='exec-row';
+    div.innerHTML=`<span class="exec-icon" style="color:var(--green)">✓</span>
+      <div style="flex:1"><div class="exec-wf">${a.action}</div>
+      <div class="exec-proj">${a.user||'—'} · ${a.module||'—'}</div></div>
+      <span class="exec-time">${a.ts||''}</span>
+      <span class="badge badge--green">Succès</span>`;
+    cont.appendChild(div);
+  });
+}
+
+// ── Restaurer état toggles workflows ─────────────────────
+function restoreWFs(){
+  const wfs=getWFs();
+  Object.entries(wfs).forEach(([id,cfg])=>{
+    const card=document.querySelector(`[data-wf="${id}"]`);
+    if(!card) return;
+    const badge=card.querySelector('.badge');
+    if(badge&&cfg.actif===false){
+      badge.textContent='Inactif';badge.className='badge badge--grey';
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderAlertes();
+  renderHistorique();
+  restoreWFs();
+  // Patcher toggles visuels des workflows (data-wf)
+  document.querySelectorAll('.rule-hd,.wf-card').forEach(card=>{
+    const id=card.id?.replace('-hd','')||card.dataset.wf;
+    if(id){
+      const toggle=card.querySelector('input[type="checkbox"]');
+      if(toggle) toggle.addEventListener('change',()=>toggleWorkflow(id));
+    }
+  });
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAA — 4.4 Connaissances · 4.5 Portail · 4.6 Messagerie</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F4F3EF;--surface:#fff;--border:#E2E0D8;--border-md:#C8C5BB;
+      --text:#1C1B18;--text-2:#6B6860;--text-3:#9B998F;
+      --primary:#1B4965;--primary-l:#EAF1F6;--accent:#C75B37;
+      --green:#2D6A4F;--green-l:#E8F5EE;--orange:#B8860B;--orange-l:#FDF6DC;
+      --red:#C0392B;--red-l:#FDECEA;--grey-l:#F0EFEB;--purple:#6A3D9A;--purple-l:#F3EEF9;
+      --font:'Sora',sans-serif;--mono:'DM Mono',monospace;
+      --shadow:0 1px 3px rgba(0,0,0,.07);--r:8px;--r-sm:4px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+    .mod-bar{background:var(--primary);display:flex;position:sticky;top:0;z-index:100;overflow-x:auto}
+    .mod-tab{padding:14px 20px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:6px}
+    .mod-tab:hover{color:rgba(255,255,255,.9)}
+    .mod-tab--on{color:#fff;border-bottom-color:var(--accent);font-weight:700}
+    .page{padding:24px;display:none;flex-direction:column;gap:18px;max-width:1100px}
+    .page--on{display:flex}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r-sm);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap}
+    .btn--primary{background:var(--primary);color:#fff}.btn--primary:hover{background:#153d52}
+    .btn--ghost{background:transparent;color:var(--text);border-color:var(--border-md)}.btn--ghost:hover{background:var(--grey-l)}
+    .btn--accent{background:var(--accent);color:#fff}
+    .btn--sm{padding:5px 10px;font-size:12px}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge--green{background:var(--green-l);color:var(--green)}
+    .badge--orange{background:var(--orange-l);color:var(--orange)}
+    .badge--red{background:var(--red-l);color:var(--red)}
+    .badge--grey{background:var(--grey-l);color:var(--text-2)}
+    .badge--blue{background:var(--primary-l);color:var(--primary)}
+    .badge--purple{background:var(--purple-l);color:var(--purple)}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+    .card__hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .card__title{font-size:13px;font-weight:700}
+    .card__sub{font-size:12px;color:var(--text-3);margin-top:2px}
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{background:var(--grey-l);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);white-space:nowrap}
+    .tbl td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .tbl tr:last-child td{border-bottom:none}
+    .tbl tr:hover td{background:rgba(27,73,101,.015)}
+    .mono{font-family:var(--mono)}
+    .form-input,.form-select{padding:8px 11px;border:1.5px solid var(--border-md);border-radius:var(--r-sm);font-family:var(--font);font-size:13px;outline:none;color:var(--text)}
+    .form-input:focus,.form-select:focus{border-color:var(--primary)}
+
+    /* ═══ 4.4 CONNAISSANCES ═══ */
+    .know-layout{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+    .know-sidebar{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .know-sidebar__hd{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--grey-l);font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px}
+    .know-cat{padding:8px 14px;font-size:13px;cursor:pointer;border-left:3px solid transparent;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+    .know-cat:last-child{border-bottom:none}
+    .know-cat:hover{background:var(--grey-l)}
+    .know-cat--on{background:var(--primary-l);color:var(--primary);font-weight:700;border-left-color:var(--primary)}
+    .know-cat__count{margin-left:auto;font-size:11px;color:var(--text-3);font-family:var(--mono)}
+    .detail-card{border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .15s;background:var(--surface)}
+    .detail-card:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(27,73,101,.1)}
+    .detail-card--on{border-color:var(--primary)}
+    .detail-hd{padding:12px 14px;display:flex;align-items:flex-start;gap:10px}
+    .detail-icon{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .detail-name{font-weight:700;font-size:13.5px;margin-bottom:2px}
+    .detail-meta{font-size:11.5px;color:var(--text-3)}
+    .detail-tags{display:flex;gap:4px;flex-wrap:wrap;padding:0 14px 10px}
+    .tag{background:var(--grey-l);color:var(--text-2);padding:2px 8px;border-radius:10px;font-size:11px}
+    .usage-dot{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-3)}
+    /* REX */
+    .rex-card{background:var(--green-l);border:1px solid rgba(45,106,79,.25);border-radius:var(--r);padding:14px 16px;margin-bottom:8px}
+    .rex-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .rex-title{font-weight:700;font-size:14px;color:var(--green)}
+    .rex-row{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;padding:4px 0}
+    .rex-label{min-width:90px;font-weight:700;color:var(--green);flex-shrink:0}
+
+    /* ═══ 4.5 PORTAIL ═══ */
+    /* Portail — vue externe simulée */
+    .portal-shell{background:#f8f8f5;border:2px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+    .portal-topbar{height:52px;background:var(--primary);display:flex;align-items:center;padding:0 20px;gap:12px}
+    .portal-logo{font-size:16px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px}
+    .portal-proj{font-size:13px;color:rgba(255,255,255,.7)}
+    .portal-body{padding:20px;display:flex;gap:16px}
+    .portal-nav{width:160px;flex-shrink:0}
+    .portal-nav__item{padding:7px 10px;border-radius:var(--r-sm);font-size:13px;cursor:pointer;color:var(--text-2);display:flex;align-items:center;gap:7px;margin-bottom:2px}
+    .portal-nav__item:hover,.portal-nav__item--on{background:var(--primary-l);color:var(--primary);font-weight:600}
+    .portal-content{flex:1}
+    .portal-section{margin-bottom:16px}
+    .portal-section__title{font-size:13px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+    .portal-doc{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;margin-bottom:4px;font-size:13px;transition:background .12s}
+    .portal-doc:hover{background:var(--grey-l)}
+    .portal-doc__icon{font-size:16px;flex-shrink:0}
+    .portal-doc__name{flex:1;font-weight:600}
+    .portal-doc__meta{font-size:11.5px;color:var(--text-3)}
+    /* Signature devis vue portail */
+    .devis-portal{background:var(--surface);border:2px solid var(--primary);border-radius:var(--r);padding:20px;max-width:600px}
+    .devis-portal__hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+    .devis-portal__title{font-size:18px;font-weight:700;margin-bottom:4px}
+    .devis-portal__sub{font-size:13px;color:var(--text-2)}
+    .devis-line{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .devis-line:last-child{border-bottom:none}
+    .devis-total{background:var(--primary-l);margin:12px -20px -20px;padding:14px 20px;border-top:2px solid var(--primary)}
+    /* Messagerie portail */
+    .msg-thread{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+    .msg-hd{padding:10px 14px;background:var(--grey-l);border-bottom:1px solid var(--border);font-size:13px;font-weight:700}
+    .msg-bubble{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;gap:10px;font-size:13px}
+    .msg-bubble:last-child{border-bottom:none}
+    .msg-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px}
+    .msg-body{flex:1}
+    .msg-who{font-weight:700;font-size:12px;margin-bottom:3px}
+    .msg-text{color:var(--text-2);line-height:1.5}
+    .msg-time{font-size:11px;color:var(--text-3);font-family:var(--mono);white-space:nowrap;margin-top:2px}
+    /* Blocage accès */
+    .access-block{background:var(--orange-l);border:1px solid rgba(184,134,11,.4);border-radius:var(--r);padding:16px;text-align:center}
+    .access-block__icon{font-size:36px;margin-bottom:8px}
+    .access-block__title{font-size:15px;font-weight:700;color:var(--orange);margin-bottom:6px}
+
+    /* ═══ 4.6 MESSAGERIE ═══ */
+    .msg-layout{display:grid;grid-template-columns:280px 1fr 300px;gap:0;height:calc(100vh - 100px);min-height:500px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+    .msg-sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column}
+    .msg-sidebar__hd{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--grey-l)}
+    .msg-search{width:100%;padding:7px 10px;border:1px solid var(--border-md);border-radius:20px;font-family:var(--font);font-size:13px;outline:none}
+    .conv-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:background .12s}
+    .conv-item:hover,.conv-item--on{background:var(--primary-l)}
+    .conv-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+    .conv-name{font-weight:700;font-size:13px;margin-bottom:2px}
+    .conv-preview{font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .conv-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+    .conv-time{font-size:11px;color:var(--text-3);font-family:var(--mono)}
+    .conv-unread{width:18px;height:18px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+    /* Zone conversation */
+    .conv-main{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+    .conv-hd{padding:12px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px}
+    .conv-proj-badge{background:var(--primary-l);color:var(--primary);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+    .conv-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+    .msg-out{align-self:flex-end;max-width:70%}
+    .msg-in{align-self:flex-start;max-width:70%;display:flex;gap:8px}
+    .msg-bubble-out{background:var(--primary);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px;font-size:13px;line-height:1.5}
+    .msg-bubble-in{background:var(--grey-l);padding:10px 14px;border-radius:14px 14px 14px 4px;font-size:13px;line-height:1.5;color:var(--text)}
+    .msg-mention{background:rgba(27,73,101,.15);padding:0 4px;border-radius:3px;font-weight:700;color:var(--primary)}
+    .msg-link-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;margin-top:6px;font-size:12px;cursor:pointer}
+    .msg-link-icon{font-size:14px;margin-right:4px}
+    .msg-time-small{font-size:10.5px;color:var(--text-3);margin-top:3px;font-family:var(--mono)}
+    .conv-input-zone{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:flex-end;gap:8px}
+    .conv-input{flex:1;padding:10px 14px;border:1.5px solid var(--border-md);border-radius:20px;font-family:var(--font);font-size:13px;outline:none;resize:none;max-height:100px;line-height:1.5}
+    .conv-input:focus{border-color:var(--primary)}
+    /* Contexte panneau droite */
+    .ctx-panel{display:flex;flex-direction:column}
+    .ctx-hd{padding:12px 14px;border-bottom:1px solid var(--border);background:var(--grey-l);font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px}
+    .ctx-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+    .ctx-title{font-size:11.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+    .ctx-item{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:4px 0;cursor:pointer;color:var(--primary)}
+    .ctx-item:hover{text-decoration:underline}
+    .ctx-comment{border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;margin-bottom:6px;cursor:pointer;transition:background .12s}
+    .ctx-comment:hover{background:var(--grey-l)}
+    .ctx-comment__who{font-weight:700;font-size:11.5px;margin-bottom:3px}
+    .ctx-comment__text{color:var(--text-2)}
+    .ctx-email{border:1px solid rgba(184,134,11,.3);background:var(--orange-l);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;margin-bottom:6px}
+    .ctx-email__from{font-weight:700;font-size:11.5px;color:var(--orange);margin-bottom:2px}
+    .ctx-email__subject{color:var(--text-2)}
+  </style>
+</head>
+<body>
+<div class="mod-bar">
+  <div class="mod-tab mod-tab--on" onclick="show('p44')">📚 4.4 Connaissances</div>
+  <div class="mod-tab" onclick="show('p45')">🌐 4.5 Portail externe</div>
+  <div class="mod-tab" onclick="show('p46')">💬 4.6 Messagerie</div>
+</div>
+
+<!-- ══════════ 4.4 CONNAISSANCES ══════════ -->
+<main class="page page--on" id="p44">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Base de connaissances agence</h1>
+      <p style="font-size:13px;color:var(--text-2);margin-top:3px">Détails types · DOE capitalisés · REX projets · Matériaux & fournisseurs</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <div style="position:relative">
+        <input class="form-input" placeholder="🔍 Recherche plein texte…" style="width:260px;padding-left:14px">
+      </div>
+      <button class="btn btn--primary btn--sm">+ Contribuer</button>
+    </div>
+  </div>
+
+  <div class="know-layout">
+    <!-- Catégories -->
+    <div class="know-sidebar">
+      <div class="know-sidebar__hd">Catégories</div>
+      <div class="know-cat know-cat--on"><span>📐</span>Détails types<span class="know-cat__count">34</span></div>
+      <div class="know-cat"><span>📦</span>Matériaux & produits<span class="know-cat__count">18</span></div>
+      <div class="know-cat"><span>🏗</span>Retours chantier<span class="know-cat__count">12</span></div>
+      <div class="know-cat"><span>📋</span>REX projets<span class="know-cat__count">7</span></div>
+      <div class="know-cat"><span>👥</span>Fournisseurs<span class="know-cat__count">23</span></div>
+      <div class="know-cat"><span>📄</span>CCTP types<span class="know-cat__count">9</span></div>
+      <div class="know-cat"><span>🔬</span>Solutions techniques<span class="know-cat__count">15</span></div>
+    </div>
+
+    <!-- Liste + Détail -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Barre filtres -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select class="form-select" style="font-size:12.5px;padding:6px 10px"><option>Tous les tags</option><option>Façade</option><option>Toiture</option><option>Structure</option></select>
+        <select class="form-select" style="font-size:12.5px;padding:6px 10px"><option>Tout type</option><option>En attente de validation</option><option>Validé</option></select>
+      </div>
+
+      <!-- Grille détails -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="detail-card detail-card--on">
+          <div class="detail-hd">
+            <div class="detail-icon" style="background:var(--primary-l)">🏗</div>
+            <div style="flex:1">
+              <div class="detail-name">Acrotère béton avec relevé d'étanchéité</div>
+              <div class="detail-meta">Ajouté par M. Lefort · 12/01/2026</div>
+            </div>
+            <span class="badge badge--green">Validé</span>
+          </div>
+          <div class="detail-tags">
+            <span class="tag">Toiture-terrasse</span><span class="tag">Étanchéité</span><span class="tag">Béton</span>
+          </div>
+          <div style="padding:0 14px 10px;display:flex;align-items:center;justify-content:space-between">
+            <div class="usage-dot"><span>📁</span>Utilisé sur 3 projets</div>
+            <button class="btn btn--ghost btn--sm">Voir →</button>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-hd">
+            <div class="detail-icon" style="background:var(--green-l)">🪟</div>
+            <div style="flex:1">
+              <div class="detail-name">Menuiserie aluminium — seuil PMR</div>
+              <div class="detail-meta">Ajouté par S. Moreau · 28/02/2026</div>
+            </div>
+            <span class="badge badge--orange">En attente</span>
+          </div>
+          <div class="detail-tags">
+            <span class="tag">Menuiseries</span><span class="tag">PMR</span><span class="tag">Aluminium</span>
+          </div>
+          <div style="padding:0 14px 10px;display:flex;align-items:center;justify-content:space-between">
+            <div class="usage-dot"><span>📁</span>Nouveau</div>
+            <button class="btn btn--primary btn--sm">Valider</button>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-hd">
+            <div class="detail-icon" style="background:var(--orange-l)">🧱</div>
+            <div style="flex:1">
+              <div class="detail-name">Isolation ITE — laine de roche 14cm</div>
+              <div class="detail-meta">Ajouté par A. Dupont · 05/02/2026</div>
+            </div>
+            <span class="badge badge--green">Validé</span>
+          </div>
+          <div class="detail-tags">
+            <span class="tag">Façade</span><span class="tag">ITE</span><span class="tag">Thermique</span>
+          </div>
+          <div style="padding:0 14px 10px;display:flex;align-items:center;justify-content:space-between">
+            <div class="usage-dot"><span>📁</span>Utilisé sur 5 projets</div>
+            <button class="btn btn--ghost btn--sm">Voir →</button>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-hd">
+            <div class="detail-icon" style="background:var(--purple-l)">⚡</div>
+            <div style="flex:1">
+              <div class="detail-name">Local vélos réglementaire RE2020</div>
+              <div class="detail-meta">Ajouté par M. Lefort · 22/11/2025</div>
+            </div>
+            <span class="badge badge--green">Validé</span>
+          </div>
+          <div class="detail-tags">
+            <span class="tag">RE2020</span><span class="tag">Mobilités douces</span>
+          </div>
+          <div style="padding:0 14px 10px;display:flex;align-items:center;justify-content:space-between">
+            <div class="usage-dot"><span>📁</span>Utilisé sur 2 projets</div>
+            <button class="btn btn--ghost btn--sm">Voir →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Détail sélectionné -->
+      <div class="card">
+        <div class="card__hd"><div><div class="card__title">📐 Acrotère béton avec relevé d'étanchéité</div><div class="card__sub">Détail type validé · Catégorie : Toiture-terrasse</div></div><div style="display:flex;gap:6px"><button class="btn btn--ghost btn--sm">⬇ Télécharger DWG</button><button class="btn btn--ghost btn--sm">Utiliser sur un projet</button></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          <!-- Vignette -->
+          <div style="border-right:1px solid var(--border);padding:16px;display:flex;align-items:center;justify-content:center;background:var(--grey-l);min-height:160px">
+            <div style="text-align:center;color:var(--text-3)">
+              <div style="font-size:48px;margin-bottom:8px">📐</div>
+              <div style="font-size:12px">Aperçu DWG/PDF<br>disponible au téléchargement</div>
+            </div>
+          </div>
+          <!-- Infos -->
+          <div style="padding:16px;font-size:13px;display:flex;flex-direction:column;gap:10px">
+            <div><span style="font-weight:700">Description :</span> Acrotère en béton banché avec relevé d'étanchéité et solins. Solution éprouvée sur 3 projets. Point de vigilance : <strong>hauteur de relevé min. 15 cm</strong> au-dessus du niveau fini.</div>
+            <div><span style="font-weight:700">Projets où utilisé :</span> Rés. Les Oliviers (2024), Rés. Les Cèdres (2023), Immeuble Gambetta (2022)</div>
+            <div><span style="font-weight:700">Retour chantier :</span> Vérifier la continuité de l'étanchéité sous le solin — 1 sinistre Gambetta lié à une rupture à l'angle.</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="badge badge--green">3 utilisations confirmées</span>
+              <span class="badge badge--blue">Revue technique : OK</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REX -->
+      <div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:10px">Fiches REX — Retours d'expérience</div>
+        <div class="rex-card">
+          <div class="rex-hd">
+            <div class="rex-title">REX — Résidence Les Pins (2024, archivé)</div>
+            <span class="badge badge--green">Validé</span>
+          </div>
+          <div class="rex-row"><span class="rex-label">✅ Points forts</span><span>Bon bureau d'études fluides (INEX), solution innovante de façade ventilée bois, coordination parfaite DET.</span></div>
+          <div class="rex-row"><span class="rex-label">⚠ Points faibles</span><span>Retard entreprise GO (4 semaines) → décalage réception. Problème coordination VRD découvert en phase DET.</span></div>
+          <div class="rex-row"><span class="rex-label">📐 Détails</span><span>3 détails intégrés à la base : nez de dalle bois, joint de dilatation façade, jonction toiture-terrasse/façade.</span></div>
+          <div class="rex-row"><span class="rex-label">👤 Contributeur</span><span>M. Lefort · Validé par D. Garnier</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════ 4.5 PORTAIL EXTERNE ══════════ -->
+<main class="page" id="p45">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Portail externe — Vue interne</h1>
+      <p style="font-size:13px;color:var(--text-2);margin-top:3px">Gérez les accès MOA, BET et entreprises · Signature de devis · Documents partagés · Blocage accès</p>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn--ghost btn--sm">👁 Prévisualiser le portail</button>
+      <button class="btn btn--primary btn--sm">+ Inviter un intervenant</button>
+    </div>
+  </div>
+
+  <!-- Accès actifs -->
+  <div class="card">
+    <div class="card__hd"><div class="card__title">Accès portail actifs</div></div>
+    <table class="tbl">
+      <thead><tr><th>Intervenant</th><th>Rôle</th><th>Projet</th><th>Token</th><th>Dernière connexion</th><th>Blocage accès</th><th>Actions</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><div style="font-weight:700">Ville de Nantes — M. Durand</div><div style="font-size:11.5px;color:var(--text-3)">mdp.durand@nantes.fr</div></td>
+          <td><span class="badge badge--blue">MOA</span></td>
+          <td>Groupe scolaire V. Hugo</td>
+          <td><span class="badge badge--green">Valide</span></td>
+          <td class="mono" style="font-size:12px">Auj. 09:30</td>
+          <td><span class="badge badge--grey">—</span></td>
+          <td><div style="display:flex;gap:4px"><button class="btn btn--ghost btn--sm">⋯</button><button class="btn btn--ghost btn--sm" style="color:var(--red)">🚫</button></div></td>
+        </tr>
+        <tr>
+          <td><div style="font-weight:700">BET Structure — INEX</div><div style="font-size:11.5px;color:var(--text-3)">m.petit@inex-structure.fr</div></td>
+          <td><span class="badge badge--purple">BET</span></td>
+          <td>Résidence Les Oliviers</td>
+          <td><span class="badge badge--green">Valide</span></td>
+          <td class="mono" style="font-size:12px">05/03 14:22</td>
+          <td><span class="badge badge--grey">—</span></td>
+          <td><button class="btn btn--ghost btn--sm">⋯</button></td>
+        </tr>
+        <tr>
+          <td><div style="font-weight:700">Entreprise GO — Vinci</div><div style="font-size:11.5px;color:var(--text-3)">c.martin@vinci.fr</div></td>
+          <td><span class="badge badge--orange">Entreprise</span></td>
+          <td>Résidence Les Cèdres</td>
+          <td><span class="badge badge--orange">Expire J–3</span></td>
+          <td class="mono" style="font-size:12px">04/03 08:00</td>
+          <td><span class="badge badge--red">🚫 Bloqué — FAC impayée</span></td>
+          <td><div style="display:flex;gap:4px"><button class="btn btn--ghost btn--sm">Lever</button><button class="btn btn--ghost btn--sm">⋯</button></div></td>
+        </tr>
+        <tr>
+          <td><div style="font-weight:700">Résidence Trianon — M. Faure</div><div style="font-size:11.5px;color:var(--text-3)">Token signature unique</div></td>
+          <td><span class="badge badge--grey">Signature devis</span></td>
+          <td>Résidence Trianon</td>
+          <td><span class="badge badge--orange">J–22 restants</span></td>
+          <td class="mono" style="font-size:12px">Non consulté</td>
+          <td><span class="badge badge--grey">—</span></td>
+          <td><div style="display:flex;gap:4px"><button class="btn btn--ghost btn--sm">Relancer</button><button class="btn btn--ghost btn--sm">⋯</button></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Simulation portail vue externe -->
+  <div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">Simulation — Vue du portail (MOA : Ville de Nantes)</div>
+    <div class="portal-shell">
+      <div class="portal-topbar">
+        <div class="portal-logo"><div style="width:28px;height:28px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">GAA</div>Portail projet</div>
+        <span class="portal-proj">Groupe scolaire Victor Hugo</span>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+          <span style="font-size:13px;color:rgba(255,255,255,.7)">M. Durand — Ville de Nantes</span>
+          <div style="width:28px;height:28px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">MD</div>
+        </div>
+      </div>
+      <div class="portal-body">
+        <div class="portal-nav">
+          <div class="portal-nav__item portal-nav__item--on"><span>📊</span>Avancement</div>
+          <div class="portal-nav__item"><span>📄</span>Documents</div>
+          <div class="portal-nav__item"><span>✅</span>Validations</div>
+          <div class="portal-nav__item"><span>💬</span>Échanges</div>
+          <div class="portal-nav__item"><span>💰</span>Facturation</div>
+        </div>
+        <div class="portal-content">
+          <div class="portal-section">
+            <div class="portal-section__title">Avancement du projet</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px">
+                <div><div style="font-weight:700">Phase en cours : APD</div><div style="font-size:12px;color:var(--text-3)">Avant-Projet Détaillé · Avancement : 45%</div></div>
+                <span class="badge badge--orange">APD en cours</span>
+              </div>
+              <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="width:45%;height:100%;background:var(--orange);border-radius:4px"></div></div>
+              <div style="display:flex;gap:16px;margin-top:12px;font-size:12.5px;color:var(--text-2)">
+                <span>📅 Prochain jalon : <strong>Rendu APD 13/03</strong></span>
+                <span>💰 Prochaine facturation : <strong>APD → 27 000 €</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="portal-section">
+            <div class="portal-section__title">Documents récents</div>
+            <div class="portal-doc"><span class="portal-doc__icon">📄</span><span class="portal-doc__name">CR-12 Réunion de conception APD</span><span class="portal-doc__meta">Partagé 04/03</span><span class="badge badge--green" style="margin-left:auto">Nouveau</span></div>
+            <div class="portal-doc"><span class="portal-doc__icon">🗺</span><span class="portal-doc__name">APD_Plan_masse_Ind-A.pdf</span><span class="portal-doc__meta">Partagé 02/03</span><button class="btn btn--ghost btn--sm" style="margin-left:auto">⬇</button></div>
+            <div class="portal-doc"><span class="portal-doc__icon">🗂</span><span class="portal-doc__name">Notice descriptive APD</span><span class="portal-doc__meta">En attente de validation</span><button class="btn btn--accent btn--sm" style="margin-left:auto">Valider</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signature de devis + blocage accès -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- Devis signature -->
+    <div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Portail signature devis — Vue client (token unique)</div>
+      <div class="devis-portal">
+        <div class="devis-portal__hd">
+          <div><div class="devis-portal__title">Proposition d'honoraires</div><div class="devis-portal__sub">D-2026-007 · Résidence Trianon · Valable jusqu'au 30/03/2026</div></div>
+        </div>
+        <div class="devis-line"><span style="font-weight:700">Mission</span><span>MOE complète — ESQ à AOR</span></div>
+        <div class="devis-line"><span>ESQ (8%)</span><span class="mono">6 400 €</span></div>
+        <div class="devis-line"><span>APD + APS (27%)</span><span class="mono">21 600 €</span></div>
+        <div class="devis-line"><span>PRO + DCE (30%)</span><span class="mono">24 000 €</span></div>
+        <div class="devis-line"><span>DET + AOR (35%)</span><span class="mono">28 000 €</span></div>
+        <div class="devis-total">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:12px;color:var(--text-2)">Total HT</div><div style="font-size:20px;font-weight:700;font-family:var(--mono);color:var(--primary)">80 000 €</div><div style="font-size:12px;color:var(--text-3)">TVA 20% : 16 000 € · TTC : 96 000 €</div></div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button class="btn btn--primary">✍ Signer le devis</button>
+              <button class="btn btn--ghost btn--sm" style="color:var(--red)">✗ Refuser (avec motif)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-3)">Signature via Yousign · Lien invalidé après signature · Journal d'accès tracé</div>
+    </div>
+
+    <!-- Blocage accès -->
+    <div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px">Fonctionnalité blocage accès portail (opt-in par projet)</div>
+      <div class="access-block">
+        <div class="access-block__icon">🔒</div>
+        <div class="access-block__title">Accès aux nouveaux documents temporairement suspendu</div>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:12px">Un règlement est en attente pour ce projet. Les documents antérieurs restent accessibles.<br>Pour toute question, contactez votre architecte.</p>
+        <button class="btn btn--ghost btn--sm" style="margin:0 auto;display:flex;border-color:var(--orange);color:var(--orange)">Contacter Agence Lefort & Associés</button>
+      </div>
+      <div style="margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;font-size:12.5px">
+        <div style="font-weight:700;margin-bottom:6px">Configuration — Résidence Les Cèdres</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="width:36px;height:20px;background:var(--red);border-radius:10px;position:relative;cursor:pointer"><div style="position:absolute;top:3px;left:19px;width:14px;height:14px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div></div>
+          <span style="font-size:13px">Blocage accès activé pour ce projet</span>
+        </div>
+        <div style="color:var(--text-2)">Déclencheur : FAC-2026-008 (Groupe scolaire V. Hugo) impayée depuis 12 jours · Seuil : 10 jours<br>Documents antérieurs au 25/02 restent accessibles.</div>
+        <button class="btn btn--ghost btn--sm" style="margin-top:8px;color:var(--green);border-color:var(--green)">Lever manuellement le blocage</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ══════════ 4.6 MESSAGERIE ══════════ -->
+<main class="page" id="p46" style="padding:24px;gap:0">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;letter-spacing:-.3px">Messagerie & collaboration interne</h1>
+      <p style="font-size:13px;color:var(--text-2);margin-top:3px">Fils projet · Commentaires contextuels · Mentions · Intégration email</p>
+    </div>
+  </div>
+  <div class="msg-layout">
+
+    <!-- Liste conversations -->
+    <div class="msg-sidebar">
+      <div class="msg-sidebar__hd">
+        <input class="msg-search" placeholder="🔍 Rechercher…">
+      </div>
+      <div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Fils projet</div>
+      <div class="conv-item conv-item--on">
+        <div class="conv-avatar" style="background:var(--primary)">OL</div>
+        <div style="flex:1;min-width:0">
+          <div class="conv-name">Rés. Les Oliviers</div>
+          <div class="conv-preview">@Thomas peux-tu vérifier le dimensionnement de l'escalier central ?</div>
+        </div>
+        <div class="conv-meta"><span class="conv-time">09:14</span><span class="conv-unread">3</span></div>
+      </div>
+      <div class="conv-item">
+        <div class="conv-avatar" style="background:var(--green)">VH</div>
+        <div style="flex:1;min-width:0">
+          <div class="conv-name">Groupe scolaire V. Hugo</div>
+          <div class="conv-preview">S. Moreau : Le dossier APD avance bien, rendu prévu vendredi</div>
+        </div>
+        <div class="conv-meta"><span class="conv-time">Hier</span><span class="conv-unread">1</span></div>
+      </div>
+      <div class="conv-item">
+        <div class="conv-avatar" style="background:var(--orange)">LC</div>
+        <div style="flex:1;min-width:0">
+          <div class="conv-name">Rés. Les Cèdres</div>
+          <div class="conv-preview">CR-13 diffusé à 6 destinataires</div>
+        </div>
+        <div class="conv-meta"><span class="conv-time">Il y a 2j</span></div>
+      </div>
+      <div style="padding:8px 14px;font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);border-top:1px solid var(--border)">Commentaires récents</div>
+      <div class="conv-item">
+        <div class="conv-avatar" style="background:var(--purple)" style="font-size:9px">TASK</div>
+        <div style="flex:1;min-width:0">
+          <div class="conv-name" style="font-size:12px">Tâche — Plans PRO R+1</div>
+          <div class="conv-preview">A. Dupont : J'ai besoin du détail d'acrotère pour finir</div>
+        </div>
+        <div class="conv-meta"><span class="conv-time">08:55</span><span class="conv-unread">1</span></div>
+      </div>
+      <div class="conv-item">
+        <div class="conv-avatar" style="background:var(--accent)" style="font-size:9px">DOC</div>
+        <div style="flex:1;min-width:0">
+          <div class="conv-name" style="font-size:12px">Doc — PRO_RDC_Ind-B.dwg</div>
+          <div class="conv-preview">M. Lefort : Voir commentaires sur le détail du seuil PMR</div>
+        </div>
+        <div class="conv-meta"><span class="conv-time">Hier</span></div>
+      </div>
+    </div>
+
+    <!-- Zone conversation active -->
+    <div class="conv-main">
+      <div class="conv-hd">
+        <div style="font-weight:700;font-size:14px;flex:1">Résidence Les Oliviers</div>
+        <span class="conv-proj-badge">📁 Fil projet</span>
+        <div style="font-size:12px;color:var(--text-3)">5 membres</div>
+      </div>
+      <div class="conv-messages">
+
+        <!-- Messages -->
+        <div class="msg-in">
+          <div class="conv-avatar" style="background:var(--primary);width:28px;height:28px;font-size:10px;flex-shrink:0">ML</div>
+          <div>
+            <div class="msg-who" style="color:var(--primary)">M. Lefort</div>
+            <div class="msg-bubble-in">
+              <span class="msg-mention">@Thomas</span>, peux-tu vérifier le dimensionnement de l'escalier central ? Le plan PRO RDC montre 90 cm de largeur, la réglementation PMR exige 100 cm.
+              <div class="msg-link-preview"><span class="msg-link-icon">📄</span><strong>PRO_RDC_Ind-B.dwg</strong> — Résidence Les Oliviers → Phase PRO</div>
+            </div>
+            <div class="msg-time-small">Auj. 09:14</div>
+          </div>
+        </div>
+
+        <div class="msg-out">
+          <div class="msg-bubble-out">Je regarde ça maintenant. C'est effectivement 90 cm sur le plan, je vais corriger et redéposer une version C en fin de matinée.</div>
+          <div class="msg-time-small" style="text-align:right;color:var(--text-3)">Auj. 09:22 · Lu ✓✓</div>
+        </div>
+
+        <div class="msg-in">
+          <div class="conv-avatar" style="background:var(--green);width:28px;height:28px;font-size:10px;flex-shrink:0">SM</div>
+          <div>
+            <div class="msg-who" style="color:var(--green)">S. Moreau</div>
+            <div class="msg-bubble-in"><span class="msg-mention">@M. Lefort</span> pour info, j'ai aussi repéré un problème similaire sur le plan de coupe — je commente directement sur le document.</div>
+            <div class="msg-time-small">Auj. 09:28</div>
+          </div>
+        </div>
+
+        <!-- Email archivé automatiquement -->
+        <div style="display:flex;gap:8px;align-items:flex-start;padding:2px 0">
+          <div style="width:28px;height:28px;background:var(--orange-l);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">✉</div>
+          <div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--orange);margin-bottom:3px">Email archivé automatiquement</div>
+            <div class="ctx-email" style="margin:0">
+              <div class="ctx-email__from">De : d.martin@nantes.fr (MOA)</div>
+              <div class="ctx-email__subject">Sujet : Demande de modification — programme salle polyvalente</div>
+              <div style="font-size:12px;color:var(--text-2);margin-top:4px">Reçu et transféré à oliviers@projets.gaa.io → archivé dans la GED.</div>
+            </div>
+            <div class="msg-time-small">Auj. 08:50 · Archivé dans GED</div>
+          </div>
+        </div>
+
+        <div class="msg-in">
+          <div class="conv-avatar" style="background:var(--primary);width:28px;height:28px;font-size:10px;flex-shrink:0">ML</div>
+          <div>
+            <div class="msg-who" style="color:var(--primary)">M. Lefort</div>
+            <div class="msg-bubble-in"><span class="msg-mention">@Equipe</span> — Réunion de coordination BET demain 14h. Je partage le lien de visio ici.
+              <div class="msg-link-preview"><span class="msg-link-icon">📅</span><strong>Réunion coordination BET — 07/03 14h00</strong> — Synchronisé dans les agendas</div>
+            </div>
+            <div class="msg-time-small">Auj. 09:44</div>
+          </div>
+        </div>
+
+      </div>
+      <!-- Zone saisie -->
+      <div class="conv-input-zone">
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn--ghost btn--sm" style="padding:6px 8px">📎</button>
+          <button class="btn btn--ghost btn--sm" style="padding:6px 8px">🔗</button>
+          <button class="btn btn--ghost btn--sm" style="padding:6px 8px">@</button>
+        </div>
+        <textarea class="conv-input" placeholder="Message… @mention · 🔗 lier un doc/tâche" rows="1">@S. Moreau OK, mets le commentaire sur le doc — Thomas corrige de son côté. On fait un point vendredi.</textarea>
+        <button class="btn btn--primary" style="padding:8px 14px;border-radius:20px">→</button>
+      </div>
+    </div>
+
+    <!-- Panneau contexte -->
+    <div class="ctx-panel">
+      <div class="ctx-hd">Contexte — Rés. Les Oliviers</div>
+      <div class="ctx-section">
+        <div class="ctx-title">Liens rapides</div>
+        <div class="ctx-item"><span>📁</span> Fiche projet</div>
+        <div class="ctx-item"><span>📄</span> GED Phase PRO (14 docs)</div>
+        <div class="ctx-item"><span>✓</span> Tâches en cours (8)</div>
+        <div class="ctx-item"><span>💰</span> Suivi financier</div>
+      </div>
+      <div class="ctx-section">
+        <div class="ctx-title">Commentaires sur documents</div>
+        <div class="ctx-comment">
+          <div class="ctx-comment__who">S. Moreau — Plan Coupe A-A</div>
+          <div class="ctx-comment__text">Largeur escalier 90 cm → à corriger pour PMR. Voir article R111-18.</div>
+        </div>
+        <div class="ctx-comment">
+          <div class="ctx-comment__who">A. Dupont — PRO_RDC_Ind-B.dwg</div>
+          <div class="ctx-comment__text">Besoin du détail d'acrotère validé pour finaliser le plan.</div>
+        </div>
+      </div>
+      <div class="ctx-section">
+        <div class="ctx-title">Emails archivés récents</div>
+        <div class="ctx-email">
+          <div class="ctx-email__from">MOA — d.martin@nantes.fr</div>
+          <div class="ctx-email__subject">Demande modification salle polyvalente</div>
+        </div>
+        <div class="ctx-email">
+          <div class="ctx-email__from">BET Struct. — m.petit@inex.fr</div>
+          <div class="ctx-email__subject">Note de calcul planchers — Rev.2</div>
+        </div>
+      </div>
+      <div class="ctx-section" style="border-bottom:none">
+        <div class="ctx-title">Membres du fil (5)</div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <div style="width:28px;height:28px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff" title="M. Lefort">ML</div>
+          <div style="width:28px;height:28px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff" title="S. Moreau">SM</div>
+          <div style="width:28px;height:28px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff" title="A. Dupont">AD</div>
+          <div style="width:28px;height:28px;background:var
+<script>
+// ── GAA STORE (inline, partagé entre modules) ──────────────────
+const GAAStore = (() => {
+  const P = 'gaa_';
+  const K = {
+    AGENCE:'agence', BRANDING:'branding', TAUX:'taux',
+    NUMEROTATION:'numerotation', PHASES:'phases',
+    UTILISATEURS:'utilisateurs', PREFERENCES:'preferences',
+    PROJETS:'projets', CONTACTS:'contacts',
+    ALERTES:'alertes_devis', AUDIT:'audit_log',
+  };
+  function _ts(){const n=new Date();const p=x=>String(x).padStart(2,'0');return`${p(n.getDate())}/${p(n.getMonth()+1)}/${n.getFullYear()} ${p(n.getHours())}:${p(n.getMinutes())}`;}
+  const r=k=>{try{const v=localStorage.getItem(P+k);return v?JSON.parse(v):null;}catch{return null;}};
+  const w=(k,v)=>{try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){console.error(e);return false;}};
+  const sub={};
+  const notify=(k,v)=>{(sub[k]||[]).forEach(fn=>fn(v));(sub['*']||[]).forEach(fn=>fn(k,v));};
+  const DEFAULTS={
+    agence:{raison_sociale:'Agence Lefort & Associés SARL',siret:'123 456 789 00012',tva:'FR12 123456789',ape:'7111Z',adresse_complete:'14 rue des Architectes, 75011 Paris',email:'contact@agence-lefort.fr',telephone:'+33 1 42 00 00 00',iban:'FR76 3000 4000 0100 0000 0000 123',bic:'BNPAFRPP',banque:'BNP Paribas — Agence Paris 11e',delai_paiement:'30',pied_de_page:'Agence Lefort & Associés SARL — SIRET 123 456 789 — RC Pro Allianz N°12345'},
+    branding:{couleur_principale:'#1B4965',couleur_accent:'#C75B37',logo_url:null},
+    taux:[{profil:'Dirigeant / Associé',taux:130,cout:55,marge:58},{profil:'Chef de projet',taux:95,cout:48,marge:50},{profil:'Architecte / Collaborateur',taux:80,cout:40,marge:50},{profil:'Dessinateur / Projeteur',taux:58,cout:30,marge:48},{profil:'Stagiaire',taux:25,cout:12,marge:52}],
+    numerotation:{projet:{format:'PRJ-{YEAR}-{SEQ:3}',prochain:14},devis:{format:'D-{YEAR}-{SEQ:3}',prochain:8},facture:{format:'FAC-{YEAR}-{SEQ:3}',prochain:13},avoir:{format:'AV-{YEAR}-{SEQ:3}',prochain:1}},
+    phases:[{code:'ESQ',libelle:'Esquisse',ratio:8,duree:4,actif:true},{code:'APS',libelle:'Avant-Projet Sommaire',ratio:12,duree:6,actif:true},{code:'APD',libelle:'Avant-Projet Détaillé',ratio:15,duree:8,actif:true},{code:'PRO',libelle:'Projet',ratio:20,duree:10,actif:true},{code:'DCE',libelle:'Dossier Consultation Entreprises',ratio:10,duree:4,actif:true},{code:'ACT',libelle:'Assistance Contrats Travaux',ratio:0,duree:2,actif:false},{code:'DET',libelle:'Direction Exécution Travaux',ratio:25,duree:40,actif:true},{code:'AOR',libelle:'Assistance Opérations Réception',ratio:10,duree:8,actif:true}],
+    utilisateurs:[{id:'u1',initiales:'DG',nom:'D. Garnier',email:'garnier@agence-lefort.fr',role:'Dirigeant',couleur:'#C0392B',actif:true},{id:'u2',initiales:'ML',nom:'M. Lefort',email:'lefort@agence-lefort.fr',role:'Chef de projet',couleur:'#1B4965',actif:true},{id:'u3',initiales:'SM',nom:'S. Moreau',email:'moreau@agence-lefort.fr',role:'Chef de projet',couleur:'#2D6A4F',actif:true},{id:'u4',initiales:'AD',nom:'A. Dupont',email:'dupont@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#B8860B',actif:true},{id:'u5',initiales:'PB',nom:'P. Bernard',email:'bernard@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u6',initiales:'LC',nom:'L. Chen',email:'chen@agence-lefort.fr',role:'Dessinateur / Projeteur',couleur:'#6A3D9A',actif:true},{id:'u7',initiales:'TM',nom:'T. Martin',email:'t.martin@agence-lefort.fr',role:'Stagiaire',couleur:'#555555',actif:false}],
+    contacts:[{id:'c1',nom:'M. Dumont',societe:'Ville de Nantes',role:'MOA',email:'urbanisme@nantes.fr',telephone:'02 40 00 00 00'},{id:'c2',nom:'M. Renard',societe:'SCI Les Oliviers',role:'MOA',email:'contact@sci-oliviers.fr',telephone:'06 12 00 00 00'},{id:'c3',nom:'Mme Picard',societe:'Commune de Rezé',role:'MOA',email:'mairie@reze.fr',telephone:'02 40 75 00 00'},{id:'c4',nom:'M. Petit',societe:'INEX Structure',role:'BET',email:'m.petit@inex.fr',telephone:'01 43 00 00 00'}],
+    alertes_devis:{alerte_signature:15,alerte_non_converti:30},
+    audit_log:[{time:_ts(),user:'Système',action:'Store initialisé',module:'Système'}],
+    preferences:{utilisateur_courant:'u2'},
+    projets:[
+      {id:'PRJ-2024-001',nom:'Résidence Les Oliviers',statut:'en_cours',type_mission:'MOE',phase_courante:'PRO',moa:{nom:'SCI Les Oliviers',contact:'M. Renard',email:'contact@sci-oliviers.fr'},adresse:'Avenue des Fleurs, 44000 Nantes',surface_shon:2810,montant_travaux:2800000,honoraires_ht:255000,date_debut:'2024-03-01',date_fin_prevue:'2026-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2024-03-01',date_fin:'2024-04-15'},{code:'APS',statut:'valide',date_debut:'2024-04-15',date_fin:'2024-06-30'},{code:'APD',statut:'valide',date_debut:'2024-07-01',date_fin:'2024-10-15'},{code:'PRO',statut:'en_cours',date_debut:'2024-10-15',date_fin:'2025-04-30',avancement:65},{code:'DCE',statut:'a_venir',date_debut:'2025-05-01',date_fin:'2025-07-31'},{code:'DET',statut:'a_venir',date_debut:'2025-09-01',date_fin:'2026-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2026-12-31'}],created_at:'2024-02-15T09:00:00Z'},
+      {id:'PRJ-2025-002',nom:'Groupe scolaire Victor Hugo',statut:'en_cours',type_mission:'MOE',phase_courante:'APD',moa:{nom:'Ville de Nantes',contact:'M. Dumont',email:'urbanisme@nantes.fr'},adresse:'Rue Victor Hugo, 44000 Nantes',surface_shon:1850,montant_travaux:3200000,honoraires_ht:180000,date_debut:'2025-07-09',date_fin_prevue:'2027-06-30',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide',date_debut:'2025-07-09',date_fin:'2025-09-30'},{code:'APS',statut:'valide',date_debut:'2025-10-01',date_fin:'2025-12-31'},{code:'APD',statut:'en_cours',date_debut:'2026-01-01',date_fin:'2026-03-13',avancement:45},{code:'PRO',statut:'a_venir',date_debut:'2026-04-01',date_fin:'2026-07-31'},{code:'DCE',statut:'a_venir',date_debut:'2026-08-01',date_fin:'2026-10-31'},{code:'DET',statut:'a_venir',date_debut:'2027-01-01',date_fin:'2027-04-30'},{code:'AOR',statut:'a_venir',date_debut:'2027-05-01',date_fin:'2027-06-30'}],created_at:'2025-06-20T10:00:00Z'},
+      {id:'PRJ-2026-003',nom:'École Jules-Ferry',statut:'en_cours',type_mission:'MOE',phase_courante:'ESQ',moa:{nom:'Commune de Rezé',contact:'Mme Picard',email:'mairie@reze.fr'},adresse:'Place Jules-Ferry, 44400 Rezé',surface_shon:1200,montant_travaux:1800000,honoraires_ht:145000,date_debut:'2026-03-04',date_fin_prevue:'2028-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'en_cours',date_debut:'2026-03-04',date_fin:'2026-05-15',avancement:12},{code:'APS',statut:'a_venir',date_debut:'2026-06-01',date_fin:'2026-09-30'},{code:'APD',statut:'a_venir',date_debut:'2026-10-01',date_fin:'2027-01-31'},{code:'PRO',statut:'a_venir',date_debut:'2027-02-01',date_fin:'2027-06-30'},{code:'DCE',statut:'a_venir',date_debut:'2027-07-01',date_fin:'2027-09-30'},{code:'DET',statut:'a_venir',date_debut:'2028-01-01',date_fin:'2028-09-30'},{code:'AOR',statut:'a_venir',date_debut:'2028-10-01',date_fin:'2028-12-31'}],created_at:'2026-03-04T08:46:00Z'},
+      {id:'PRJ-2024-004',nom:'Résidence Les Cèdres',statut:'en_cours',type_mission:'MOE',phase_courante:'DET',moa:{nom:'Promoteur Cèdres SAS',contact:'M. Fabre',email:'m.fabre@cedres-promo.fr'},adresse:'Rue des Cèdres, 44300 Nantes',surface_shon:3200,montant_travaux:4100000,honoraires_ht:310000,date_debut:'2023-01-15',date_fin_prevue:'2025-12-31',chef_projet:'M. Lefort',phases:[{code:'ESQ',statut:'valide'},{code:'APS',statut:'valide'},{code:'APD',statut:'valide'},{code:'PRO',statut:'valide'},{code:'DCE',statut:'valide'},{code:'DET',statut:'en_cours',avancement:88},{code:'AOR',statut:'a_venir'}],created_at:'2023-01-10T09:00:00Z'},
+    ],
+  };
+  return {
+    K,
+    init(){Object.entries(DEFAULTS).forEach(([k,v])=>{if(r(k)===null)w(k,v);});return this;},
+    get(k){return r(k)??DEFAULTS[k]??null;},
+    set(k,v){w(k,v);notify(k,v);return this;},
+    update(k,p){const c=this.get(k);if(!Array.isArray(c)){w(k,{...c,...p});notify(k,{...c,...p});}return this;},
+    // Projets
+    getProjets(){return this.get(K.PROJETS)||[];},
+    getProjet(id){return this.getProjets().find(p=>p.id===id)||null;},
+    saveProjet(p){const ps=this.getProjets();const i=ps.findIndex(x=>x.id===p.id);if(i>=0)ps[i]=p;else ps.push(p);this.set(K.PROJETS,ps);return p;},
+    deleteProjet(id){this.set(K.PROJETS,this.getProjets().filter(p=>p.id!==id));},
+    // Numéros
+    nextNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num[type];if(!cfg)return null;const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');const n=cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);cfg.prochain++;num[type]=cfg;this.set(K.NUMEROTATION,num);return n;},
+    previewNumero(type){const num=this.get(K.NUMEROTATION);const cfg=num?.[type];if(!cfg)return'—';const y=new Date().getFullYear();const s=String(cfg.prochain).padStart(3,'0');return cfg.format.replace('{YEAR}',y).replace(/{SEQ:\d+}/,s);},
+    // Utilisateurs
+    getUtilisateurs(){return this.get(K.UTILISATEURS)||[];},
+    getMe(){const p=this.get(K.PREFERENCES)||{};return this.getUtilisateurs().find(u=>u.id===(p.utilisateur_courant||'u2'))||this.getUtilisateurs()[0];},
+    // Audit
+    addAudit(user,action,module){const log=this.get(K.AUDIT)||[];log.unshift({time:_ts(),user,action,module});this.set(K.AUDIT,log.slice(0,200));},
+    // Contacts
+    getContacts(){return this.get(K.CONTACTS)||[];},
+    // On
+    on(k,fn){if(!sub[k])sub[k]=[];sub[k].push(fn);return()=>{sub[k]=sub[k].filter(f=>f!==fn);};},
+  };
+})();
+GAAStore.init();
+window.GAAStore=GAAStore;
+
+
+let _gaaToastT;
+function showToast(msg,type=''){
+  let el=document.getElementById('gaa-toast');
+  if(!el){el=document.createElement('div');el.id='gaa-toast';el.style.cssText='position:fixed;bottom:24px;right:24px;background:#1C1B18;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1)';document.body.appendChild(el);}
+  el.textContent=msg;el.style.background=type==='success'?'#2D6A4F':type==='error'?'#C0392B':'#1C1B18';
+  el.style.transform='translateY(0)';el.style.opacity='1';
+  clearTimeout(_gaaToastT);_gaaToastT=setTimeout(()=>{el.style.transform='translateY(80px)';el.style.opacity='0';},2800);
+}
+
+function applyBranding(){
+  const b=GAAStore.get(GAAStore.K.BRANDING);
+  if(b?.couleur_principale) document.documentElement.style.setProperty('--primary',b.couleur_principale);
+  if(b?.couleur_accent) document.documentElement.style.setProperty('--accent',b.couleur_accent);
+  const me=GAAStore.getMe();
+  document.querySelectorAll('.nav__avatar,.nav-sidebar__avatar').forEach(el=>{el.textContent=me?.initiales||'ML';el.style.background=me?.couleur||'var(--accent)';});
+}
+
+const KNOW_KEY='connaissances';
+function getKnow(){ return GAAStore.get(KNOW_KEY)||[]; }
+function saveKnow(k){ const list=getKnow(); const i=list.findIndex(x=>x.id===k.id); if(i>=0)list[i]=k; else list.push(k); GAAStore.set(KNOW_KEY,list); }
+
+// ── Navigation ────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('page--on'));
+  document.getElementById(id)?.classList.add('page--on');
+  document.querySelectorAll('.mod-tab').forEach(t=>t.classList.remove('mod-tab--on'));
+  const idx={'p44':0,'p45':1,'p46':2};
+  if(idx[id]!==undefined) document.querySelectorAll('.mod-tab')[idx[id]]?.classList.add('mod-tab--on');
+  window.scrollTo(0,0);
+}
+
+// ── Base de connaissances ─────────────────────────────────
+function validerDetail(btn){
+  const card=btn.closest('.detail-card');
+  const title=card?.querySelector('.detail-name')?.textContent?.trim();
+  if(!title) return;
+  const know={id:'know-'+Date.now(),titre:title,statut:'valide',
+    valide_par:GAAStore.getMe()?.nom,
+    valide_at:new Date().toISOString()};
+  saveKnow(know);
+  GAAStore.addAudit(GAAStore.getMe()?.nom,`Connaissance "${title}" validée`,'4.4 Connaissances');
+  const badge=card.querySelector('.badge');
+  if(badge){badge.textContent='Validé';badge.className='badge badge--green';}
+  btn.textContent='Voir →';btn.className='btn btn--ghost btn--sm';
+  btn.onclick=null;
+  showToast(`"${title}" validée ✓`,'success');
+}
+
+// Patcher les boutons Valider
+document.querySelectorAll('.btn--primary').forEach(btn=>{
+  if(btn.textContent.trim()==='Valider') btn.onclick=()=>validerDetail(btn);
+});
+
+// ── Portail externe — enrichir avec données projet ────────
+function renderPortail(){
+  const projets=GAAStore.getProjets().filter(p=>p.statut==='en_cours');
+  if(!projets.length) return;
+  const p=projets[0];
+  // Titre portail
+  const ptitle=document.querySelector('.portal-shell h1,.portal-topbar + * h1');
+  if(ptitle) ptitle.textContent=p.nom;
+  // Phase courante
+  const ph=(p.phases||[]).find(ph=>ph.statut==='en_cours');
+  const phEl=document.querySelector('[class*="portal"] .badge');
+  if(phEl&&ph) phEl.textContent=`Phase ${ph.code} — ${ph.avancement||0}%`;
+}
+
+// ── Messagerie — membres depuis store ────────────────────
+function renderMembres(){
+  const users=GAAStore.getUtilisateurs().filter(u=>u.actif).slice(0,5);
+  // Mettre à jour les avatars du panneau contexte
+  const avatarWrap=document.querySelector('.ctx-section:last-child > div[style*="display:flex"]');
+  if(!avatarWrap||!users.length) return;
+  const colors=['var(--primary)','var(--green)','var(--orange)','var(--accent)','#6A3D9A'];
+  const newAvatars=users.map((u,i)=>`
+    <div style="width:28px;height:28px;background:${u.couleur||colors[i%colors.length]};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff" title="${u.nom}">${u.initiales||u.nom.substring(0,2).toUpperCase()}</div>`
+  ).join('');
+  avatarWrap.innerHTML=newAvatars;
+}
+
+// ── Envoyer un message ────────────────────────────────────
+function envoyerMessage(){
+  const inp=document.querySelector('#msg-input,input[placeholder*="message"],textarea[placeholder*="message"]');
+  const text=inp?.value?.trim();
+  if(!text){showToast('Message vide','error');return;}
+  const me=GAAStore.getMe();
+  GAAStore.addAudit(me?.nom,`Message envoyé : "${text.substring(0,40)}…"`,'4.6 Messagerie');
+  inp.value='';
+  showToast('Message envoyé ✓','success');
+}
+
+// Patcher bouton envoi
+document.querySelectorAll('button').forEach(btn=>{
+  if(btn.textContent.trim()==='Envoyer'||btn.textContent.includes('↵'))
+    btn.addEventListener('click',envoyerMessage);
+});
+
+document.addEventListener('DOMContentLoaded',()=>{
+  applyBranding();
+  renderPortail();
+  renderMembres();
+});
+
+</script>
+</body>
+</html>
